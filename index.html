@@ -3,34 +3,243 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Experience — Ludovico Einaudi</title>
 
   <style>
-    body {
-      margin: 0;
-      padding: 20px;
-      background: #ddd;
-      text-align: center;
+    * {
+      box-sizing: border-box;
     }
 
-    img {
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #e5e5e5;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .pagina {
+      background: white;
+      margin: 0 auto 30px auto;
+      padding: 20px;
+      max-width: 1400px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.2);
+    }
+
+    .pagina h2 {
+      font-size: 16px;
+      margin: 0 0 15px;
+      color: #555;
+    }
+
+    .pagina img {
       display: block;
       width: 100%;
-      max-width: 1200px;
       height: auto;
-      margin: 0 auto 30px auto;
-      background: white;
+    }
+
+    #estado {
+      text-align: center;
+      padding: 20px;
+    }
+
+    @media print {
+
+      body {
+        background: white;
+        padding: 0;
+      }
+
+      h1,
+      #estado {
+        display: none;
+      }
+
+      .pagina {
+        box-shadow: none;
+        margin: 0;
+        padding: 0;
+        page-break-after: always;
+      }
+
+      .pagina:last-child {
+        page-break-after: auto;
+      }
+
+      .pagina h2 {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <img src="EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_0.svg" alt="Página 1">
-  <img src="EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_1.svg" alt="Página 2">
-  <img src="EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_2.svg" alt="Página 3">
-  <img src="EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_3.svg" alt="Página 4">
-  <img src="EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_4.svg" alt="Página 5">
+<h1>Experience — Ludovico Einaudi</h1>
+
+<div id="estado">
+  Cargando partitura...
+</div>
+
+<div id="partitura"></div>
+
+<script>
+
+const carpeta =
+  "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
+
+const archivos = [
+  "score_0.svg",
+  "score_1.svg",
+  "score_2.svg",
+  "score_3.svg",
+  "score_4.svg"
+];
+
+const contenedor =
+  document.getElementById("partitura");
+
+const estado =
+  document.getElementById("estado");
+
+
+async function cargarPartitura() {
+
+  for (let i = 0; i < archivos.length; i++) {
+
+    const archivo = archivos[i];
+
+    const url =
+      carpeta + archivo;
+
+    try {
+
+      const respuesta =
+        await fetch(url);
+
+      if (!respuesta.ok) {
+        throw new Error(
+          "HTTP " + respuesta.status
+        );
+      }
+
+      const svg =
+        await respuesta.text();
+
+      /*
+       * Creamos una página.
+       */
+
+      const pagina =
+        document.createElement("div");
+
+      pagina.className =
+        "pagina";
+
+      /*
+       * Título.
+       */
+
+      const titulo =
+        document.createElement("h2");
+
+      titulo.textContent =
+        "Página " + (i + 1);
+
+      pagina.appendChild(titulo);
+
+      /*
+       * Convertimos el SVG en un
+       * elemento SVG real dentro del HTML.
+       */
+
+      const parser =
+        new DOMParser();
+
+      const documento =
+        parser.parseFromString(
+          svg,
+          "image/svg+xml"
+        );
+
+      const elementoSVG =
+        documento.documentElement;
+
+      /*
+       * Insertamos el SVG directamente
+       * en el DOM.
+       */
+
+      pagina.appendChild(
+        document.importNode(
+          elementoSVG,
+          true
+        )
+      );
+
+      /*
+       * Ajustamos el tamaño.
+       */
+
+      const svgFinal =
+        pagina.querySelector("svg");
+
+      if (svgFinal) {
+
+        svgFinal.style.width =
+          "100%";
+
+        svgFinal.style.height =
+          "auto";
+
+        svgFinal.style.display =
+          "block";
+      }
+
+      contenedor.appendChild(
+        pagina
+      );
+
+    } catch (error) {
+
+      console.error(
+        archivo,
+        error
+      );
+
+      const errorPagina =
+        document.createElement("div");
+
+      errorPagina.className =
+        "pagina";
+
+      errorPagina.innerHTML =
+        "<h2>Error cargando " +
+        archivo +
+        "</h2>" +
+        "<p>" +
+        error.message +
+        "</p>";
+
+      contenedor.appendChild(
+        errorPagina
+      );
+    }
+  }
+
+  estado.textContent =
+    "Partitura cargada.";
+
+}
+
+cargarPartitura();
+
+</script>
 
 </body>
 </html>
