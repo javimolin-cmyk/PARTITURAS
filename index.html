@@ -1,98 +1,376 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Experience — Analizador SVG</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Experience — Detector de notas</title>
 
 <style>
 
+* {
+    box-sizing: border-box;
+}
+
 body {
-    background:#181818;
-    color:white;
-    font-family:Arial,sans-serif;
-    padding:30px;
+
+    margin: 0;
+
+    padding: 25px;
+
+    background: #181818;
+
+    color: white;
+
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+h1 {
+    margin-top: 0;
 }
 
 button {
-    padding:15px 25px;
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-    border:0;
-    border-radius:8px;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    padding: 13px 20px;
+
+    margin: 4px;
+
+    font-size: 15px;
+
+    font-weight: bold;
+
+    cursor: pointer;
 }
 
 #analizar {
-    background:#4caf50;
-    color:white;
+
+    background: #4caf50;
+
+    color: white;
+}
+
+#descargar {
+
+    background: #2196f3;
+
+    color: white;
+
+    display: none;
 }
 
 #estado {
-    margin-top:20px;
-    padding:20px;
-    background:#050505;
-    border-radius:8px;
-    white-space:pre-wrap;
-    font-family:monospace;
-    line-height:1.5;
+
+    margin-top: 20px;
+
+    padding: 18px;
+
+    background: #090909;
+
+    border-radius: 8px;
+
+    white-space: pre-wrap;
+
+    font-family: monospace;
+
+    line-height: 1.5;
 }
 
 .pagina {
-    background:white;
-    color:black;
-    margin-top:30px;
-    padding:20px;
-    border-radius:10px;
+
+    position: relative;
+
+    margin-top: 35px;
+
+    padding: 20px;
+
+    background: white;
+
+    border-radius: 8px;
+
+    overflow: auto;
 }
 
-.pagina svg {
-    max-width:100%;
-    height:auto;
+.svg-wrapper {
+
+    position: relative;
+
+    width: 100%;
+
+}
+
+.svg-wrapper svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+
+}
+
+.overlay {
+
+    position: absolute;
+
+    left: 0;
+
+    top: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    pointer-events: none;
+}
+
+.nota-marker {
+
+    position: absolute;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    width: 14px;
+
+    height: 14px;
+
+    border-radius: 50%;
+
+    background: red;
+
+    border: 2px solid white;
+
+    box-shadow:
+        0 0 3px black;
+
+    color: white;
+
+    font-size: 7px;
+
+    font-weight: bold;
+
+    line-height: 10px;
+
+    text-align: center;
+
+    z-index: 10;
+}
+
+.nota-marker:hover {
+
+    background: blue;
+
+}
+
+.info {
+
+    margin-top: 15px;
+
+    padding: 12px;
+
+    background: #eee;
+
+    color: #111;
+
+    border-radius: 5px;
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    margin-top: 20px;
+
+    font-size: 12px;
+}
+
+th,
+td {
+
+    padding: 5px;
+
+    border: 1px solid #aaa;
+
+    text-align: center;
+}
+
+th {
+
+    background: #ddd;
+
+}
+
+.stats {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(170px, 1fr)
+        );
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+.stat {
+
+    background: #252525;
+
+    padding: 15px;
+
+    border-radius: 7px;
+}
+
+.stat-number {
+
+    font-size: 25px;
+
+    font-weight: bold;
+}
+
+.stat-name {
+
+    color: #aaa;
+
+    margin-top: 4px;
+}
+
+details {
+
+    margin-top: 20px;
+
+    background: #252525;
+
+    padding: 10px;
+
+    border-radius: 7px;
+}
+
+summary {
+
+    cursor: pointer;
+
+    font-weight: bold;
 }
 
 </style>
+
 </head>
+
 
 <body>
 
-<h1>🎼 EXPERIENCE — Analizador SVG</h1>
+
+<h1>
+🎼 EXPERIENCE — Detector vectorial de notas
+</h1>
+
+
+<p>
+Analizando directamente los SVG de MuseScore.
+</p>
+
 
 <button id="analizar">
 🔎 ANALIZAR PARTITURA
 </button>
 
+
+<button id="descargar">
+⬇️ DESCARGAR DATOS JSON
+</button>
+
+
 <div id="estado">
-Esperando...
+Esperando análisis...
 </div>
+
+
+<div
+    id="stats"
+    class="stats">
+</div>
+
 
 <div id="resultado"></div>
 
 
 <script>
 
-const archivos = [
 
-    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_0.svg",
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
 
-    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_1.svg",
 
-    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_2.svg",
+const BASE =
 
-    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_3.svg",
+"EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
-    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/score_4.svg"
+
+const ARCHIVOS = [
+
+    "score_0.svg",
+
+    "score_1.svg",
+
+    "score_2.svg",
+
+    "score_3.svg",
+
+    "score_4.svg"
 
 ];
 
 
-const estado =
-    document.getElementById("estado");
+/* =========================================================
+   VARIABLES
+========================================================= */
 
 
-const resultado =
-    document.getElementById("resultado");
+let paginas = [];
+
+let todasLasNotas = [];
+
+let contadorGlobal = 0;
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+
+function numero(valor) {
+
+    const n =
+        parseFloat(valor);
+
+    return Number.isFinite(n)
+        ? n
+        : 0;
+
+}
+
+
+/* =========================================================
+   SEPARAR SUBPATHS
+========================================================= */
 
 
 function separarSubpaths(d) {
@@ -100,14 +378,19 @@ function separarSubpaths(d) {
     if (!d)
         return [];
 
+
     const posiciones = [];
 
-    const regex = /[Mm](?=[-+.\d])/g;
+    const regex =
+        /[Mm](?=[-+.\d])/g;
+
 
     let match;
 
+
     while (
-        (match = regex.exec(d))
+        (match =
+            regex.exec(d))
         !== null
     ) {
 
@@ -117,7 +400,9 @@ function separarSubpaths(d) {
 
     }
 
+
     const resultado = [];
+
 
     for (
         let i = 0;
@@ -128,10 +413,16 @@ function separarSubpaths(d) {
         const inicio =
             posiciones[i];
 
+
         const fin =
-            i + 1 < posiciones.length
-            ? posiciones[i + 1]
-            : d.length;
+
+            i + 1 <
+            posiciones.length
+
+                ? posiciones[i + 1]
+
+                : d.length;
+
 
         const subpath =
             d.slice(
@@ -139,277 +430,1883 @@ function separarSubpaths(d) {
                 fin
             ).trim();
 
-        if (subpath)
-            resultado.push(subpath);
+
+        if (
+            subpath.length > 0
+        ) {
+
+            resultado.push(
+                subpath
+            );
+
+        }
 
     }
 
+
     return resultado;
+
 }
+
+
+/* =========================================================
+   CREAR SVG TEMPORAL
+========================================================= */
+
+
+let svgTemporal = null;
+
+
+function obtenerSVGTemporal() {
+
+    if (svgTemporal)
+        return svgTemporal;
+
+
+    svgTemporal =
+        document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg"
+        );
+
+
+    svgTemporal.setAttribute(
+        "width",
+        "10000"
+    );
+
+
+    svgTemporal.setAttribute(
+        "height",
+        "10000"
+    );
+
+
+    svgTemporal.style.position =
+        "absolute";
+
+
+    svgTemporal.style.left =
+        "-100000px";
+
+
+    svgTemporal.style.top =
+        "0";
+
+
+    svgTemporal.style.visibility =
+        "hidden";
+
+
+    document.body.appendChild(
+        svgTemporal
+    );
+
+
+    return svgTemporal;
+
+}
+
+
+/* =========================================================
+   BBOX DE SUBPATH
+========================================================= */
+
+
+function obtenerBBox(d) {
+
+    try {
+
+        const svg =
+            obtenerSVGTemporal();
+
+
+        const path =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "path"
+            );
+
+
+        path.setAttribute(
+            "d",
+            d
+        );
+
+
+        svg.appendChild(
+            path
+        );
+
+
+        const bbox =
+            path.getBBox();
+
+
+        path.remove();
+
+
+        return {
+
+            x: bbox.x,
+
+            y: bbox.y,
+
+            width: bbox.width,
+
+            height: bbox.height,
+
+            cx:
+                bbox.x +
+                bbox.width / 2,
+
+            cy:
+                bbox.y +
+                bbox.height / 2
+
+        };
+
+    }
+    catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
+/* =========================================================
+   DETECTAR CABEZAS
+========================================================= */
+
+
+function detectarCabezas(
+    svg,
+    pagina
+) {
+
+    const elementos =
+        [
+            ...svg.querySelectorAll(
+                ".Note"
+            )
+        ];
+
+
+    const resultado = [];
+
+
+    for (
+        const elemento
+        of elementos
+    ) {
+
+        const d =
+            elemento.getAttribute(
+                "d"
+            );
+
+
+        if (!d)
+            continue;
+
+
+        const subpaths =
+            separarSubpaths(d);
+
+
+        for (
+            const subpath
+            of subpaths
+        ) {
+
+            /*
+            Las cabezas de las notas
+            normalmente contienen curvas.
+            */
+
+            if (
+                !/[Cc]/.test(
+                    subpath
+                )
+            )
+                continue;
+
+
+            const bbox =
+                obtenerBBox(
+                    subpath
+                );
+
+
+            if (!bbox)
+                continue;
+
+
+            /*
+            Filtros geométricos.
+            */
+
+            if (
+                bbox.width < 5 ||
+                bbox.height < 5
+            )
+                continue;
+
+
+            if (
+                bbox.width > 100 ||
+                bbox.height > 100
+            )
+                continue;
+
+
+            const proporcion =
+                bbox.width /
+                bbox.height;
+
+
+            if (
+                proporcion < 0.35 ||
+                proporcion > 4
+            )
+                continue;
+
+
+            contadorGlobal++;
+
+
+            resultado.push({
+
+                id:
+                    contadorGlobal,
+
+                pagina,
+
+                x:
+                    bbox.cx,
+
+                y:
+                    bbox.cy,
+
+                width:
+                    bbox.width,
+
+                height:
+                    bbox.height,
+
+                subpath
+
+            });
+
+        }
+
+    }
+
+
+    /*
+    Ordenar por posición visual.
+
+    Primero Y.
+    Luego X.
+    */
+
+    resultado.sort(
+        (a, b) => {
+
+            if (
+                Math.abs(
+                    a.y -
+                    b.y
+                ) > 50
+            ) {
+
+                return (
+                    a.y -
+                    b.y
+                );
+
+            }
+
+
+            return (
+                a.x -
+                b.x
+            );
+
+        }
+    );
+
+
+    return resultado;
+
+}
+
+
+/* =========================================================
+   DETECTAR STAFF LINES
+========================================================= */
+
+
+function detectarStaffLines(
+    svg
+) {
+
+    const staff =
+        svg.querySelector(
+            ".StaffLines"
+        );
+
+
+    if (!staff)
+        return [];
+
+
+    /*
+    En estos SVG las líneas del pentagrama
+    están representadas mediante paths.
+
+    Extraemos los valores Y que aparecen
+    repetidamente en el path.
+    */
+
+    const d =
+        staff.getAttribute(
+            "d"
+        );
+
+
+    if (!d)
+        return [];
+
+
+    const segmentos =
+        [];
+
+
+    /*
+    Buscar pares de coordenadas
+    aproximadamente horizontales.
+
+    */
+
+    const regex =
+        /([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)/g;
+
+
+    let match;
+
+
+    while (
+        (match =
+            regex.exec(d))
+        !== null
+    ) {
+
+        const x1 =
+            numero(match[1]);
+
+
+        const y1 =
+            numero(match[2]);
+
+
+        const x2 =
+            numero(match[3]);
+
+
+        const y2 =
+            numero(match[4]);
+
+
+        if (
+            Math.abs(
+                y1 -
+                y2
+            ) < 3 &&
+            Math.abs(
+                x2 -
+                x1
+            ) > 100
+        ) {
+
+            segmentos.push({
+
+                x1,
+
+                x2,
+
+                y:
+                    (
+                        y1 +
+                        y2
+                    ) / 2,
+
+                longitud:
+                    Math.abs(
+                        x2 -
+                        x1
+                    )
+
+            });
+
+        }
+
+    }
+
+
+    /*
+    Ordenar por Y.
+    */
+
+    segmentos.sort(
+        (a, b) =>
+            a.y -
+            b.y
+    );
+
+
+    return segmentos;
+
+}
+
+
+/* =========================================================
+   CONSTRUIR PENTAGRAMAS
+========================================================= */
+
+
+function construirPentagramas(
+    lineas
+) {
+
+    const pentagramas = [];
+
+
+    for (
+        let i = 0;
+        i < lineas.length;
+    ) {
+
+        const grupo = [];
+
+
+        grupo.push(
+            lineas[i]
+        );
+
+
+        for (
+            let j = i + 1;
+            j < lineas.length;
+            j++
+        ) {
+
+            const diferencia =
+                lineas[j].y -
+                grupo[
+                    grupo.length - 1
+                ].y;
+
+
+            if (
+                grupo.length === 1
+            ) {
+
+                if (
+                    diferencia <
+                    100
+                ) {
+
+                    grupo.push(
+                        lineas[j]
+                    );
+
+                }
+                else {
+
+                    break;
+
+                }
+
+            }
+            else {
+
+                const esperado =
+                    grupo[1].y -
+                    grupo[0].y;
+
+
+                if (
+                    Math.abs(
+                        diferencia -
+                        esperado
+                    ) < 8
+                ) {
+
+                    grupo.push(
+                        lineas[j]
+                    );
+
+                }
+                else {
+
+                    break;
+
+                }
+
+            }
+
+
+            if (
+                grupo.length === 5
+            ) {
+
+                break;
+
+            }
+
+        }
+
+
+        if (
+            grupo.length === 5
+        ) {
+
+            pentagramas.push({
+
+                lineas:
+                    grupo,
+
+                top:
+                    grupo[0].y,
+
+                bottom:
+                    grupo[4].y,
+
+                espacio:
+                    (
+                        grupo[4].y -
+                        grupo[0].y
+                    ) / 4
+
+            });
+
+
+            i += 5;
+
+        }
+        else {
+
+            i++;
+
+        }
+
+    }
+
+
+    return pentagramas;
+
+}
+
+
+/* =========================================================
+   ASIGNAR PENTAGRAMA
+========================================================= */
+
+
+function asignarPentagrama(
+    nota,
+    pentagramas
+) {
+
+    if (
+        pentagramas.length === 0
+    )
+        return null;
+
+
+    let mejor = null;
+
+    let mejorDistancia =
+        Infinity;
+
+
+    for (
+        let i = 0;
+        i < pentagramas.length;
+        i++
+    ) {
+
+        const p =
+            pentagramas[i];
+
+
+        const centro =
+            (
+                p.top +
+                p.bottom
+            ) / 2;
+
+
+        const distancia =
+            Math.abs(
+                nota.y -
+                centro
+            );
+
+
+        /*
+        Penalizar notas demasiado alejadas.
+        */
+
+        const limite =
+            p.espacio * 6;
+
+
+        if (
+            distancia >
+            limite
+        )
+            continue;
+
+
+        if (
+            distancia <
+            mejorDistancia
+        ) {
+
+            mejorDistancia =
+                distancia;
+
+
+            mejor = {
+
+                indice: i,
+
+                pentagrama: p,
+
+                distancia
+
+            };
+
+        }
+
+    }
+
+
+    return mejor;
+
+}
+
+
+/* =========================================================
+   CALCULAR POSICIÓN MUSICAL
+========================================================= */
+
+
+function calcularPosicion(
+    nota,
+    pentagrama
+) {
+
+    const espacio =
+        pentagrama.espacio;
+
+
+    const lineaInferior =
+        pentagrama.bottom;
+
+
+    /*
+    Cada línea = 2 pasos diatónicos.
+
+    Espacio entre líneas = 2 pasos.
+
+    Por lo tanto:
+    medio espacio = 1 paso.
+    */
+
+    const pasosFloat =
+        (
+            lineaInferior -
+            nota.y
+        ) /
+        (
+            espacio / 2
+        );
+
+
+    const pasos =
+        Math.round(
+            pasosFloat
+        );
+
+
+    return {
+
+        pasos,
+
+        desviacion:
+            Math.abs(
+                pasosFloat -
+                pasos
+            )
+
+    };
+
+}
+
+
+/* =========================================================
+   PITCH
+========================================================= */
+
+
+function pitchDesdePasos(
+    pasos,
+    clave
+) {
+
+    /*
+    MIDI de la línea inferior.
+
+    Treble:
+    E4 = 64
+
+    Bass:
+    G2 = 43
+    */
+
+    let midi =
+        clave === "bass"
+            ? 43
+            : 64;
+
+
+    const intervalos = [
+
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        1
+
+    ];
+
+
+    if (
+        pasos >= 0
+    ) {
+
+        for (
+            let i = 0;
+            i < pasos;
+            i++
+        ) {
+
+            const indice =
+                i % 7;
+
+
+            midi +=
+                intervalos[
+                    indice
+                ];
+
+        }
+
+    }
+    else {
+
+        for (
+            let i = 0;
+            i > pasos;
+            i--
+        ) {
+
+            const indice =
+                (
+                    (
+                        i - 1
+                    ) % 7 +
+                    7
+                ) % 7;
+
+
+            midi -=
+                intervalos[
+                    indice
+                ];
+
+        }
+
+    }
+
+
+    return midi;
+
+}
+
+
+/* =========================================================
+   NOMBRE NOTA
+========================================================= */
+
+
+function nombreMIDI(
+    midi
+) {
+
+    const nombres = [
+
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B"
+
+    ];
+
+
+    const octava =
+        Math.floor(
+            midi / 12
+        ) - 1;
+
+
+    return (
+        nombres[
+            (
+                midi % 12 +
+                12
+            ) % 12
+        ] +
+        octava
+    );
+
+}
+
+
+/* =========================================================
+   PROCESAR PÁGINA
+========================================================= */
+
+
+async function procesarPagina(
+    archivo,
+    numeroPagina
+) {
+
+    const respuesta =
+        await fetch(
+            BASE + archivo,
+            {
+                cache:
+                    "no-store"
+            }
+        );
+
+
+    if (!respuesta.ok) {
+
+        throw new Error(
+            "HTTP " +
+            respuesta.status +
+            " al cargar " +
+            archivo
+        );
+
+    }
+
+
+    const texto =
+        await respuesta.text();
+
+
+    const parser =
+        new DOMParser();
+
+
+    const doc =
+        parser.parseFromString(
+            texto,
+            "image/svg+xml"
+        );
+
+
+    const error =
+        doc.querySelector(
+            "parsererror"
+        );
+
+
+    if (error) {
+
+        throw new Error(
+            "SVG inválido: " +
+            archivo
+        );
+
+    }
+
+
+    const svg =
+        doc.documentElement;
+
+
+    const notas =
+        detectarCabezas(
+            svg,
+            numeroPagina
+        );
+
+
+    const lineas =
+        detectarStaffLines(
+            svg
+        );
+
+
+    const pentagramas =
+        construirPentagramas(
+            lineas
+        );
+
+
+    /*
+    Asignar cada nota.
+    */
+
+    for (
+        const nota of notas
+    ) {
+
+        const asignacion =
+            asignarPentagrama(
+                nota,
+                pentagramas
+            );
+
+
+        if (
+            !asignacion
+        ) {
+
+            nota.sistema =
+                null;
+
+            nota.pasos =
+                null;
+
+            nota.midi =
+                null;
+
+            nota.nombre =
+                null;
+
+            continue;
+
+        }
+
+
+        nota.sistema =
+            asignacion.indice;
+
+
+        const posicion =
+            calcularPosicion(
+                nota,
+                asignacion.pentagrama
+            );
+
+
+        nota.pasos =
+            posicion.pasos;
+
+
+        nota.desviacion =
+            posicion.desviacion;
+
+
+        /*
+        Por ahora usamos clave de sol.
+
+        NO significa que el MIDI final
+        vaya a usar solamente clave de sol.
+
+        Esto será refinado posteriormente
+        usando .Clef.
+        */
+
+        nota.clave =
+            "treble";
+
+
+        nota.midi =
+            pitchDesdePasos(
+                nota.pasos,
+                nota.clave
+            );
+
+
+        nota.nombre =
+            nombreMIDI(
+                nota.midi
+            );
+
+    }
+
+
+    return {
+
+        numero:
+            numeroPagina,
+
+        svg,
+
+        texto,
+
+        notas,
+
+        pentagramas,
+
+        notePaths:
+            svg.querySelectorAll(
+                ".Note"
+            ).length,
+
+        stems:
+            svg.querySelectorAll(
+                ".Stem"
+            ).length,
+
+        beams:
+            svg.querySelectorAll(
+                ".Beam"
+            ).length,
+
+        barras:
+            svg.querySelectorAll(
+                ".BarLine"
+            ).length
+
+    };
+
+}
+
+
+/* =========================================================
+   MOSTRAR PÁGINA
+========================================================= */
+
+
+function mostrarPagina(
+    pagina
+) {
+
+    const contenedor =
+        document.createElement(
+            "section"
+        );
+
+
+    contenedor.className =
+        "pagina";
+
+
+    const titulo =
+        document.createElement(
+            "h2"
+        );
+
+
+    titulo.textContent =
+
+        "Página " +
+        pagina.numero +
+        " — " +
+        pagina.notas.length +
+        " cabezas";
+
+
+    contenedor.appendChild(
+        titulo
+    );
+
+
+    const info =
+        document.createElement(
+            "div"
+        );
+
+
+    info.className =
+        "info";
+
+
+    info.innerHTML =
+
+        "<b>.Note:</b> " +
+        pagina.notePaths +
+
+        " &nbsp; | &nbsp; " +
+
+        "<b>.Stem:</b> " +
+        pagina.stems +
+
+        " &nbsp; | &nbsp; " +
+
+        "<b>.Beam:</b> " +
+        pagina.beams +
+
+        " &nbsp; | &nbsp; " +
+
+        "<b>.BarLine:</b> " +
+        pagina.barras +
+
+        " &nbsp; | &nbsp; " +
+
+        "<b>Pentagramas detectados:</b> " +
+        pagina.pentagramas.length;
+
+
+    contenedor.appendChild(
+        info
+    );
+
+
+    /*
+    Contenedor del SVG.
+    */
+
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+
+    wrapper.className =
+        "svg-wrapper";
+
+
+    const svg =
+        document.importNode(
+            pagina.svg,
+            true
+        );
+
+
+    wrapper.appendChild(
+        svg
+    );
+
+
+    /*
+    Overlay.
+
+    El SVG mantiene sus dimensiones originales.
+    Los markers usan coordenadas SVG mediante
+    viewBox.
+    */
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+
+    overlay.className =
+        "overlay";
+
+
+    /*
+    Obtener dimensiones reales.
+    */
+
+    let viewBox =
+        svg.getAttribute(
+            "viewBox"
+        );
+
+
+    let vb;
+
+
+    if (viewBox) {
+
+        vb =
+            viewBox
+                .trim()
+                .split(
+                    /[\s,]+/
+                )
+                .map(Number);
+
+    }
+    else {
+
+        vb = [
+
+            0,
+            0,
+            numero(
+                svg.getAttribute(
+                    "width"
+                )
+            ),
+            numero(
+                svg.getAttribute(
+                    "height"
+                )
+            )
+
+        ];
+
+    }
+
+
+    const vx =
+        vb[0];
+
+
+    const vy =
+        vb[1];
+
+
+    const vw =
+        vb[2];
+
+
+    const vh =
+        vb[3];
+
+
+    /*
+    Crear marcadores.
+    */
+
+    for (
+        const nota
+        of pagina.notas
+    ) {
+
+        const marker =
+            document.createElement(
+                "div"
+            );
+
+
+        marker.className =
+            "nota-marker";
+
+
+        marker.textContent =
+            nota.id;
+
+
+        /*
+        Convertimos coordenadas SVG
+        a porcentaje.
+
+        */
+
+        const porcentajeX =
+
+            (
+                (
+                    nota.x -
+                    vx
+                ) /
+                vw
+            ) * 100;
+
+
+        const porcentajeY =
+
+            (
+                (
+                    nota.y -
+                    vy
+                ) /
+                vh
+            ) * 100;
+
+
+        marker.style.left =
+            porcentajeX +
+            "%";
+
+
+        marker.style.top =
+            porcentajeY +
+            "%";
+
+
+        marker.title =
+
+            "Nota #" +
+            nota.id +
+
+            "\nPágina: " +
+            nota.pagina +
+
+            "\nX: " +
+            nota.x.toFixed(2) +
+
+            "\nY: " +
+            nota.y.toFixed(2) +
+
+            "\nStaff: " +
+            (
+                nota.sistema !== null
+                    ? nota.sistema + 1
+                    : "?"
+            ) +
+
+            "\nPitch: " +
+            (
+                nota.nombre ||
+                "?"
+            );
+
+
+        overlay.appendChild(
+            marker
+        );
+
+    }
+
+
+    wrapper.appendChild(
+        overlay
+    );
+
+
+    contenedor.appendChild(
+        wrapper
+    );
+
+
+    /*
+    Tabla de diagnóstico.
+    */
+
+    const details =
+        document.createElement(
+            "details"
+        );
+
+
+    const summary =
+        document.createElement(
+            "summary"
+        );
+
+
+    summary.textContent =
+        "Ver datos de las notas";
+
+
+    details.appendChild(
+        summary
+    );
+
+
+    const tabla =
+        document.createElement(
+            "table"
+        );
+
+
+    tabla.innerHTML = `
+
+        <thead>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>X</th>
+
+                <th>Y</th>
+
+                <th>Staff</th>
+
+                <th>Pasos</th>
+
+                <th>MIDI</th>
+
+                <th>Nota</th>
+
+                <th>Error vertical</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+    `;
+
+
+    const tbody =
+        tabla.querySelector(
+            "tbody"
+        );
+
+
+    for (
+        const nota
+        of pagina.notas
+    ) {
+
+        const fila =
+            document.createElement(
+                "tr"
+            );
+
+
+        fila.innerHTML = `
+
+            <td>
+                ${nota.id}
+            </td>
+
+            <td>
+                ${nota.x.toFixed(2)}
+            </td>
+
+            <td>
+                ${nota.y.toFixed(2)}
+            </td>
+
+            <td>
+                ${
+                    nota.sistema !== null
+                        ? nota.sistema + 1
+                        : "?"
+                }
+            </td>
+
+            <td>
+                ${
+                    nota.pasos !== null
+                        ? nota.pasos
+                        : "?"
+                }
+            </td>
+
+            <td>
+                ${
+                    nota.midi !== null
+                        ? nota.midi
+                        : "?"
+                }
+            </td>
+
+            <td>
+                ${
+                    nota.nombre ||
+                    "?"
+                }
+            </td>
+
+            <td>
+                ${
+                    nota.desviacion !== undefined
+                        ? nota.desviacion.toFixed(3)
+                        : "?"
+                }
+            </td>
+
+        `;
+
+
+        tbody.appendChild(
+            fila
+        );
+
+    }
+
+
+    details.appendChild(
+        tabla
+    );
+
+
+    contenedor.appendChild(
+        details
+    );
+
+
+    document
+        .getElementById(
+            "resultado"
+        )
+        .appendChild(
+            contenedor
+        );
+
+}
+
+
+/* =========================================================
+   ESTADÍSTICAS
+========================================================= */
+
+
+function mostrarEstadisticas() {
+
+    const stats =
+        document.getElementById(
+            "stats"
+        );
+
+
+    stats.innerHTML = "";
+
+
+    const datos = [
+
+        [
+            paginas.length,
+            "Páginas"
+        ],
+
+        [
+            todasLasNotas.length,
+            "Cabezas detectadas"
+        ],
+
+        [
+            todosLosPentagramas(),
+            "Pentagramas"
+        ],
+
+        [
+            todasLasNotas.filter(
+                n =>
+                    n.midi !== null
+            ).length,
+            "Con pitch"
+        ]
+
+    ];
+
+
+    for (
+        const [numero, nombre]
+        of datos
+    ) {
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+
+        div.className =
+            "stat";
+
+
+        div.innerHTML = `
+
+            <div class="stat-number">
+                ${numero}
+            </div>
+
+            <div class="stat-name">
+                ${nombre}
+            </div>
+
+        `;
+
+
+        stats.appendChild(
+            div
+        );
+
+    }
+
+}
+
+
+function todosLosPentagramas() {
+
+    return paginas.reduce(
+        (
+            total,
+            pagina
+        ) =>
+            total +
+            pagina.pentagramas.length,
+        0
+    );
+
+}
+
+
+/* =========================================================
+   DESCARGAR JSON
+========================================================= */
+
+
+function descargarJSON() {
+
+    const datos = {
+
+        proyecto:
+            "Experience — Ludovico Einaudi",
+
+        totalNotas:
+            todasLasNotas.length,
+
+        paginas:
+
+            paginas.map(
+                pagina => ({
+
+                    pagina:
+                        pagina.numero,
+
+                    notas:
+                        pagina.notas,
+
+                    pentagramas:
+                        pagina.pentagramas.length
+
+                })
+            ),
+
+        notas:
+            todasLasNotas
+
+    };
+
+
+    const blob =
+        new Blob(
+            [
+                JSON.stringify(
+                    datos,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:
+                    "application/json"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const a =
+        document.createElement(
+            "a"
+        );
+
+
+    a.href =
+        url;
+
+
+    a.download =
+        "experience_notas_detectadas.json";
+
+
+    a.click();
+
+
+    setTimeout(
+        () =>
+            URL.revokeObjectURL(
+                url
+            ),
+        1000
+    );
+
+}
+
+
+/* =========================================================
+   ANALIZAR TODO
+========================================================= */
 
 
 async function analizar() {
 
+    const estado =
+        document.getElementById(
+            "estado"
+        );
+
+
     estado.textContent =
-        "▶ Botón funcionando.\n\n" +
-        "Comenzando análisis...";
+        "▶ Iniciando...\n";
 
 
-    resultado.innerHTML = "";
+    document
+        .getElementById(
+            "resultado"
+        )
+        .innerHTML = "";
+
+
+    document
+        .getElementById(
+            "stats"
+        )
+        .innerHTML = "";
+
+
+    paginas = [];
+
+    todasLasNotas = [];
+
+    contadorGlobal = 0;
 
 
     try {
 
         for (
             let i = 0;
-            i < archivos.length;
+            i < ARCHIVOS.length;
             i++
         ) {
 
             estado.textContent +=
-                "\n\n📄 Página " +
-                (i + 1) +
-                "\n" +
-                "URL: " +
-                archivos[i] +
-                "\n" +
-                "Descargando...";
 
+                "\n📄 Página " +
+                (
+                    i + 1
+                ) +
+                " / " +
+                ARCHIVOS.length;
 
-            const respuesta =
-                await fetch(
-                    archivos[i],
-                    {
-                        cache:"no-store"
-                    }
-                );
-
-
-            if (!respuesta.ok) {
-
-                throw new Error(
-                    "No se pudo cargar " +
-                    archivos[i] +
-                    "\nHTTP " +
-                    respuesta.status
-                );
-
-            }
-
-
-            const texto =
-                await respuesta.text();
-
-
-            estado.textContent +=
-                "\n✓ SVG descargado" +
-                "\nTamaño: " +
-                texto.length +
-                " caracteres";
-
-
-            const parser =
-                new DOMParser();
-
-
-            const doc =
-                parser.parseFromString(
-                    texto,
-                    "image/svg+xml"
-                );
-
-
-            const error =
-                doc.querySelector(
-                    "parsererror"
-                );
-
-
-            if (error) {
-
-                throw new Error(
-                    "El SVG de la página " +
-                    (i + 1) +
-                    " no pudo ser interpretado."
-                );
-
-            }
-
-
-            const svg =
-                doc.documentElement;
-
-
-            const notes =
-                svg.querySelectorAll(
-                    ".Note"
-                );
-
-
-            const stems =
-                svg.querySelectorAll(
-                    ".Stem"
-                );
-
-
-            const beams =
-                svg.querySelectorAll(
-                    ".Beam"
-                );
-
-
-            const bars =
-                svg.querySelectorAll(
-                    ".BarLine"
-                );
-
-
-            const staff =
-                svg.querySelectorAll(
-                    ".StaffLines"
-                );
-
-
-            estado.textContent +=
-
-                "\n✓ SVG válido" +
-
-                "\n.Note: " +
-                notes.length +
-
-                "\n.Stem: " +
-                stems.length +
-
-                "\n.Beam: " +
-                beams.length +
-
-                "\n.BarLine: " +
-                bars.length +
-
-                "\n.StaffLines: " +
-                staff.length;
-
-
-            let totalSubpaths = 0;
-
-
-            for (
-                const note of notes
-            ) {
-
-                const d =
-                    note.getAttribute(
-                        "d"
-                    );
-
-
-                const subpaths =
-                    separarSubpaths(d);
-
-
-                totalSubpaths +=
-                    subpaths.length;
-
-            }
-
-
-            estado.textContent +=
-
-                "\nSubpaths dentro de .Note: " +
-                totalSubpaths;
-
-
-            /*
-            Mostrar SVG
-            */
 
             const pagina =
-                document.createElement(
-                    "div"
+                await procesarPagina(
+                    ARCHIVOS[i],
+                    i + 1
                 );
 
 
-            pagina.className =
-                "pagina";
-
-
-            const titulo =
-                document.createElement(
-                    "h2"
-                );
-
-
-            titulo.textContent =
-                "Página " +
-                (i + 1);
-
-
-            pagina.appendChild(
-                titulo
+            paginas.push(
+                pagina
             );
 
 
-            /*
-            Para mostrarlo usamos
-            directamente el SVG.
-            */
-
-            const svgVisual =
-                document.importNode(
-                    svg,
-                    true
-                );
-
-
-            pagina.appendChild(
-                svgVisual
+            todasLasNotas.push(
+                ...pagina.notas
             );
 
 
-            resultado.appendChild(
+            estado.textContent +=
+
+                "\n✓ SVG cargado" +
+
+                "\n.Note: " +
+                pagina.notePaths +
+
+                "\nCabezas: " +
+                pagina.notas.length +
+
+                "\nPentagramas: " +
+                pagina.pentagramas.length;
+
+
+            mostrarPagina(
                 pagina
             );
 
         }
 
 
+        mostrarEstadisticas();
+
+
+        document
+            .getElementById(
+                "descargar"
+            )
+            .style.display =
+                "inline-block";
+
+
         estado.textContent +=
 
-            "\n\n============================" +
+            "\n\n================================" +
 
-            "\n✓ ANÁLISIS TERMINADO" +
+            "\n✓ ANÁLISIS COMPLETADO" +
 
-            "\n============================" +
+            "\n================================" +
 
-            "\n\nLos 5 SVG fueron cargados correctamente.";
+            "\n\nTotal de cabezas: " +
+            todasLasNotas.length;
 
 
     }
     catch(error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
 
 
         estado.textContent +=
 
             "\n\n❌ ERROR\n\n" +
-
             error.message;
-
 
     }
 
 }
 
 
+/* =========================================================
+   EVENTOS
+========================================================= */
+
+
 document
-    .getElementById("analizar")
+    .getElementById(
+        "analizar"
+    )
     .addEventListener(
         "click",
         analizar
     );
 
+
+document
+    .getElementById(
+        "descargar"
+    )
+    .addEventListener(
+        "click",
+        descargarJSON
+    );
+
+
 </script>
 
 </body>
+
 </html>
