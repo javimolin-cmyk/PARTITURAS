@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
 
 <meta charset="UTF-8">
@@ -8,7 +7,7 @@
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
-<title>Experience — Detector de notas</title>
+<title>Experience — Reconstrucción musical</title>
 
 <style>
 
@@ -17,15 +16,10 @@
 }
 
 body {
-
     margin: 0;
-
     padding: 25px;
-
     background: #181818;
-
     color: white;
-
     font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -34,115 +28,97 @@ h1 {
 }
 
 button {
-
     border: 0;
-
     border-radius: 7px;
-
     padding: 13px 20px;
-
     margin: 4px;
-
     font-size: 15px;
-
     font-weight: bold;
-
     cursor: pointer;
 }
 
 #analizar {
-
     background: #4caf50;
-
     color: white;
 }
 
 #descargar {
-
     background: #2196f3;
-
     color: white;
-
     display: none;
 }
 
 #estado {
-
     margin-top: 20px;
-
     padding: 18px;
-
     background: #090909;
-
     border-radius: 8px;
-
     white-space: pre-wrap;
-
     font-family: monospace;
-
     line-height: 1.5;
 }
 
+.stats {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(170px, 1fr)
+        );
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.stat {
+    background: #252525;
+    padding: 15px;
+    border-radius: 7px;
+}
+
+.stat-number {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.stat-name {
+    color: #aaa;
+    margin-top: 4px;
+}
+
 .pagina {
-
     position: relative;
-
     margin-top: 35px;
-
     padding: 20px;
-
     background: white;
-
+    color: black;
     border-radius: 8px;
-
     overflow: auto;
 }
 
 .svg-wrapper {
-
     position: relative;
-
     width: 100%;
-
 }
 
-.svg-wrapper svg {
-
+.svg-wrapper > svg {
     display: block;
-
     width: 100%;
-
     height: auto;
-
 }
 
 .overlay {
-
     position: absolute;
-
-    left: 0;
-
-    top: 0;
-
-    width: 100%;
-
-    height: 100%;
-
+    inset: 0;
     pointer-events: none;
 }
 
 .nota-marker {
-
     position: absolute;
 
     transform:
-        translate(
-            -50%,
-            -50%
-        );
+        translate(-50%, -50%);
 
     width: 14px;
-
     height: 14px;
 
     border-radius: 50%;
@@ -167,14 +143,38 @@ button {
     z-index: 10;
 }
 
-.nota-marker:hover {
+.linea-pentagrama {
+    position: absolute;
 
-    background: blue;
+    height: 3px;
 
+    background: #00aaff;
+
+    box-shadow:
+        0 0 2px #000;
+
+    z-index: 5;
+}
+
+.pentagrama-label {
+    position: absolute;
+
+    background: #00aaff;
+
+    color: white;
+
+    padding: 2px 5px;
+
+    border-radius: 3px;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    z-index: 20;
 }
 
 .info {
-
     margin-top: 15px;
 
     padding: 12px;
@@ -186,76 +186,20 @@ button {
     border-radius: 5px;
 }
 
-table {
-
-    width: 100%;
-
-    border-collapse: collapse;
-
-    margin-top: 20px;
-
-    font-size: 12px;
+.ok {
+    color: #4caf50;
 }
 
-th,
-td {
-
-    padding: 5px;
-
-    border: 1px solid #aaa;
-
-    text-align: center;
-}
-
-th {
-
-    background: #ddd;
-
-}
-
-.stats {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fit,
-            minmax(170px, 1fr)
-        );
-
-    gap: 10px;
-
-    margin-top: 20px;
-}
-
-.stat {
-
-    background: #252525;
-
-    padding: 15px;
-
-    border-radius: 7px;
-}
-
-.stat-number {
-
-    font-size: 25px;
-
-    font-weight: bold;
-}
-
-.stat-name {
-
-    color: #aaa;
-
-    margin-top: 4px;
+.warning {
+    color: #ff9800;
 }
 
 details {
-
     margin-top: 20px;
 
     background: #252525;
+
+    color: white;
 
     padding: 10px;
 
@@ -263,27 +207,48 @@ details {
 }
 
 summary {
-
     cursor: pointer;
 
     font-weight: bold;
+}
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    margin-top: 15px;
+
+    font-size: 12px;
+}
+
+th,
+td {
+    padding: 5px;
+
+    border: 1px solid #555;
+
+    text-align: center;
+}
+
+th {
+    background: #333;
 }
 
 </style>
 
 </head>
 
-
 <body>
 
 
 <h1>
-🎼 EXPERIENCE — Detector vectorial de notas
+🎼 EXPERIENCE — Reconstrucción de pentagramas
 </h1>
 
 
 <p>
-Analizando directamente los SVG de MuseScore.
+Las cabezas se detectan directamente desde los SVG de MuseScore.
 </p>
 
 
@@ -293,18 +258,17 @@ Analizando directamente los SVG de MuseScore.
 
 
 <button id="descargar">
-⬇️ DESCARGAR DATOS JSON
+⬇️ DESCARGAR JSON
 </button>
 
 
 <div id="estado">
-Esperando análisis...
+Esperando...
 </div>
 
 
-<div
-    id="stats"
-    class="stats">
+<div id="stats"
+     class="stats">
 </div>
 
 
@@ -320,28 +284,18 @@ Esperando análisis...
 
 
 const BASE =
-
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
 
 const ARCHIVOS = [
 
     "score_0.svg",
-
     "score_1.svg",
-
     "score_2.svg",
-
     "score_3.svg",
-
     "score_4.svg"
 
 ];
-
-
-/* =========================================================
-   VARIABLES
-========================================================= */
 
 
 let paginas = [];
@@ -356,10 +310,10 @@ let contadorGlobal = 0;
 ========================================================= */
 
 
-function numero(valor) {
+function numero(v) {
 
     const n =
-        parseFloat(valor);
+        parseFloat(v);
 
     return Number.isFinite(n)
         ? n
@@ -368,8 +322,15 @@ function numero(valor) {
 }
 
 
+function distancia(a, b) {
+
+    return Math.abs(a - b);
+
+}
+
+
 /* =========================================================
-   SEPARAR SUBPATHS
+   SUBPATHS
 ========================================================= */
 
 
@@ -415,7 +376,6 @@ function separarSubpaths(d) {
 
 
         const fin =
-
             i + 1 <
             posiciones.length
 
@@ -424,22 +384,15 @@ function separarSubpaths(d) {
                 : d.length;
 
 
-        const subpath =
+        const parte =
             d.slice(
                 inicio,
                 fin
             ).trim();
 
 
-        if (
-            subpath.length > 0
-        ) {
-
-            resultado.push(
-                subpath
-            );
-
-        }
+        if (parte)
+            resultado.push(parte);
 
     }
 
@@ -450,14 +403,14 @@ function separarSubpaths(d) {
 
 
 /* =========================================================
-   CREAR SVG TEMPORAL
+   BBOX
 ========================================================= */
 
 
 let svgTemporal = null;
 
 
-function obtenerSVGTemporal() {
+function getSVGTemporal() {
 
     if (svgTemporal)
         return svgTemporal;
@@ -485,14 +438,11 @@ function obtenerSVGTemporal() {
     svgTemporal.style.position =
         "absolute";
 
-
     svgTemporal.style.left =
         "-100000px";
 
-
     svgTemporal.style.top =
         "0";
-
 
     svgTemporal.style.visibility =
         "hidden";
@@ -508,17 +458,12 @@ function obtenerSVGTemporal() {
 }
 
 
-/* =========================================================
-   BBOX DE SUBPATH
-========================================================= */
-
-
-function obtenerBBox(d) {
+function bboxPath(d) {
 
     try {
 
         const svg =
-            obtenerSVGTemporal();
+            getSVGTemporal();
 
 
         const path =
@@ -539,7 +484,7 @@ function obtenerBBox(d) {
         );
 
 
-        const bbox =
+        const b =
             path.getBBox();
 
 
@@ -548,26 +493,23 @@ function obtenerBBox(d) {
 
         return {
 
-            x: bbox.x,
-
-            y: bbox.y,
-
-            width: bbox.width,
-
-            height: bbox.height,
+            x: b.x,
+            y: b.y,
+            width: b.width,
+            height: b.height,
 
             cx:
-                bbox.x +
-                bbox.width / 2,
+                b.x +
+                b.width / 2,
 
             cy:
-                bbox.y +
-                bbox.height / 2
+                b.y +
+                b.height / 2
 
         };
 
     }
-    catch (error) {
+    catch {
 
         return null;
 
@@ -586,7 +528,7 @@ function detectarCabezas(
     pagina
 ) {
 
-    const elementos =
+    const elements =
         [
             ...svg.querySelectorAll(
                 ".Note"
@@ -594,16 +536,16 @@ function detectarCabezas(
         ];
 
 
-    const resultado = [];
+    const notas = [];
 
 
     for (
-        const elemento
-        of elementos
+        const element
+        of elements
     ) {
 
         const d =
-            elemento.getAttribute(
+            element.getAttribute(
                 "d"
             );
 
@@ -622,8 +564,8 @@ function detectarCabezas(
         ) {
 
             /*
-            Las cabezas de las notas
-            normalmente contienen curvas.
+            Las cabezas que encontramos
+            contienen curvas.
             */
 
             if (
@@ -634,69 +576,63 @@ function detectarCabezas(
                 continue;
 
 
-            const bbox =
-                obtenerBBox(
+            const b =
+                bboxPath(
                     subpath
                 );
 
 
-            if (!bbox)
+            if (!b)
                 continue;
 
 
-            /*
-            Filtros geométricos.
-            */
-
             if (
-                bbox.width < 5 ||
-                bbox.height < 5
+                b.width < 5 ||
+                b.height < 5
             )
                 continue;
 
 
             if (
-                bbox.width > 100 ||
-                bbox.height > 100
+                b.width > 100 ||
+                b.height > 100
             )
                 continue;
 
 
-            const proporcion =
-                bbox.width /
-                bbox.height;
+            const ratio =
+                b.width /
+                b.height;
 
 
             if (
-                proporcion < 0.35 ||
-                proporcion > 4
+                ratio < 0.35 ||
+                ratio > 4
             )
                 continue;
 
 
-            contadorGlobal++;
-
-
-            resultado.push({
+            notas.push({
 
                 id:
-                    contadorGlobal,
+                    ++contadorGlobal,
 
                 pagina,
 
                 x:
-                    bbox.cx,
+                    b.cx,
 
                 y:
-                    bbox.cy,
+                    b.cy,
 
                 width:
-                    bbox.width,
+                    b.width,
 
                 height:
-                    bbox.height,
+                    b.height,
 
-                subpath
+                d:
+                    subpath
 
             });
 
@@ -705,51 +641,30 @@ function detectarCabezas(
     }
 
 
-    /*
-    Ordenar por posición visual.
-
-    Primero Y.
-    Luego X.
-    */
-
-    resultado.sort(
-        (a, b) => {
-
-            if (
-                Math.abs(
-                    a.y -
-                    b.y
-                ) > 50
-            ) {
-
-                return (
-                    a.y -
-                    b.y
-                );
-
-            }
-
-
-            return (
-                a.x -
-                b.x
-            );
-
-        }
-    );
-
-
-    return resultado;
+    return notas;
 
 }
 
 
 /* =========================================================
-   DETECTAR STAFF LINES
+   EXTRAER TODAS LAS COORDENADAS Y
+   DE LOS STAFFLINES
 ========================================================= */
 
+/*
+   IMPORTANTE:
 
-function detectarStaffLines(
+   .StaffLines es un único <path>.
+
+   Por eso querySelectorAll()
+   devuelve 1.
+
+   El objetivo ahora es encontrar
+   las 5 líneas dentro de su "d".
+*/
+
+
+function extraerYStaffLines(
     svg
 ) {
 
@@ -763,14 +678,6 @@ function detectarStaffLines(
         return [];
 
 
-    /*
-    En estos SVG las líneas del pentagrama
-    están representadas mediante paths.
-
-    Extraemos los valores Y que aparecen
-    repetidamente en el path.
-    */
-
     const d =
         staff.getAttribute(
             "d"
@@ -781,75 +688,68 @@ function detectarStaffLines(
         return [];
 
 
-    const segmentos =
-        [];
+    const ys = [];
 
 
     /*
-    Buscar pares de coordenadas
-    aproximadamente horizontales.
+    Buscar todos los números.
 
+    No asumimos que el path
+    tenga una estructura determinada.
     */
 
-    const regex =
-        /([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)[ ,]+([-+]?\d*\.?\d+)/g;
+    const numeros =
+        d.match(
+            /[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi
+        );
 
 
-    let match;
+    if (!numeros)
+        return [];
 
 
-    while (
-        (match =
-            regex.exec(d))
-        !== null
+    const valores =
+        numeros.map(
+            Number
+        );
+
+
+    /*
+    Las líneas horizontales de un
+    pentagrama aparecen como segmentos.
+
+    Buscamos números que se repitan
+    como coordenadas Y.
+
+    Para no depender del orden del
+    path, agrupamos valores próximos.
+    */
+
+    for (
+        const v of valores
     ) {
 
-        const x1 =
-            numero(match[1]);
+        if (
+            !Number.isFinite(v)
+        )
+            continue;
 
 
-        const y1 =
-            numero(match[2]);
-
-
-        const x2 =
-            numero(match[3]);
-
-
-        const y2 =
-            numero(match[4]);
+        let grupo =
+            ys.find(
+                y =>
+                    Math.abs(
+                        y -
+                        v
+                    ) < 1
+            );
 
 
         if (
-            Math.abs(
-                y1 -
-                y2
-            ) < 3 &&
-            Math.abs(
-                x2 -
-                x1
-            ) > 100
+            grupo === undefined
         ) {
 
-            segmentos.push({
-
-                x1,
-
-                x2,
-
-                y:
-                    (
-                        y1 +
-                        y2
-                    ) / 2,
-
-                longitud:
-                    Math.abs(
-                        x2 -
-                        x1
-                    )
-
-            });
+            ys.push(v);
 
         }
 
@@ -857,23 +757,362 @@ function detectarStaffLines(
 
 
     /*
-    Ordenar por Y.
+    Ordenar.
     */
 
-    segmentos.sort(
+    ys.sort(
         (a, b) =>
-            a.y -
-            b.y
+            a - b
     );
 
 
-    return segmentos;
+    return ys;
 
 }
 
 
 /* =========================================================
-   CONSTRUIR PENTAGRAMAS
+   DETECCIÓN DE LÍNEAS POR GEOMETRÍA
+========================================================= */
+
+
+function detectarLineasStaff(
+    svg,
+    notas
+) {
+
+    /*
+    Primero intentamos .StaffLines.
+    */
+
+    let ys =
+        extraerYStaffLines(
+            svg
+        );
+
+
+    /*
+    Si no obtenemos suficientes
+    valores útiles, reconstruimos
+    usando la distribución vertical
+    de las cabezas.
+
+    */
+
+    if (
+        ys.length < 5
+    ) {
+
+        ys =
+            detectarLineasDesdeNotas(
+                notas
+            );
+
+    }
+
+
+    return ys;
+
+}
+
+
+/* =========================================================
+   RECONSTRUCCIÓN DESDE LAS NOTAS
+========================================================= */
+
+
+function detectarLineasDesdeNotas(
+    notas
+) {
+
+    if (
+        notas.length === 0
+    )
+        return [];
+
+
+    /*
+    Crear histograma vertical.
+
+    Una nota situada sobre una línea
+    produce muchas posiciones
+    cercanas a esa línea.
+
+    */
+
+    const bins =
+        new Map();
+
+
+    const paso =
+        2;
+
+
+    for (
+        const nota
+        of notas
+    ) {
+
+        const y =
+            Math.round(
+                nota.y /
+                paso
+            ) *
+            paso;
+
+
+        bins.set(
+            y,
+            (
+                bins.get(y) ||
+                0
+            ) + 1
+        );
+
+    }
+
+
+    const candidatos =
+        [
+            ...bins.entries()
+        ]
+        .map(
+            ([y, count]) =>
+                ({
+                    y,
+                    count
+                })
+        )
+        .sort(
+            (a, b) =>
+                b.count -
+                a.count
+        );
+
+
+    /*
+    Seleccionar posiciones separadas
+    aproximadamente por la distancia
+    de un espacio de pentagrama.
+
+    Probamos varias escalas.
+
+    */
+
+    const mejores = [];
+
+
+    for (
+        const candidato
+        of candidatos
+    ) {
+
+        if (
+            mejores.every(
+                y =>
+                    Math.abs(
+                        y -
+                        candidato.y
+                    ) > 10
+            )
+        ) {
+
+            mejores.push(
+                candidato.y
+            );
+
+        }
+
+
+        if (
+            mejores.length >= 20
+        )
+            break;
+
+    }
+
+
+    mejores.sort(
+        (a, b) =>
+            a - b
+    );
+
+
+    /*
+    Encontrar grupos de 5 líneas
+    aproximadamente equidistantes.
+    */
+
+    let mejorGrupo =
+        null;
+
+    let mejorError =
+        Infinity;
+
+
+    for (
+        let i = 0;
+        i < mejores.length;
+        i++
+    ) {
+
+        for (
+            let j = i + 1;
+            j < mejores.length;
+            j++
+        ) {
+
+            const distanciaTotal =
+                (
+                    mejores[j] -
+                    mejores[i]
+                );
+
+
+            const espacio =
+                distanciaTotal /
+                4;
+
+
+            if (
+                espacio < 5 ||
+                espacio > 100
+            )
+                continue;
+
+
+            const grupo = [];
+
+
+            for (
+                let k = 0;
+                k < 5;
+                k++
+            ) {
+
+                const esperado =
+                    mejores[i] +
+                    k *
+                    espacio;
+
+
+                let cercano =
+                    mejores.reduce(
+                        (
+                            best,
+                            valor
+                        ) =>
+
+                            Math.abs(
+                                valor -
+                                esperado
+                            ) <
+
+                            Math.abs(
+                                best -
+                                esperado
+                            )
+
+                                ? valor
+                                : best
+                        ,
+                        mejores[0]
+                    );
+
+
+                grupo.push(
+                    cercano
+                );
+
+            }
+
+
+            const unicos =
+                [
+                    ...new Set(
+                        grupo
+                    )
+                ];
+
+
+            if (
+                unicos.length !== 5
+            )
+                continue;
+
+
+            let error = 0;
+
+
+            for (
+                let k = 0;
+                k < 5;
+                k++
+            ) {
+
+                const esperado =
+                    mejores[i] +
+                    k *
+                    espacio;
+
+
+                error +=
+                    Math.abs(
+                        grupo[k] -
+                        esperado
+                    );
+
+            }
+
+
+            if (
+                error <
+                mejorError
+            ) {
+
+                mejorError =
+                    error;
+
+                mejorGrupo =
+                    grupo;
+
+            }
+
+        }
+
+    }
+
+
+    if (
+        mejorGrupo
+    ) {
+
+        return mejorGrupo.sort(
+            (a, b) =>
+                a - b
+        );
+
+    }
+
+
+    /*
+    Último recurso:
+    tomar los 5 picos más separados.
+    */
+
+    return mejores.slice(
+        0,
+        5
+    ).sort(
+        (a, b) =>
+            a - b
+    );
+
+}
+
+
+/* =========================================================
+   AGRUPAR PENTAGRAMAS
 ========================================================= */
 
 
@@ -881,538 +1120,266 @@ function construirPentagramas(
     lineas
 ) {
 
-    const pentagramas = [];
+    if (
+        lineas.length < 5
+    )
+        return [];
+
+
+    /*
+    Agrupar líneas cuando están
+    separadas por aproximadamente
+    el mismo espacio.
+    */
+
+    const resultado = [];
+
+
+    let grupo = [];
 
 
     for (
-        let i = 0;
-        i < lineas.length;
+        const y
+        of lineas
     ) {
 
-        const grupo = [];
-
-
-        grupo.push(
-            lineas[i]
-        );
-
-
-        for (
-            let j = i + 1;
-            j < lineas.length;
-            j++
+        if (
+            grupo.length === 0
         ) {
 
-            const diferencia =
-                lineas[j].y -
-                grupo[
-                    grupo.length - 1
-                ].y;
+            grupo.push(
+                y
+            );
 
-
-            if (
-                grupo.length === 1
-            ) {
-
-                if (
-                    diferencia <
-                    100
-                ) {
-
-                    grupo.push(
-                        lineas[j]
-                    );
-
-                }
-                else {
-
-                    break;
-
-                }
-
-            }
-            else {
-
-                const esperado =
-                    grupo[1].y -
-                    grupo[0].y;
-
-
-                if (
-                    Math.abs(
-                        diferencia -
-                        esperado
-                    ) < 8
-                ) {
-
-                    grupo.push(
-                        lineas[j]
-                    );
-
-                }
-                else {
-
-                    break;
-
-                }
-
-            }
-
-
-            if (
-                grupo.length === 5
-            ) {
-
-                break;
-
-            }
+            continue;
 
         }
 
 
         if (
-            grupo.length === 5
+            grupo.length === 1
         ) {
 
-            pentagramas.push({
+            grupo.push(
+                y
+            );
 
-                lineas:
-                    grupo,
+            continue;
 
-                top:
-                    grupo[0].y,
-
-                bottom:
-                    grupo[4].y,
-
-                espacio:
-                    (
-                        grupo[4].y -
-                        grupo[0].y
-                    ) / 4
-
-            });
+        }
 
 
-            i += 5;
+        const espacio =
+            grupo[1] -
+            grupo[0];
+
+
+        const esperado =
+            grupo[
+                grupo.length - 1
+            ] +
+            espacio;
+
+
+        if (
+            Math.abs(
+                y -
+                esperado
+            ) < 12
+        ) {
+
+            grupo.push(
+                y
+            );
 
         }
         else {
 
-            i++;
+            if (
+                grupo.length >= 5
+            ) {
+
+                for (
+                    let i = 0;
+                    i + 4 <
+                    grupo.length;
+                    i += 5
+                ) {
+
+                    const cinco =
+                        grupo.slice(
+                            i,
+                            i + 5
+                        );
+
+
+                    resultado.push({
+
+                        lineas:
+                            cinco,
+
+                        top:
+                            cinco[0],
+
+                        bottom:
+                            cinco[4],
+
+                        espacio:
+                            (
+                                cinco[4] -
+                                cinco[0]
+                            ) /
+                            4
+
+                    });
+
+                }
+
+            }
+
+
+            grupo = [
+                y
+            ];
 
         }
 
     }
 
 
-    return pentagramas;
+    if (
+        grupo.length >= 5
+    ) {
+
+        for (
+            let i = 0;
+            i + 4 <
+            grupo.length;
+            i += 5
+        ) {
+
+            const cinco =
+                grupo.slice(
+                    i,
+                    i + 5
+                );
+
+
+            resultado.push({
+
+                lineas:
+                    cinco,
+
+                top:
+                    cinco[0],
+
+                bottom:
+                    cinco[4],
+
+                espacio:
+                    (
+                        cinco[4] -
+                        cinco[0]
+                    ) /
+                    4
+
+            });
+
+        }
+
+    }
+
+
+    return resultado;
 
 }
 
 
 /* =========================================================
-   ASIGNAR PENTAGRAMA
+   ASIGNAR NOTAS
 ========================================================= */
 
 
-function asignarPentagrama(
-    nota,
+function asignarNotas(
+    notas,
     pentagramas
 ) {
 
-    if (
-        pentagramas.length === 0
-    )
-        return null;
-
-
-    let mejor = null;
-
-    let mejorDistancia =
-        Infinity;
-
-
     for (
-        let i = 0;
-        i < pentagramas.length;
-        i++
+        const nota
+        of notas
     ) {
 
-        const p =
-            pentagramas[i];
+        let mejor =
+            null;
 
+        let mejorDist =
+            Infinity;
 
-        const centro =
-            (
-                p.top +
-                p.bottom
-            ) / 2;
-
-
-        const distancia =
-            Math.abs(
-                nota.y -
-                centro
-            );
-
-
-        /*
-        Penalizar notas demasiado alejadas.
-        */
-
-        const limite =
-            p.espacio * 6;
-
-
-        if (
-            distancia >
-            limite
-        )
-            continue;
-
-
-        if (
-            distancia <
-            mejorDistancia
-        ) {
-
-            mejorDistancia =
-                distancia;
-
-
-            mejor = {
-
-                indice: i,
-
-                pentagrama: p,
-
-                distancia
-
-            };
-
-        }
-
-    }
-
-
-    return mejor;
-
-}
-
-
-/* =========================================================
-   CALCULAR POSICIÓN MUSICAL
-========================================================= */
-
-
-function calcularPosicion(
-    nota,
-    pentagrama
-) {
-
-    const espacio =
-        pentagrama.espacio;
-
-
-    const lineaInferior =
-        pentagrama.bottom;
-
-
-    /*
-    Cada línea = 2 pasos diatónicos.
-
-    Espacio entre líneas = 2 pasos.
-
-    Por lo tanto:
-    medio espacio = 1 paso.
-    */
-
-    const pasosFloat =
-        (
-            lineaInferior -
-            nota.y
-        ) /
-        (
-            espacio / 2
-        );
-
-
-    const pasos =
-        Math.round(
-            pasosFloat
-        );
-
-
-    return {
-
-        pasos,
-
-        desviacion:
-            Math.abs(
-                pasosFloat -
-                pasos
-            )
-
-    };
-
-}
-
-
-/* =========================================================
-   PITCH
-========================================================= */
-
-
-function pitchDesdePasos(
-    pasos,
-    clave
-) {
-
-    /*
-    MIDI de la línea inferior.
-
-    Treble:
-    E4 = 64
-
-    Bass:
-    G2 = 43
-    */
-
-    let midi =
-        clave === "bass"
-            ? 43
-            : 64;
-
-
-    const intervalos = [
-
-        2,
-        2,
-        1,
-        2,
-        2,
-        2,
-        1
-
-    ];
-
-
-    if (
-        pasos >= 0
-    ) {
 
         for (
             let i = 0;
-            i < pasos;
+            i < pentagramas.length;
             i++
         ) {
 
-            const indice =
-                i % 7;
+            const p =
+                pentagramas[i];
 
 
-            midi +=
-                intervalos[
-                    indice
-                ];
-
-        }
-
-    }
-    else {
-
-        for (
-            let i = 0;
-            i > pasos;
-            i--
-        ) {
-
-            const indice =
+            const centro =
                 (
-                    (
-                        i - 1
-                    ) % 7 +
-                    7
-                ) % 7;
+                    p.top +
+                    p.bottom
+                ) / 2;
 
 
-            midi -=
-                intervalos[
-                    indice
-                ];
+            const dist =
+                Math.abs(
+                    nota.y -
+                    centro
+                );
+
+
+            const limite =
+                p.espacio *
+                7;
+
+
+            if (
+                dist >
+                limite
+            )
+                continue;
+
+
+            if (
+                dist <
+                mejorDist
+            ) {
+
+                mejorDist =
+                    dist;
+
+
+                mejor = {
+
+                    indice: i,
+
+                    pentagrama: p
+
+                };
+
+            }
 
         }
-
-    }
-
-
-    return midi;
-
-}
-
-
-/* =========================================================
-   NOMBRE NOTA
-========================================================= */
-
-
-function nombreMIDI(
-    midi
-) {
-
-    const nombres = [
-
-        "C",
-        "C#",
-        "D",
-        "D#",
-        "E",
-        "F",
-        "F#",
-        "G",
-        "G#",
-        "A",
-        "A#",
-        "B"
-
-    ];
-
-
-    const octava =
-        Math.floor(
-            midi / 12
-        ) - 1;
-
-
-    return (
-        nombres[
-            (
-                midi % 12 +
-                12
-            ) % 12
-        ] +
-        octava
-    );
-
-}
-
-
-/* =========================================================
-   PROCESAR PÁGINA
-========================================================= */
-
-
-async function procesarPagina(
-    archivo,
-    numeroPagina
-) {
-
-    const respuesta =
-        await fetch(
-            BASE + archivo,
-            {
-                cache:
-                    "no-store"
-            }
-        );
-
-
-    if (!respuesta.ok) {
-
-        throw new Error(
-            "HTTP " +
-            respuesta.status +
-            " al cargar " +
-            archivo
-        );
-
-    }
-
-
-    const texto =
-        await respuesta.text();
-
-
-    const parser =
-        new DOMParser();
-
-
-    const doc =
-        parser.parseFromString(
-            texto,
-            "image/svg+xml"
-        );
-
-
-    const error =
-        doc.querySelector(
-            "parsererror"
-        );
-
-
-    if (error) {
-
-        throw new Error(
-            "SVG inválido: " +
-            archivo
-        );
-
-    }
-
-
-    const svg =
-        doc.documentElement;
-
-
-    const notas =
-        detectarCabezas(
-            svg,
-            numeroPagina
-        );
-
-
-    const lineas =
-        detectarStaffLines(
-            svg
-        );
-
-
-    const pentagramas =
-        construirPentagramas(
-            lineas
-        );
-
-
-    /*
-    Asignar cada nota.
-    */
-
-    for (
-        const nota of notas
-    ) {
-
-        const asignacion =
-            asignarPentagrama(
-                nota,
-                pentagramas
-            );
 
 
         if (
-            !asignacion
+            !mejor
         ) {
 
-            nota.sistema =
-                null;
-
-            nota.pasos =
-                null;
-
-            nota.midi =
-                null;
-
-            nota.nombre =
+            nota.staff =
                 null;
 
             continue;
@@ -1420,94 +1387,53 @@ async function procesarPagina(
         }
 
 
-        nota.sistema =
-            asignacion.indice;
+        nota.staff =
+            mejor.indice +
+            1;
 
 
-        const posicion =
-            calcularPosicion(
-                nota,
-                asignacion.pentagrama
+        const p =
+            mejor.pentagrama;
+
+
+        /*
+        Distancia desde la línea
+        inferior.
+
+        Cada espacio equivale
+        a un paso diatónico.
+        */
+
+        const pasosFloat =
+            (
+                p.bottom -
+                nota.y
+            ) /
+            (
+                p.espacio /
+                2
             );
 
 
         nota.pasos =
-            posicion.pasos;
-
-
-        nota.desviacion =
-            posicion.desviacion;
-
-
-        /*
-        Por ahora usamos clave de sol.
-
-        NO significa que el MIDI final
-        vaya a usar solamente clave de sol.
-
-        Esto será refinado posteriormente
-        usando .Clef.
-        */
-
-        nota.clave =
-            "treble";
-
-
-        nota.midi =
-            pitchDesdePasos(
-                nota.pasos,
-                nota.clave
+            Math.round(
+                pasosFloat
             );
 
 
-        nota.nombre =
-            nombreMIDI(
-                nota.midi
+        nota.errorVertical =
+            Math.abs(
+                pasosFloat -
+                nota.pasos
             );
 
     }
-
-
-    return {
-
-        numero:
-            numeroPagina,
-
-        svg,
-
-        texto,
-
-        notas,
-
-        pentagramas,
-
-        notePaths:
-            svg.querySelectorAll(
-                ".Note"
-            ).length,
-
-        stems:
-            svg.querySelectorAll(
-                ".Stem"
-            ).length,
-
-        beams:
-            svg.querySelectorAll(
-                ".Beam"
-            ).length,
-
-        barras:
-            svg.querySelectorAll(
-                ".BarLine"
-            ).length
-
-    };
 
 }
 
 
 /* =========================================================
-   MOSTRAR PÁGINA
+   RENDERIZAR
 ========================================================= */
 
 
@@ -1515,33 +1441,35 @@ function mostrarPagina(
     pagina
 ) {
 
-    const contenedor =
+    const section =
         document.createElement(
             "section"
         );
 
 
-    contenedor.className =
+    section.className =
         "pagina";
 
 
-    const titulo =
+    const h2 =
         document.createElement(
             "h2"
         );
 
 
-    titulo.textContent =
+    h2.textContent =
 
         "Página " +
         pagina.numero +
+
         " — " +
+
         pagina.notas.length +
         " cabezas";
 
 
-    contenedor.appendChild(
-        titulo
+    section.appendChild(
+        h2
     );
 
 
@@ -1557,38 +1485,29 @@ function mostrarPagina(
 
     info.innerHTML =
 
-        "<b>.Note:</b> " +
+        "<b>Note:</b> " +
         pagina.notePaths +
 
         " &nbsp; | &nbsp; " +
 
-        "<b>.Stem:</b> " +
-        pagina.stems +
+        "<b>Cabezas:</b> " +
+        pagina.notas.length +
 
         " &nbsp; | &nbsp; " +
 
-        "<b>.Beam:</b> " +
-        pagina.beams +
+        "<b>Líneas detectadas:</b> " +
+        pagina.lineas.length +
 
         " &nbsp; | &nbsp; " +
 
-        "<b>.BarLine:</b> " +
-        pagina.barras +
-
-        " &nbsp; | &nbsp; " +
-
-        "<b>Pentagramas detectados:</b> " +
+        "<b>Pentagramas:</b> " +
         pagina.pentagramas.length;
 
 
-    contenedor.appendChild(
+    section.appendChild(
         info
     );
 
-
-    /*
-    Contenedor del SVG.
-    */
 
     const wrapper =
         document.createElement(
@@ -1612,14 +1531,6 @@ function mostrarPagina(
     );
 
 
-    /*
-    Overlay.
-
-    El SVG mantiene sus dimensiones originales.
-    Los markers usan coordenadas SVG mediante
-    viewBox.
-    */
-
     const overlay =
         document.createElement(
             "div"
@@ -1630,23 +1541,19 @@ function mostrarPagina(
         "overlay";
 
 
-    /*
-    Obtener dimensiones reales.
-    */
-
-    let viewBox =
+    let vb =
         svg.getAttribute(
             "viewBox"
         );
 
 
-    let vb;
+    let valores;
 
 
-    if (viewBox) {
+    if (vb) {
 
-        vb =
-            viewBox
+        valores =
+            vb
                 .trim()
                 .split(
                     /[\s,]+/
@@ -1656,15 +1563,17 @@ function mostrarPagina(
     }
     else {
 
-        vb = [
+        valores = [
 
             0,
             0,
+
             numero(
                 svg.getAttribute(
                     "width"
                 )
             ),
+
             numero(
                 svg.getAttribute(
                     "height"
@@ -1677,23 +1586,130 @@ function mostrarPagina(
 
 
     const vx =
-        vb[0];
-
+        valores[0];
 
     const vy =
-        vb[1];
-
+        valores[1];
 
     const vw =
-        vb[2];
-
+        valores[2];
 
     const vh =
-        vb[3];
+        valores[3];
 
 
     /*
-    Crear marcadores.
+    Dibujar pentagramas.
+    */
+
+    for (
+        let i = 0;
+        i < pagina.pentagramas.length;
+        i++
+    ) {
+
+        const p =
+            pagina.pentagramas[i];
+
+
+        for (
+            const y
+            of p.lineas
+        ) {
+
+            const line =
+                document.createElement(
+                    "div"
+                );
+
+
+            line.className =
+                "linea-pentagrama";
+
+
+            /*
+            La línea se extiende
+            sobre prácticamente todo
+            el ancho del SVG.
+            */
+
+            line.style.left =
+                "0%";
+
+
+            line.style.width =
+                "100%";
+
+
+            line.style.top =
+
+                (
+                    (
+                        y -
+                        vy
+                    ) /
+                    vh *
+                    100
+                ) +
+
+                "%";
+
+
+            overlay.appendChild(
+                line
+            );
+
+        }
+
+
+        /*
+        Etiqueta.
+        */
+
+        const label =
+            document.createElement(
+                "div"
+            );
+
+
+        label.className =
+            "pentagrama-label";
+
+
+        label.textContent =
+            "P" +
+            (
+                i + 1
+            );
+
+
+        label.style.left =
+            "0%";
+
+
+        label.style.top =
+
+            (
+                (
+                    p.top -
+                    vy
+                ) /
+                vh *
+                100
+            ) +
+
+            "%";
+
+
+        overlay.appendChild(
+            label
+        );
+
+    }
+
+
+    /*
+    Dibujar cabezas.
     */
 
     for (
@@ -1715,41 +1731,31 @@ function mostrarPagina(
             nota.id;
 
 
-        /*
-        Convertimos coordenadas SVG
-        a porcentaje.
-
-        */
-
-        const porcentajeX =
+        marker.style.left =
 
             (
                 (
                     nota.x -
                     vx
                 ) /
-                vw
-            ) * 100;
+                vw *
+                100
+            ) +
+
+            "%";
 
 
-        const porcentajeY =
+        marker.style.top =
 
             (
                 (
                     nota.y -
                     vy
                 ) /
-                vh
-            ) * 100;
+                vh *
+                100
+            ) +
 
-
-        marker.style.left =
-            porcentajeX +
-            "%";
-
-
-        marker.style.top =
-            porcentajeY +
             "%";
 
 
@@ -1767,17 +1773,17 @@ function mostrarPagina(
             "\nY: " +
             nota.y.toFixed(2) +
 
-            "\nStaff: " +
+            "\nPentagrama: " +
             (
-                nota.sistema !== null
-                    ? nota.sistema + 1
-                    : "?"
+                nota.staff ||
+                "?"
             ) +
 
-            "\nPitch: " +
+            "\nPasos: " +
             (
-                nota.nombre ||
-                "?"
+                nota.pasos !== undefined
+                    ? nota.pasos
+                    : "?"
             );
 
 
@@ -1793,7 +1799,7 @@ function mostrarPagina(
     );
 
 
-    contenedor.appendChild(
+    section.appendChild(
         wrapper
     );
 
@@ -1815,7 +1821,7 @@ function mostrarPagina(
 
 
     summary.textContent =
-        "Ver datos de las notas";
+        "Ver datos detectados";
 
 
     details.appendChild(
@@ -1823,35 +1829,26 @@ function mostrarPagina(
     );
 
 
-    const tabla =
+    const table =
         document.createElement(
             "table"
         );
 
 
-    tabla.innerHTML = `
+    table.innerHTML = `
 
         <thead>
 
-            <tr>
+        <tr>
 
-                <th>ID</th>
+        <th>ID</th>
+        <th>X</th>
+        <th>Y</th>
+        <th>Pentagrama</th>
+        <th>Pasos</th>
+        <th>Error</th>
 
-                <th>X</th>
-
-                <th>Y</th>
-
-                <th>Staff</th>
-
-                <th>Pasos</th>
-
-                <th>MIDI</th>
-
-                <th>Nota</th>
-
-                <th>Error vertical</th>
-
-            </tr>
+        </tr>
 
         </thead>
 
@@ -1861,7 +1858,7 @@ function mostrarPagina(
 
 
     const tbody =
-        tabla.querySelector(
+        table.querySelector(
             "tbody"
         );
 
@@ -1871,81 +1868,62 @@ function mostrarPagina(
         of pagina.notas
     ) {
 
-        const fila =
+        const tr =
             document.createElement(
                 "tr"
             );
 
 
-        fila.innerHTML = `
+        tr.innerHTML = `
 
-            <td>
-                ${nota.id}
-            </td>
+        <td>
+            ${nota.id}
+        </td>
 
-            <td>
-                ${nota.x.toFixed(2)}
-            </td>
+        <td>
+            ${nota.x.toFixed(2)}
+        </td>
 
-            <td>
-                ${nota.y.toFixed(2)}
-            </td>
+        <td>
+            ${nota.y.toFixed(2)}
+        </td>
 
-            <td>
-                ${
-                    nota.sistema !== null
-                        ? nota.sistema + 1
-                        : "?"
-                }
-            </td>
+        <td>
+            ${nota.staff || "?"}
+        </td>
 
-            <td>
-                ${
-                    nota.pasos !== null
-                        ? nota.pasos
-                        : "?"
-                }
-            </td>
+        <td>
+            ${
+                nota.pasos !== undefined
+                    ? nota.pasos
+                    : "?"
+            }
+        </td>
 
-            <td>
-                ${
-                    nota.midi !== null
-                        ? nota.midi
-                        : "?"
-                }
-            </td>
-
-            <td>
-                ${
-                    nota.nombre ||
-                    "?"
-                }
-            </td>
-
-            <td>
-                ${
-                    nota.desviacion !== undefined
-                        ? nota.desviacion.toFixed(3)
-                        : "?"
-                }
-            </td>
+        <td>
+            ${
+                nota.errorVertical !== undefined
+                    ? nota.errorVertical.toFixed(3)
+                    : "?"
+            }
+        </td>
 
         `;
 
 
         tbody.appendChild(
-            fila
+            tr
         );
 
     }
 
 
     details.appendChild(
-        tabla
+        table
     );
 
 
-    contenedor.appendChild(
+    section.appendChild(
         details
     );
 
@@ -1955,110 +1933,14 @@ function mostrarPagina(
             "resultado"
         )
         .appendChild(
-            contenedor
+            section
         );
 
 }
 
 
 /* =========================================================
-   ESTADÍSTICAS
-========================================================= */
-
-
-function mostrarEstadisticas() {
-
-    const stats =
-        document.getElementById(
-            "stats"
-        );
-
-
-    stats.innerHTML = "";
-
-
-    const datos = [
-
-        [
-            paginas.length,
-            "Páginas"
-        ],
-
-        [
-            todasLasNotas.length,
-            "Cabezas detectadas"
-        ],
-
-        [
-            todosLosPentagramas(),
-            "Pentagramas"
-        ],
-
-        [
-            todasLasNotas.filter(
-                n =>
-                    n.midi !== null
-            ).length,
-            "Con pitch"
-        ]
-
-    ];
-
-
-    for (
-        const [numero, nombre]
-        of datos
-    ) {
-
-        const div =
-            document.createElement(
-                "div"
-            );
-
-
-        div.className =
-            "stat";
-
-
-        div.innerHTML = `
-
-            <div class="stat-number">
-                ${numero}
-            </div>
-
-            <div class="stat-name">
-                ${nombre}
-            </div>
-
-        `;
-
-
-        stats.appendChild(
-            div
-        );
-
-    }
-
-}
-
-
-function todosLosPentagramas() {
-
-    return paginas.reduce(
-        (
-            total,
-            pagina
-        ) =>
-            total +
-            pagina.pentagramas.length,
-        0
-    );
-
-}
-
-
-/* =========================================================
-   DESCARGAR JSON
+   JSON
 ========================================================= */
 
 
@@ -2066,31 +1948,30 @@ function descargarJSON() {
 
     const datos = {
 
-        proyecto:
+        titulo:
             "Experience — Ludovico Einaudi",
 
-        totalNotas:
+        totalCabezas:
             todasLasNotas.length,
 
         paginas:
-
             paginas.map(
-                pagina => ({
+                p => ({
 
                     pagina:
-                        pagina.numero,
+                        p.numero,
 
-                    notas:
-                        pagina.notas,
+                    lineas:
+                        p.lineas,
 
                     pentagramas:
-                        pagina.pentagramas.length
+                        p.pentagramas,
+
+                    notas:
+                        p.notas
 
                 })
-            ),
-
-        notas:
-            todasLasNotas
+            )
 
     };
 
@@ -2128,7 +2009,7 @@ function descargarJSON() {
 
 
     a.download =
-        "experience_notas_detectadas.json";
+        "experience_reconstruccion.json";
 
 
     a.click();
@@ -2146,7 +2027,7 @@ function descargarJSON() {
 
 
 /* =========================================================
-   ANALIZAR TODO
+   ANALIZAR
 ========================================================= */
 
 
@@ -2159,7 +2040,7 @@ async function analizar() {
 
 
     estado.textContent =
-        "▶ Iniciando...\n";
+        "▶ Iniciando reconstrucción...\n";
 
 
     document
@@ -2197,15 +2078,125 @@ async function analizar() {
                 (
                     i + 1
                 ) +
-                " / " +
-                ARCHIVOS.length;
+                " / 5";
 
 
-            const pagina =
-                await procesarPagina(
+            const respuesta =
+                await fetch(
+                    BASE +
                     ARCHIVOS[i],
+                    {
+                        cache:
+                            "no-store"
+                    }
+                );
+
+
+            if (
+                !respuesta.ok
+            ) {
+
+                throw new Error(
+
+                    "HTTP " +
+                    respuesta.status +
+                    " al cargar " +
+                    ARCHIVOS[i]
+
+                );
+
+            }
+
+
+            const texto =
+                await respuesta.text();
+
+
+            const parser =
+                new DOMParser();
+
+
+            const doc =
+                parser.parseFromString(
+                    texto,
+                    "image/svg+xml"
+                );
+
+
+            const svg =
+                doc.documentElement;
+
+
+            const notas =
+                detectarCabezas(
+                    svg,
                     i + 1
                 );
+
+
+            estado.textContent +=
+
+                "\n✓ SVG cargado" +
+
+                "\n.Note: " +
+                svg.querySelectorAll(
+                    ".Note"
+                ).length +
+
+                "\nCabezas: " +
+                notas.length;
+
+
+            const lineas =
+                detectarLineasStaff(
+                    svg,
+                    notas
+                );
+
+
+            estado.textContent +=
+
+                "\nLíneas encontradas: " +
+                lineas.length;
+
+
+            const pentagramas =
+                construirPentagramas(
+                    lineas
+                );
+
+
+            estado.textContent +=
+
+                "\nPentagramas: " +
+                pentagramas.length;
+
+
+            asignarNotas(
+                notas,
+                pentagramas
+            );
+
+
+            const pagina = {
+
+                numero:
+                    i + 1,
+
+                svg,
+
+                notas,
+
+                lineas,
+
+                pentagramas,
+
+                notePaths:
+                    svg.querySelectorAll(
+                        ".Note"
+                    ).length
+
+            };
 
 
             paginas.push(
@@ -2214,22 +2205,8 @@ async function analizar() {
 
 
             todasLasNotas.push(
-                ...pagina.notas
+                ...notas
             );
-
-
-            estado.textContent +=
-
-                "\n✓ SVG cargado" +
-
-                "\n.Note: " +
-                pagina.notePaths +
-
-                "\nCabezas: " +
-                pagina.notas.length +
-
-                "\nPentagramas: " +
-                pagina.pentagramas.length;
 
 
             mostrarPagina(
@@ -2239,7 +2216,83 @@ async function analizar() {
         }
 
 
-        mostrarEstadisticas();
+        /*
+        Estadísticas.
+        */
+
+        const conStaff =
+            todasLasNotas.filter(
+                n =>
+                    n.staff !== null &&
+                    n.staff !== undefined
+            ).length;
+
+
+        const stats =
+            document.getElementById(
+                "stats"
+            );
+
+
+        stats.innerHTML = `
+
+        <div class="stat">
+
+            <div class="stat-number">
+                ${paginas.length}
+            </div>
+
+            <div class="stat-name">
+                Páginas
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-number">
+                ${todasLasNotas.length}
+            </div>
+
+            <div class="stat-name">
+                Cabezas detectadas
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-number">
+                ${paginas.reduce(
+                    (a,p) =>
+                        a +
+                        p.pentagramas.length,
+                    0
+                )}
+            </div>
+
+            <div class="stat-name">
+                Pentagramas
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-number">
+                ${conStaff}
+            </div>
+
+            <div class="stat-name">
+                Notas asignadas
+            </div>
+
+        </div>
+
+        `;
 
 
         document
@@ -2254,12 +2307,15 @@ async function analizar() {
 
             "\n\n================================" +
 
-            "\n✓ ANÁLISIS COMPLETADO" +
+            "\n✓ RECONSTRUCCIÓN TERMINADA" +
 
             "\n================================" +
 
             "\n\nTotal de cabezas: " +
-            todasLasNotas.length;
+            todasLasNotas.length +
+
+            "\nNotas asignadas a pentagrama: " +
+            conStaff;
 
 
     }
@@ -2308,5 +2364,4 @@ document
 </script>
 
 </body>
-
 </html>
