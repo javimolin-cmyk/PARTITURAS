@@ -46,7 +46,7 @@ pre{max-height:600px;overflow:auto;background:#0d1117;padding:15px;border-radius
 .note-dot{stroke:#fff;stroke-width:1.2;pointer-events:none}
 .staff-line{stroke:#1f6feb;stroke-width:1.2;opacity:.75;pointer-events:none}
 .bar-line{stroke:#d29922;stroke-width:1;opacity:.5;pointer-events:none}
-#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:4000px;height:5000px;visibility:hidden;overflow:visible;pointer-events:none}
+#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:5000px;height:7000px;visibility:hidden;overflow:visible;pointer-events:none}
 @media(max-width:700px){
 h1{font-size:22px}
 .container{padding:10px}
@@ -188,7 +188,10 @@ return text;
 
 function parseSVG(text){
 const doc=new DOMParser().parseFromString(text,"image/svg+xml");
-if(doc.querySelector("parsererror"))throw new Error("SVG inválido");
+
+if(doc.querySelector("parsererror")){
+throw new Error("SVG inválido");
+}
 
 const source=doc.documentElement;
 
@@ -197,10 +200,13 @@ throw new Error("No se encontró <svg>");
 }
 
 const live=document.importNode(source,true);
+
 live.setAttribute("aria-hidden","true");
 
 const vb=(source.getAttribute("viewBox")||"")
-.trim().split(/[\s,]+/).map(Number);
+.trim()
+.split(/[\s,]+/)
+.map(Number);
 
 const w=vb.length===4&&Number.isFinite(vb[2])
 ?vb[2]
@@ -228,70 +234,78 @@ return{doc,svg:live};
 function bbox(el){
 try{
 const b=el.getBBox();
-if([b.x,b.y,b.width,b.height].every(Number.isFinite)&&(b.width>0||b.height>0)){
-return{x:b.x,y:b.y,width:b.width,height:b.height};
+
+if(
+[b.x,b.y,b.width,b.height].every(Number.isFinite)&&
+(b.width>0||b.height>0)
+){
+return{
+x:b.x,
+y:b.y,
+width:b.width,
+height:b.height
+};
 }
 }catch(e){}
+
 return null;
 }
 
-function getCTMPoint(el,x,y){
+function rootPoint(el,x,y){
 try{
-const m=el.getScreenCTM();
-if(m){
-const p=new DOMPoint(x,y).matrixTransform(m);
-return{x:p.x,y:p.y};
-}
-}catch(e){}
+const root=el.ownerSVGElement;
+
+if(!root){
 return{x,y};
 }
 
-function localBBoxToRoot(el,b){
+const em=el.getScreenCTM();
+const rm=root.getScreenCTM();
+
+if(!em||!rm){
+return{x,y};
+}
+
+const p=new DOMPoint(x,y).matrixTransform(em);
+return p.matrixTransform(rm.inverse());
+
+}catch(e){
+return{x,y};
+}
+}
+
+function rootBBox(el){
+const b=bbox(el);
+
+if(!b)return null;
+
 try{
 const root=el.ownerSVGElement;
+
 if(!root)return b;
 
-const points=[
-{x:b.x,y:b.y},
-{x:b.x+b.width,y:b.y},
-{x:b.x,y:b.y+b.height},
-{x:b.x+b.width,y:b.y+b.height}
+const pts=[
+rootPoint(el,b.x,b.y),
+rootPoint(el,b.x+b.width,b.y),
+rootPoint(el,b.x,b.y+b.height),
+rootPoint(el,b.x+b.width,b.y+b.height)
 ];
 
-const converted=points.map(p=>getCTMPoint(el,p.x,p.y));
-
-const xs=converted.map(p=>p.x);
-const ys=converted.map(p=>p.y);
+const xs=pts.map(p=>p.x);
+const ys=pts.map(p=>p.y);
 
 const minX=Math.min(...xs);
 const maxX=Math.max(...xs);
 const minY=Math.min(...ys);
 const maxY=Math.max(...ys);
 
-const rootMatrix=root.getScreenCTM();
-
-if(!rootMatrix){
-return b;
-}
-
-const inv=rootMatrix.inverse();
-
-const rp=[
-new DOMPoint(minX,minY).matrixTransform(inv),
-new DOMPoint(maxX,minY).matrixTransform(inv),
-new DOMPoint(minX,maxY).matrixTransform(inv),
-new DOMPoint(maxX,maxY).matrixTransform(inv)
-];
-
-const rx=rp.map(p=>p.x);
-const ry=rp.map(p=>p.y);
-
 return{
-x:Math.min(...rx),
-y:Math.min(...ry),
-width:Math.max(...rx)-Math.min(...rx),
-height:Math.max(...ry)-Math.min(...ry)
+x:minX,
+y:minY,
+width:maxX-minX,
+height:maxY-minY
 };
+
 }catch(e){
 return b;
 }
@@ -299,19 +313,26 @@ return b;
 
 function splitSubpaths(d){
 if(!d)return[];
+
 const matches=d.match(/[Mm][^Mm]*/g);
-return matches?matches.map(x=>x.trim()).filter(Boolean):[];
+
+return matches
+?matches.map(x=>x.trim()).filter(Boolean)
+:[];
 }
 
 function measureSubpaths(el){
 const d=el.getAttribute("d")||"";
 const parts=splitSubpaths(d);
+
 if(!parts.length)return[];
 
 const ns="http://www.w3.org/2000/svg";
+
 const holder=document.createElementNS(ns,"svg");
-holder.setAttribute("width","4000");
-holder.setAttribute("height","5000");
+
+holder.setAttribute("width","5000");
+holder.setAttribute("height","7000");
 holder.style.position="absolute";
 holder.style.left="0";
 holder.style.top="0";
@@ -322,11 +343,19 @@ holder.style.overflow="visible";
 const p=document.createElementNS(ns,"path");
 
 for(const attr of[
-"fill","fill-rule","stroke","stroke-width",
-"stroke-linejoin","stroke-linecap","stroke-miterlimit",
-"vector-effect","shape-rendering"
+"fill",
+"fill-rule",
+"stroke",
+"stroke-width",
+"stroke-linejoin",
+"stroke-linecap",
+"stroke-miterlimit",
+"vector-effect",
+"shape-rendering"
 ]){
-if(el.hasAttribute(attr))p.setAttribute(attr,el.getAttribute(attr));
+if(el.hasAttribute(attr)){
+p.setAttribute(attr,el.getAttribute(attr));
+}
 }
 
 holder.appendChild(p);
@@ -335,19 +364,28 @@ $("bboxSandbox").appendChild(holder);
 const result=[];
 
 for(const part of parts){
+
 p.setAttribute("d",part);
 
 try{
+
 const b=p.getBBox();
 
-if([b.x,b.y,b.width,b.height].every(Number.isFinite)&&b.width>0&&b.height>0){
+if(
+[b.x,b.y,b.width,b.height].every(Number.isFinite)&&
+b.width>0&&
+b.height>0
+){
+
 result.push({
 x:b.x,
 y:b.y,
 width:b.width,
 height:b.height
 });
+
 }
+
 }catch(e){}
 }
 
@@ -359,11 +397,16 @@ return result;
 function getElementsByClassIncludingSelf(svg,c){
 const out=[];
 
-if(svg.classList&&svg.classList.contains(c)){
+if(
+svg.classList&&
+svg.classList.contains(c)
+){
 out.push(svg);
 }
 
-out.push(...svg.querySelectorAll("."+CSS.escape(c)));
+const selector="."+CSS.escape(c);
+
+out.push(...svg.querySelectorAll(selector));
 
 return out;
 }
@@ -375,9 +418,18 @@ return getElementsByClassIncludingSelf(svg,c).length;
 function isPlausibleHead(b){
 if(!b)return false;
 
-if(b.width<4||b.height<3||b.width>80||b.height>80)return false;
+if(
+b.width<4||
+b.height<3||
+b.width>80||
+b.height>80
+){
+return false;
+}
 
-const ratio=Math.max(b.width,b.height)/Math.max(.01,Math.min(b.width,b.height));
+const ratio=
+Math.max(b.width,b.height)/
+Math.max(.01,Math.min(b.width,b.height));
 
 if(ratio>4.5)return false;
 
@@ -385,7 +437,13 @@ return true;
 }
 
 function addHead(out,x,y,w,h,noteIndex,source){
-if(!Number.isFinite(x)||!Number.isFinite(y))return;
+
+if(
+!Number.isFinite(x)||
+!Number.isFinite(y)
+){
+return;
+}
 
 const duplicate=out.some(n=>
 Math.abs(n.x-x)<1.5&&
@@ -393,23 +451,123 @@ Math.abs(n.y-y)<1.5
 );
 
 if(!duplicate){
-out.push({x,y,w,h,noteIndex,source});
+
+out.push({
+x,
+y,
+w,
+h,
+noteIndex,
+source
+});
+
 }
 }
 
 function extractHeads(svg){
+
 const out=[];
-const noteElements=getElementsByClassIncludingSelf(svg,"Note");
+const noteElements=
+getElementsByClassIncludingSelf(svg,"Note");
 
-log("   🔎 Elementos .Note reales: "+noteElements.length);
+log(
+"   🔎 Elementos .Note reales: "+
+noteElements.length
+);
 
-for(let ni=0;ni<noteElements.length;ni++){
+for(
+let ni=0;
+ni<noteElements.length;
+ni++
+){
+
 const note=noteElements[ni];
 
-if(note.tagName&&note.tagName.toLowerCase()==="path"&&note.hasAttribute("d")){
-const boxes=measureSubpaths(note);
+if(
+note.tagName&&
+note.tagName.toLowerCase()==="path"&&
+note.hasAttribute("d")
+){
+
+for(const b of measureSubpaths(note)){
+
+if(!isPlausibleHead(b))continue;
+
+const rb=rootBBox(note);
+
+const center=rootPoint(
+note,
+b.x+b.width/2,
+b.y+b.height/2
+);
+
+if(rb){
+
+addHead(
+out,
+center.x,
+center.y,
+b.width,
+b.height,
+ni,
+"Note"
+);
+
+}
+
+}
+
+}
+
+const children=
+note.querySelectorAll(
+"path,ellipse,circle,use"
+);
+
+for(const child of children){
+
+if(
+child.classList&&
+(
+child.classList.contains("Stem")||
+child.classList.contains("Beam")
+)
+){
+continue;
+}
+
+if(
+child.tagName.toLowerCase()==="path"
+){
+
+const boxes=measureSubpaths(child);
 
 for(const b of boxes){
+
+if(!isPlausibleHead(b))continue;
+
+const center=rootPoint(
+child,
+b.x+b.width/2,
+b.y+b.height/2
+);
+
+addHead(
+out,
+center.x,
+center.y,
+b.width,
+b.height,
+ni,
+"NoteChild"
+);
+
+}
+
+}else{
+
+const b=rootBBox(child);
+
 if(!isPlausibleHead(b))continue;
 
 addHead(
@@ -419,184 +577,340 @@ b.y+b.height/2,
 b.width,
 b.height,
 ni,
-"Note"
-);
-}
-}
-
-for(const child of note.querySelectorAll("path,ellipse,circle")){
-if(child===note)continue;
-
-if(child.classList&&(
-child.classList.contains("Stem")||
-child.classList.contains("Beam")
-)){
-continue;
-}
-
-if(child.tagName.toLowerCase()==="path"){
-for(const b of measureSubpaths(child)){
-if(!isPlausibleHead(b))continue;
-
-const rb=localBBoxToRoot(child,b);
-
-addHead(
-out,
-rb.x+rb.width/2,
-rb.y+rb.height/2,
-rb.width,
-rb.height,
-ni,
-"NoteChild"
-);
-}
-}else{
-const b=bbox(child);
-if(!isPlausibleHead(b))continue;
-
-const rb=localBBoxToRoot(child,b);
-
-addHead(
-out,
-rb.x+rb.width/2,
-rb.y+rb.height/2,
-rb.width,
-rb.height,
-ni,
 "shape"
 );
-}
-}
+
 }
 
-out.sort((a,b)=>a.y-b.y||a.x-b.x);
+}
+
+}
+
+out.sort(
+(a,b)=>a.y-b.y||a.x-b.x
+);
+
 return out;
 }
 
-function extractStaffLines(svg){
-const ys=[];
-const elements=getElementsByClassIncludingSelf(svg,"StaffLines");
+function collectGraphicBoxes(svg,selector){
 
-for(const el of elements){
+const result=[];
 
-if(el.tagName&&el.tagName.toLowerCase()==="path"){
+for(const el of svg.querySelectorAll(selector)){
 
-for(const b of measureSubpaths(el)){
+const b=rootBBox(el);
 
-if(b.width>500&&b.height<10){
-ys.push(b.y+b.height/2);
-}
-}
+if(!b)continue;
 
-}else{
-
-const b=bbox(el);
-
-if(b&&b.width>500&&b.height<10){
-ys.push(b.y+b.height/2);
-}
-}
-}
-
-if(ys.length<5){
-
-for(const el of svg.querySelectorAll("path,line,rect")){
-
-if(el.classList.contains("BarLine")||
-el.classList.contains("Stem")||
-el.classList.contains("Beam")){
+if(
+!Number.isFinite(b.x)||
+!Number.isFinite(b.y)||
+!Number.isFinite(b.width)||
+!Number.isFinite(b.height)
+){
 continue;
 }
 
-if(el.tagName.toLowerCase()==="path"){
+result.push({
+el,
+...b
+});
 
-for(const b of measureSubpaths(el)){
-
-if(b.width>500&&b.height<8){
-ys.push(b.y+b.height/2);
-}
 }
 
-}else{
-
-const b=bbox(el);
-
-if(b&&b.width>500&&b.height<8){
-ys.push(b.y+b.height/2);
-}
-}
-}
+return result;
 }
 
-ys.sort((a,b)=>a-b);
+function extractStaffLines(svg){
+
+const candidates=[];
+
+const marked=
+getElementsByClassIncludingSelf(
+svg,
+"StaffLines"
+);
+
+for(const group of marked){
+
+const own=rootBBox(group);
+
+if(
+own&&
+own.width>500&&
+own.height<1000
+){
+}
+
+const descendants=
+group.querySelectorAll(
+"path,line,rect,polyline,polygon,use"
+);
+
+for(const el of descendants){
+
+const b=rootBBox(el);
+
+if(!b)continue;
+
+if(
+b.width>500&&
+b.height<=12
+){
+
+candidates.push({
+x:b.x,
+y:b.y,
+width:b.width,
+height:b.height,
+source:"StaffLines"
+});
+
+}
+
+}
+
+if(
+group.tagName&&
+group.tagName.toLowerCase()==="path"
+){
+
+const boxes=measureSubpaths(group);
+
+for(const b of boxes){
+
+if(
+b.width>500&&
+b.height<=12
+){
+
+const center=rootPoint(
+group,
+b.x+b.width/2,
+b.y+b.height/2
+);
+
+candidates.push({
+x:center.x-b.width/2,
+y:center.y-b.height/2,
+width:b.width,
+height:b.height,
+source:"StaffLinesPath"
+});
+
+}
+
+}
+
+}
+
+}
+
+if(candidates.length<5){
+
+const all=
+svg.querySelectorAll(
+"path,line,rect,polyline,polygon,use"
+);
+
+for(const el of all){
+
+if(
+el.classList&&
+(
+el.classList.contains("BarLine")||
+el.classList.contains("Stem")||
+el.classList.contains("Beam")
+)
+){
+continue;
+}
+
+const b=rootBBox(el);
+
+if(!b)continue;
+
+if(
+b.width>500&&
+b.width>b.height*40&&
+b.height<=12
+){
+
+candidates.push({
+x:b.x,
+y:b.y,
+width:b.width,
+height:b.height,
+source:"geometry"
+});
+
+}
+
+}
+
+}
+
+candidates.sort(
+(a,b)=>a.y-b.y||a.x-b.x
+);
 
 const unique=[];
 
+for(const c of candidates){
+
+const cy=c.y+c.height/2;
+
+const duplicate=unique.some(
+u=>
+Math.abs(
+(u.y+u.height/2)-cy
+)<1.5&&
+Math.abs(u.x-c.x)<3
+);
+
+if(!duplicate){
+unique.push(c);
+}
+
+}
+
+const ys=unique.map(
+b=>b.y+b.height/2
+).sort((a,b)=>a-b);
+
+const yUnique=[];
+
 for(const y of ys){
 
-if(!unique.length||Math.abs(y-unique.at(-1))>2){
-unique.push(y);
+if(
+!yUnique.length||
+Math.abs(
+y-yUnique[yUnique.length-1]
+)>2
+){
+yUnique.push(y);
 }
+
 }
 
 const groups=[];
 
-for(const y of unique){
+for(const y of yUnique){
 
-let g=groups.at(-1);
+let g=groups[groups.length-1];
 
-if(!g||y-g.at(-1)>15){
+if(
+!g||
+y-g[g.length-1]>16
+){
+
 groups.push([y]);
+
 }else{
+
 g.push(y);
+
 }
+
 }
 
 const staffs=[];
 
 for(const original of groups){
 
-let g=[...original];
+if(original.length<5)continue;
 
-if(g.length<5)continue;
+let g=[...original];
 
 if(g.length>5){
 
-let best=g.slice(0,5);
-let bestSpan=Infinity;
+let best=null;
+let bestScore=Infinity;
 
-for(let i=0;i<=g.length-5;i++){
+for(
+let i=0;
+i<=g.length-5;
+i++
+){
 
 const q=g.slice(i,i+5);
-const span=q[4]-q[0];
 
-if(span<bestSpan){
+const diffs=
+q.slice(1).map(
+(v,j)=>v-q[j]
+);
+
+const spacing=median(diffs);
+
+const variance=
+mean(
+diffs.map(
+d=>Math.abs(d-spacing)
+)
+);
+
+const score=
+variance+
+Math.abs(
+spacing-(
+q[4]-q[0]
+)/4
+);
+
+if(score<bestScore){
+
+bestScore=score;
 best=q;
-bestSpan=span;
-}
+
 }
 
+}
+
+if(best){
 g=best;
 }
 
-const spacing=median(g.slice(1).map((v,i)=>v-g[i]));
+}
+
+const spacing=
+median(
+g.slice(1).map(
+(v,i)=>v-g[i]
+)
+);
+
+if(
+!Number.isFinite(spacing)||
+spacing<4||
+spacing>100
+){
+continue;
+}
 
 staffs.push({
 lines:g,
 center:mean(g),
 spacing
 });
+
 }
 
 return staffs;
 }
 
 function extractClefs(svg){
+
 const clefs=[];
 
-for(const el of getElementsByClassIncludingSelf(svg,"Clef")){
+for(
+const el of getElementsByClassIncludingSelf(
+svg,
+"Clef"
+)
+){
 
-const b=bbox(el);
+const b=rootBBox(el);
 
 if(!b)continue;
 
@@ -606,6 +920,7 @@ y:b.y+b.height/2,
 w:b.width,
 h:b.height
 });
+
 }
 
 return clefs;
@@ -620,20 +935,28 @@ let bestD=Infinity;
 
 for(const c of clefs){
 
-const d=Math.abs(c.y-staff.center);
+const d=Math.abs(
+c.y-staff.center
+);
 
 if(d<bestD){
+
 best=c;
 bestD=d;
+
 }
+
 }
 
 if(!best)return"treble";
 
-return best.y>staff.center?"bass":"treble";
+return best.y>staff.center
+?"bass"
+:"treble";
 }
 
 function assignStaff(heads,staffs){
+
 const assigned=[];
 
 for(const n of heads){
@@ -641,100 +964,172 @@ for(const n of heads){
 let best=null;
 let bestD=Infinity;
 
-staffs.forEach((s,si)=>{
+staffs.forEach(
+(s,si)=>{
 
-const d=Math.abs(n.y-s.center);
-const limit=Math.max(28,s.spacing*5);
+const d=Math.abs(
+n.y-s.center
+);
 
-if(d<bestD&&d<=limit){
-best={staff:si,dist:d};
+const limit=Math.max(
+s.spacing*3.8,
+35
+);
+
+if(
+d<bestD&&
+d<=limit
+){
+
+best={
+staff:si,
+dist:d
+};
+
 bestD=d;
+
 }
-});
+
+}
+);
 
 assigned.push({
 ...n,
 staff:best?best.staff:-1,
-staffDistance:best?best.dist:null
+staffDistance:
+best?best.dist:null
 });
+
 }
 
 return assigned;
 }
 
-const TREBLE_STEPS=[0,1,3,5,7,8,10];
-const BASS_STEPS=[0,2,3,5,7,8,10];
+const TREBLE_STEPS=[
+0,1,3,5,7,8,10
+];
 
-function pitchFromStaff(note,staff,clef){
+const BASS_STEPS=[
+0,2,3,5,7,8,10
+];
 
-if(!staff||staff.lines.length<5){
+function pitchFromStaff(
+note,
+staff,
+clef
+){
+
+if(
+!staff||
+staff.lines.length<5
+){
+
 return{
 pitch:null,
 confidence:0,
 step:null,
 clef:clef||null
 };
+
 }
 
-const spacing=staff.spacing||24.8;
-const bottom=staff.lines[4];
+const spacing=
+staff.spacing||24.8;
 
-const halfSteps=(bottom-note.y)/(spacing/2);
-const diatonic=Math.round(halfSteps);
-const error=Math.abs(halfSteps-diatonic);
+const bottom=
+staff.lines[4];
 
-const confidence=clamp(1-error/.65,0,1);
+const halfSteps=
+(bottom-note.y)/
+(spacing/2);
+
+const diatonic=
+Math.round(halfSteps);
+
+const error=
+Math.abs(
+halfSteps-diatonic
+);
+
+const confidence=
+clamp(
+1-error/.65,
+0,
+1
+);
 
 let midi;
 
 if(clef==="bass"){
 
-const octave=Math.floor(diatonic/7);
-const degree=((diatonic%7)+7)%7;
+const octave=
+Math.floor(diatonic/7);
 
-midi=43+octave*12+BASS_STEPS[degree];
+const degree=
+((diatonic%7)+7)%7;
+
+midi=
+43+
+octave*12+
+BASS_STEPS[degree];
 
 }else{
 
-const octave=Math.floor(diatonic/7);
-const degree=((diatonic%7)+7)%7;
+const octave=
+Math.floor(diatonic/7);
 
-midi=64+octave*12+TREBLE_STEPS[degree];
+const degree=
+((diatonic%7)+7)%7;
+
+midi=
+64+
+octave*12+
+TREBLE_STEPS[degree];
+
 }
 
 return{
-pitch:clamp(Math.round(midi),0,127),
+pitch:clamp(
+Math.round(midi),
+0,
+127
+),
 confidence,
 step:diatonic,
 clef:clef||"treble"
 };
+
 }
 
 function barPositions(svg){
+
 const arr=[];
 
-for(const el of getElementsByClassIncludingSelf(svg,"BarLine")){
+for(
+const el of getElementsByClassIncludingSelf(
+svg,
+"BarLine"
+)
+){
 
-if(el.tagName&&el.tagName.toLowerCase()==="path"){
+const b=rootBBox(el);
 
-for(const b of measureSubpaths(el)){
+if(
+b&&
+b.height>20
+){
 
-if(b.height>20){
-arr.push(b.x+b.width/2);
+arr.push(
+b.x+b.width/2
+);
+
 }
+
 }
 
-}else{
-
-const b=bbox(el);
-
-if(b&&b.height>20){
-arr.push(b.x+b.width/2);
-}
-}
-}
-
-return arr.sort((a,b)=>a-b);
+return arr.sort(
+(a,b)=>a-b
+);
 }
 
 function assignMeasures(notes,bars){
@@ -750,24 +1145,37 @@ measure++;
 }else{
 break;
 }
+
 }
 
-return{...n,measure};
+return{
+...n,
+measure
+};
+
 });
+
 }
 
 function inferDuration(note,sameStaff){
 
-const sorted=[...sameStaff].sort((a,b)=>a.x-b.x);
-const index=sorted.indexOf(note);
+const sorted=
+[...sameStaff].sort(
+(a,b)=>a.x-b.x
+);
+
+const index=
+sorted.indexOf(note);
 
 if(index<0)return 480;
 
-const next=sorted[index+1];
+const next=
+sorted[index+1];
 
 if(!next)return 480;
 
-const dx=next.x-note.x;
+const dx=
+next.x-note.x;
 
 if(dx>300)return 1920;
 if(dx>190)return 960;
@@ -790,21 +1198,30 @@ byStaff.set(n.staff,[]);
 }
 
 byStaff.get(n.staff).push(n);
+
 }
 
 const events=[];
 
-for(const[staff,arr]of byStaff){
+for(
+const[staff,arr]
+of byStaff
+){
 
-arr.sort((a,b)=>a.x-b.x);
+arr.sort(
+(a,b)=>a.x-b.x
+);
 
 const groups=[];
 
 for(const n of arr){
 
-let g=groups.at(-1);
+let g=groups[groups.length-1];
 
-if(!g||Math.abs(n.x-g.x)>7){
+if(
+!g||
+Math.abs(n.x-g.x)>7
+){
 
 groups.push({
 x:n.x,
@@ -813,13 +1230,20 @@ staff
 });
 
 }else{
+
 g.notes.push(n);
+
 }
+
 }
 
 for(const g of groups){
 
-const duration=inferDuration(g.notes[0],arr);
+const duration=
+inferDuration(
+g.notes[0],
+arr
+);
 
 events.push({
 x:g.x,
@@ -828,26 +1252,50 @@ measure:g.notes[0].measure,
 notes:g.notes,
 durationTicks:duration
 });
-}
+
 }
 
-return events.sort((a,b)=>a.x-b.x||a.staff-b.staff);
+}
+
+return events.sort(
+(a,b)=>a.x-b.x||a.staff-b.staff
+);
 }
 
 function musicalElements(svg){
 
 const classes=[
-"Stem","Beam","BarLine","Rest","KeySig","TimeSig",
-"TieSegment","OttavaSegment","VoltaSegment","Dynamic",
-"Fermata","Tempo","HairpinSegment",
-"GradualTempoChangeSegment","Expression",
-"LedgerLine","Clef","Note","StaffLines"
+"Stem",
+"Beam",
+"BarLine",
+"Rest",
+"KeySig",
+"TimeSig",
+"TieSegment",
+"OttavaSegment",
+"VoltaSegment",
+"Dynamic",
+"Fermata",
+"Tempo",
+"HairpinSegment",
+"GradualTempoChangeSegment",
+"Expression",
+"LedgerLine",
+"Clef",
+"Note",
+"StaffLines"
 ];
 
 const result={};
 
 for(const c of classes){
-result[c]=getElementsByClassIncludingSelf(svg,c).length;
+
+result[c]=
+getElementsByClassIncludingSelf(
+svg,
+c
+).length;
+
 }
 
 return result;
@@ -859,9 +1307,15 @@ const vb=svg.getAttribute("viewBox");
 
 if(vb){
 
-const p=vb.trim().split(/[\s,]+/).map(Number);
+const p=
+vb.trim()
+.split(/[\s,]+/)
+.map(Number);
 
-if(p.length===4)return p;
+if(p.length===4){
+return p;
+}
+
 }
 
 return[
@@ -870,16 +1324,21 @@ return[
 parseFloat(svg.getAttribute("width"))||1000,
 parseFloat(svg.getAttribute("height"))||1400
 ];
+
 }
 
 function renderPage(page){
 
-const wrap=document.createElement("div");
+const wrap=
+document.createElement("div");
+
 wrap.className="sheet";
 
-const clone=page.svg.cloneNode(true);
+const clone=
+page.svg.cloneNode(true);
 
 clone.removeAttribute("width");
+
 clone.style.width="100%";
 clone.style.visibility="visible";
 clone.style.position="relative";
@@ -889,13 +1348,22 @@ wrap.appendChild(clone);
 
 const vb=getViewBox(page.svg);
 
-const overlay=document.createElementNS(
+const overlay=
+document.createElementNS(
 "http://www.w3.org/2000/svg",
 "svg"
 );
 
-overlay.setAttribute("viewBox",vb.join(" "));
-overlay.setAttribute("preserveAspectRatio","xMinYMin meet");
+overlay.setAttribute(
+"viewBox",
+vb.join(" ")
+);
+
+overlay.setAttribute(
+"preserveAspectRatio",
+"xMinYMin meet"
+);
+
 overlay.style.position="absolute";
 overlay.style.left="0";
 overlay.style.top="0";
@@ -907,33 +1375,53 @@ for(const s of page.staffs){
 
 for(const y of s.lines){
 
-const line=document.createElementNS(
+const line=
+document.createElementNS(
 "http://www.w3.org/2000/svg",
 "line"
 );
 
 line.setAttribute("x1",vb[0]);
-line.setAttribute("x2",vb[0]+vb[2]);
+line.setAttribute(
+"x2",
+vb[0]+vb[2]
+);
 line.setAttribute("y1",y);
 line.setAttribute("y2",y);
-line.setAttribute("class","staff-line");
+line.setAttribute(
+"class",
+"staff-line"
+);
 
 overlay.appendChild(line);
+
 }
+
 }
 
 for(const n of page.notes){
 
-const c=document.createElementNS(
+const c=
+document.createElementNS(
 "http://www.w3.org/2000/svg",
 "ellipse"
 );
 
 c.setAttribute("cx",n.x);
 c.setAttribute("cy",n.y);
-c.setAttribute("rx",Math.max(4,n.w/2));
-c.setAttribute("ry",Math.max(3,n.h/2));
-c.setAttribute("class","note-dot");
+c.setAttribute(
+"rx",
+Math.max(4,n.w/2)
+);
+c.setAttribute(
+"ry",
+Math.max(3,n.h/2)
+);
+
+c.setAttribute(
+"class",
+"note-dot"
+);
 
 c.setAttribute(
 "fill",
@@ -945,19 +1433,29 @@ n.pitch==null
 );
 
 overlay.appendChild(c);
+
 }
 
 wrap.appendChild(overlay);
 
 return wrap;
 }
+
 function renderResults(){
+
 let html="";
 
 for(const p of score.pages){
 
-const high=p.notes.filter(n=>n.confidence>=.85).length;
-const assigned=p.notes.filter(n=>n.staff>=0).length;
+const high=
+p.notes.filter(
+n=>n.confidence>=.85
+).length;
+
+const assigned=
+p.notes.filter(
+n=>n.staff>=0
+).length;
 
 html+=`
 <div class="page">
@@ -972,33 +1470,38 @@ html+=`
 <b>Asignadas:</b> ${assigned}
 </div>
 </div>
-
 <div class="panel-body">
-
 <b>Elementos musicales:</b>
-
 <div class="element-grid">
 `;
 
-for(const[k,v]of Object.entries(p.elements)){
+for(
+const[k,v]
+of Object.entries(p.elements)
+){
+
 if(v){
+
 html+=`
-<span class="element">${esc(k)}: ${v}</span>
+<span class="element">
+${esc(k)}: ${v}
+</span>
 `;
+
 }
+
 }
 
 html+=`
 </div>
-
 <div style="margin-top:12px" class="${
-high/Math.max(1,p.notes.length)>=.7?"high":"medium"
+high/Math.max(1,p.notes.length)>=.7
+?"high"
+:"medium"
 }">
 🟢 Alta confianza: ${high}/${p.notes.length}
 </div>
-
 <h4>Primeras notas detectadas</h4>
-
 <div class="table-wrap">
 <table>
 <thead>
@@ -1017,7 +1520,8 @@ high/Math.max(1,p.notes.length)>=.7?"high":"medium"
 <tbody>
 `;
 
-p.notes.slice(0,120).forEach((n,i)=>{
+p.notes.slice(0,120).forEach(
+(n,i)=>{
 
 html+=`
 <tr>
@@ -1027,13 +1531,19 @@ html+=`
 <td>${n.staff>=0?n.staff+1:"—"}</td>
 <td>${n.clef||"—"}</td>
 <td>${n.step??"—"}</td>
-<td class="${n.pitch!=null?"high":"low"}">
+<td class="${
+n.pitch!=null?"high":"low"
+}">
 ${n.pitch!=null?n.pitch:"desconocida"}
 </td>
 <td>${n.measure??"—"}</td>
-<td>${round((n.confidence||0)*100,1)}%</td>
+<td>${round(
+(n.confidence||0)*100,
+1
+)}%</td>
 </tr>
 `;
+
 });
 
 html+=`
@@ -1043,6 +1553,7 @@ html+=`
 </div>
 </div>
 `;
+
 }
 
 $("results").innerHTML=html;
@@ -1053,8 +1564,10 @@ function writeVarLen(value,bytes){
 let buffer=value&0x7f;
 
 while(value>>=7){
+
 buffer<<=8;
 buffer|=(value&0x7f)|0x80;
+
 }
 
 while(true){
@@ -1062,31 +1575,48 @@ while(true){
 bytes.push(buffer&0xff);
 
 if(buffer&0x80){
+
 buffer>>=8;
+
 }else{
+
 break;
+
 }
+
 }
+
 }
 
 function push16(arr,n){
-arr.push((n>>8)&255,n&255);
+
+arr.push(
+(n>>8)&255,
+n&255
+);
+
 }
 
 function push32(arr,n){
+
 arr.push(
 (n>>24)&255,
 (n>>16)&255,
 (n>>8)&255,
 n&255
 );
-}
 
-function makeMidi(events){
+}function makeMidi(events){
 
 const data=[];
 
-data.push(0x4d,0x54,0x68,0x64);
+data.push(
+0x4d,
+0x54,
+0x68,
+0x64
+);
+
 push32(data,6);
 push16(data,0);
 push16(data,1);
@@ -1095,7 +1625,8 @@ push16(data,PPQ);
 const track=[];
 
 const bpm=DEFAULT_BPM;
-const micros=Math.round(60000000/bpm);
+const micros=
+Math.round(60000000/bpm);
 
 track.push(
 0x00,
@@ -1116,13 +1647,15 @@ track.push(
 const flat=[];
 let tick=0;
 
-const sorted=[...events].sort(
+const sorted=
+[...events].sort(
 (a,b)=>a.x-b.x||a.staff-b.staff
 );
 
 for(const event of sorted){
 
-const duration=event.durationTicks||480;
+const duration=
+event.durationTicks||480;
 
 for(const n of event.notes){
 
@@ -1134,9 +1667,11 @@ end:tick+duration,
 pitch:n.pitch,
 velocity:80
 });
+
 }
 
 tick+=duration;
+
 }
 
 const midiEvents=[];
@@ -1156,6 +1691,7 @@ type:"off",
 pitch:n.pitch,
 velocity:0
 });
+
 }
 
 midiEvents.sort(
@@ -1168,7 +1704,11 @@ let lastTick=0;
 
 for(const e of midiEvents){
 
-const delta=Math.max(0,e.tick-lastTick);
+const delta=
+Math.max(
+0,
+e.tick-lastTick
+);
 
 writeVarLen(delta,track);
 
@@ -1187,9 +1727,11 @@ track.push(
 e.pitch,
 0
 );
+
 }
 
 lastTick=e.tick;
+
 }
 
 track.push(
@@ -1206,14 +1748,22 @@ data.push(
 0x6b
 );
 
-push32(data,track.length);
+push32(
+data,
+track.length
+);
 
 data.push(...track);
 
 return new Blob(
-[new Uint8Array(data)],
-{type:"audio/midi"}
+[
+new Uint8Array(data)
+],
+{
+type:"audio/midi"
+}
 );
+
 }
 
 function cleanScore(){
@@ -1221,9 +1771,13 @@ function cleanScore(){
 return JSON.parse(
 JSON.stringify(
 score,
-(k,v)=>k==="svg"?undefined:v
+(k,v)=>
+k==="svg"
+?undefined
+:v
 )
 );
+
 }
 
 async function analyze(){
@@ -1236,9 +1790,6 @@ btn.textContent="⏳ ANALIZANDO...";
 clearLog();
 resetUI();
 
-btn.disabled=true;
-btn.textContent="⏳ ANALIZANDO...";
-
 score={
 pages:[],
 notes:[],
@@ -1246,77 +1797,117 @@ events:[],
 metadata:{}
 };
 
-log("▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO");
+log(
+"▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO"
+);
 
 try{
 
-for(let i=0;i<SVG_FILES.length;i++){
+for(
+let i=0;
+i<SVG_FILES.length;
+i++
+){
 
-const file=SVG_FILES[i];
+const file=
+SVG_FILES[i];
 
 log(
 `📄 Página ${i+1} / ${SVG_FILES.length}`
 );
 
-const text=await fetchSVG(file);
+const text=
+await fetchSVG(file);
 
-const{svg}=parseSVG(text);
+const{svg}=
+parseSVG(text);
 
-const elements=musicalElements(svg);
+const elements=
+musicalElements(svg);
 
-log(`   .Note: ${elements.Note}`);
+log(
+`   .Note: ${elements.Note}`
+);
 
-const heads=extractHeads(svg);
+const heads=
+extractHeads(svg);
 
-log(`   🔴 Cabezas: ${heads.length}`);
+log(
+`   🔴 Cabezas: ${heads.length}`
+);
 
-const staffs=extractStaffLines(svg);
+const staffs=
+extractStaffLines(svg);
 
-const staffLines=staffs.flatMap(
+const staffLines=
+staffs.flatMap(
 s=>s.lines
 );
 
-log(`   📏 Líneas: ${staffLines.length}`);
-log(`   🎼 Pentagramas: ${staffs.length}`);
+log(
+`   📏 Líneas: ${staffLines.length}`
+);
 
-for(const[k,v]of Object.entries(elements)){
+log(
+`   🎼 Pentagramas: ${staffs.length}`
+);
+
+for(
+const[k,v]
+of Object.entries(elements)
+){
 
 if(v){
-log(`   ├ ${k}: ${v}`);
-}
+
+log(
+`   ├ ${k}: ${v}`
+);
+
 }
 
-const clefs=extractClefs(svg);
+}
+
+const clefs=
+extractClefs(svg);
 
 log(
 `   🎼 Claves geométricas: ${clefs.length}`
 );
 
-let assigned=assignStaff(
+let assigned=
+assignStaff(
 heads,
 staffs
 );
 
-const bars=barPositions(svg);
+const bars=
+barPositions(svg);
 
 log(
 `   │ Barras detectadas: ${bars.length}`
 );
 
-assigned=assignMeasures(
+assigned=
+assignMeasures(
 assigned,
 bars
 );
 
-assigned=assigned.map(n=>{
+assigned=
+assigned.map(n=>{
 
-const s=n.staff>=0?staffs[n.staff]:null;
+const s=
+n.staff>=0
+?staffs[n.staff]
+:null;
 
-const clef=s
+const clef=
+s
 ?clefForStaff(s,clefs)
 :null;
 
-const p=pitchFromStaff(
+const p=
+pitchFromStaff(
 n,
 s,
 clef
@@ -1326,9 +1917,11 @@ return{
 ...n,
 ...p
 };
+
 });
 
-const events=inferEvents(
+const events=
+inferEvents(
 assigned
 );
 
@@ -1355,62 +1948,117 @@ score.events.push(
 ...events
 );
 
-const ok=assigned.filter(
+const ok=
+assigned.filter(
 n=>n.staff>=0
 ).length;
 
-const withPitch=assigned.filter(
+const withPitch=
+assigned.filter(
 n=>n.pitch!=null
 ).length;
 
-const high=assigned.filter(
+const high=
+assigned.filter(
 n=>n.confidence>=.85
 ).length;
 
-log(`   ✓ Asignadas: ${ok}`);
-log(`   🎵 Con pitch: ${withPitch}`);
-log(`   🟢 Alta confianza: ${high}`);
-log(`   🎵 Eventos/acordes: ${events.length}`);
+log(
+`   ✓ Asignadas: ${ok}`
+);
+
+log(
+`   🎵 Con pitch: ${withPitch}`
+);
+
+log(
+`   🟢 Alta confianza: ${high}`
+);
+
+log(
+`   🎵 Eventos/acordes: ${events.length}`
+);
 
 }
 
 score.metadata={
 
-pages:score.pages.length,
+pages:
+score.pages.length,
 
-heads:score.notes.length,
+heads:
+score.notes.length,
 
-staves:score.pages.reduce(
+staves:
+score.pages.reduce(
 (a,p)=>a+p.staffs.length,
 0
 ),
 
-assigned:score.notes.filter(
+assigned:
+score.notes.filter(
 n=>n.staff>=0
 ).length,
 
-pitch:score.notes.filter(
+pitch:
+score.notes.filter(
 n=>n.pitch!=null
 ).length,
 
-high:score.notes.filter(
+high:
+score.notes.filter(
 n=>n.confidence>=.85
 ).length,
 
-events:score.events.length,
+events:
+score.events.length,
 
-bpm:DEFAULT_BPM
+bpm:
+DEFAULT_BPM
+
 };
 
-log("================================");
-log("✓ ANÁLISIS MUSICAL COMPLETADO");
-log("Total cabezas: "+score.metadata.heads);
-log("Total pentagramas: "+score.metadata.staves);
-log("Total asignadas: "+score.metadata.assigned);
-log("Total con pitch: "+score.metadata.pitch);
-log("Pitch alta confianza: "+score.metadata.high);
-log("Eventos/acordes: "+score.metadata.events);
-log("================================");
+log(
+"================================"
+);
+
+log(
+"✓ ANÁLISIS MUSICAL COMPLETADO"
+);
+
+log(
+"Total cabezas: "+
+score.metadata.heads
+);
+
+log(
+"Total pentagramas: "+
+score.metadata.staves
+);
+
+log(
+"Total asignadas: "+
+score.metadata.assigned
+);
+
+log(
+"Total con pitch: "+
+score.metadata.pitch
+);
+
+log(
+"Pitch alta confianza: "+
+score.metadata.high
+);
+
+log(
+"Eventos/acordes: "+
+score.metadata.events
+);
+
+log(
+"================================"
+);
 
 $("statPages").textContent=
 score.metadata.pages;
@@ -1432,11 +2080,14 @@ score.metadata.high;
 
 $("visualizer").innerHTML="";
 
-for(const p of score.pages){
+for(
+const p of score.pages
+){
 
 $("visualizer").appendChild(
 renderPage(p)
 );
+
 }
 
 renderResults();
@@ -1450,22 +2101,59 @@ null,
 
 $("jsonBtn").disabled=false;
 
-if(score.metadata.pitch>0){
+if(
+score.metadata.pitch>0
+){
 
 $("midiBtn").disabled=false;
 
 }
 
-if(score.metadata.heads===0){
+if(
+score.metadata.heads===0
+){
 
 $("results").insertAdjacentHTML(
 "afterbegin",
 
 `<div class="warning-box">
 ❌ El SVG fue cargado, pero no se encontraron cabezas.
-Esto indica que la estructura del SVG no coincide con los
-elementos musicales esperados.
 </div>`
+
+);
+
+}else if(
+score.metadata.staves===0
+){
+
+$("results").insertAdjacentHTML(
+"afterbegin",
+
+`<div class="warning-box">
+⚠️ Se encontraron ${score.metadata.heads}
+cabezas, pero todavía no se pudieron
+reconstruir los pentagramas.
+</div>`
+
+);
+
+}else if(
+score.metadata.assigned<
+score.metadata.heads
+){
+
+const missing=
+score.metadata.heads-
+score.metadata.assigned;
+
+$("results").insertAdjacentHTML(
+"afterbegin",
+
+`<div class="warning-box">
+⚠️ ${missing} cabezas no pudieron
+asignarse a un pentagrama.
+</div>`
+
 );
 
 }else if(
@@ -1481,9 +2169,10 @@ $("results").insertAdjacentHTML(
 "afterbegin",
 
 `<div class="warning-box">
-⚠️ ${missing} cabezas no tienen pitch identificado.
-Las conservamos en el JSON para no perder información.
+⚠️ ${missing} cabezas no tienen pitch
+identificado. Las conservamos en el JSON.
 </div>`
+
 );
 
 }else{
@@ -1492,9 +2181,12 @@ $("results").insertAdjacentHTML(
 "afterbegin",
 
 `<div class="success-box">
-✓ Todas las cabezas detectadas tienen pitch identificado.
+✓ Todas las cabezas detectadas tienen
+pentagrama y pitch identificado.
 </div>`
+
 );
+
 }
 
 }catch(err){
@@ -1518,9 +2210,11 @@ si necesitas el detalle técnico.
 }finally{
 
 btn.disabled=false;
-btn.textContent="▶ ANALIZAR PARTITURA";
+btn.textContent=
+"▶ ANALIZAR PARTITURA";
 
 }
+
 }
 
 function generateMIDI(){
@@ -1530,51 +2224,77 @@ if(
 !score.events.length
 ){
 
-log("❌ No hay eventos musicales.");
+log(
+"❌ No hay eventos musicales."
+);
+
 return;
+
 }
 
-midiBlob=makeMidi(
+midiBlob=
+makeMidi(
 score.events
 );
 
 $("downloadBtn").disabled=false;
 
-log("🎹 MIDI generado correctamente.");
-log("   Eventos MIDI: "+score.events.length);
-log("   BPM: "+DEFAULT_BPM);
+log(
+"🎹 MIDI generado correctamente."
+);
+
+log(
+"   Eventos MIDI: "+
+score.events.length
+);
+
+log(
+"   BPM: "+
+DEFAULT_BPM
+);
+
 }
 
 function downloadMIDI(){
 
 if(!midiBlob){
+
 generateMIDI();
+
 }
 
 if(!midiBlob)return;
 
-const url=URL.createObjectURL(
+const url=
+URL.createObjectURL(
 midiBlob
 );
 
-const a=document.createElement("a");
+const a=
+document.createElement("a");
 
 a.href=url;
-a.download="Experience-Reconstruccion.mid";
+
+a.download=
+"Experience-Reconstruccion.mid";
 
 document.body.appendChild(a);
+
 a.click();
+
 a.remove();
 
 setTimeout(
 ()=>URL.revokeObjectURL(url),
 1000
 );
+
 }
 
 function downloadJSON(){
 
-const blob=new Blob(
+const blob=
+new Blob(
 [
 JSON.stringify(
 cleanScore(),
@@ -1587,23 +2307,28 @@ type:"application/json"
 }
 );
 
-const url=URL.createObjectURL(
-blob
-);
+const url=
+URL.createObjectURL(blob);
 
-const a=document.createElement("a");
+const a=
+document.createElement("a");
 
 a.href=url;
-a.download="Experience-Reconstruccion.json";
+
+a.download=
+"Experience-Reconstruccion.json";
 
 document.body.appendChild(a);
+
 a.click();
+
 a.remove();
 
 setTimeout(
 ()=>URL.revokeObjectURL(url),
 1000
 );
+
 }
 
 $("analyzeBtn").addEventListener(
