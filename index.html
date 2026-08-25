@@ -2,47 +2,31 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Experience — SVG → MIDI</title>
+<title>Diagnóstico SVG — Experience</title>
 
 <style>
-
-* {
-    box-sizing: border-box;
-}
-
 body {
     margin: 0;
-    padding: 25px;
+    padding: 30px;
     background: #202020;
     color: white;
     font-family: Arial, sans-serif;
 }
 
 .container {
-    max-width: 1500px;
+    max-width: 1400px;
     margin: auto;
-}
-
-h1 {
-    text-align: center;
-}
-
-.panel {
-    background: #303030;
-    padding: 20px;
-    border-radius: 10px;
-    margin: 20px 0;
 }
 
 button {
     padding: 12px 18px;
-    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
     border: 0;
     border-radius: 7px;
-    cursor: pointer;
-    font-size: 16px;
+    margin: 5px;
 }
 
 #analizar {
@@ -50,85 +34,42 @@ button {
     color: white;
 }
 
-#descargar {
-    background: #2196f3;
-    color: white;
-    display: none;
-}
-
-#estado {
-    white-space: pre-wrap;
+#resultado {
+    margin-top: 20px;
+    background: #111;
+    padding: 20px;
+    border-radius: 8px;
     font-family: monospace;
-    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-x: auto;
 }
 
 .pagina {
     background: white;
-    color: black;
-    margin: 30px 0;
-    padding: 15px;
-    overflow: hidden;
+    padding: 20px;
+    margin-top: 30px;
 }
 
-.pagina h2 {
-    margin-top: 0;
-}
-
-.svg-container {
-    position: relative;
-    width: 100%;
-}
-
-.svg-container svg {
+svg {
     width: 100%;
     height: auto;
-    display: block;
 }
-
-.nota-detectada {
-    position: absolute;
-    border: 2px solid red;
-    border-radius: 50%;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-}
-
-.info {
-    background: #111;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 15px;
-}
-
 </style>
 </head>
-
 
 <body>
 
 <div class="container">
 
-<h1>
-Experience — Ludovico Einaudi
-</h1>
-
-
-<div class="panel">
+<h1>Diagnóstico SVG — Experience</h1>
 
 <button id="analizar">
-🎼 ANALIZAR PARTITURA
+🔎 ANALIZAR ESTRUCTURA DE LOS SVG
 </button>
 
-<button id="descargar">
-🎹 DESCARGAR MIDI
-</button>
-
-<div id="estado">
+<div id="resultado">
 Esperando...
 </div>
-
-</div>
-
 
 <div id="partituras"></div>
 
@@ -136,12 +77,6 @@ Esperando...
 
 
 <script>
-
-/*
-============================================================
-CONFIGURACIÓN
-============================================================
-*/
 
 const CARPETA =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
@@ -155,39 +90,7 @@ const ARCHIVOS = [
 ];
 
 
-/*
-============================================================
-VARIABLES
-============================================================
-*/
-
-let todasLasNotas = [];
-
-let midiBlob = null;
-
-
-/*
-============================================================
-ESTADO
-============================================================
-*/
-
-function estado(texto) {
-
-    document
-        .getElementById("estado")
-        .textContent = texto;
-
-}
-
-
-/*
-============================================================
-CARGAR SVG
-============================================================
-*/
-
-async function cargarSVG(nombre) {
+async function cargar(nombre) {
 
     const respuesta =
         await fetch(
@@ -197,9 +100,8 @@ async function cargarSVG(nombre) {
     if (!respuesta.ok) {
 
         throw new Error(
-            "No se pudo cargar " +
             nombre +
-            " HTTP " +
+            " → HTTP " +
             respuesta.status
         );
 
@@ -210,1138 +112,263 @@ async function cargarSVG(nombre) {
 }
 
 
-/*
-============================================================
-PARSEAR SVG
-============================================================
-*/
-
-function parsearSVG(texto) {
+function analizarSVG(texto) {
 
     const parser =
         new DOMParser();
 
-    const documento =
+    const doc =
         parser.parseFromString(
             texto,
             "image/svg+xml"
         );
 
-    return documento.documentElement;
+    const svg =
+        doc.documentElement;
 
-}
-
-
-/*
-============================================================
-OBTENER CAJA DE ELEMENTO
-============================================================
-*/
-
-function obtenerCaja(elemento) {
-
-    let x =
-        parseFloat(
-            elemento.getAttribute("x")
-        );
-
-    let y =
-        parseFloat(
-            elemento.getAttribute("y")
-        );
-
-    let width =
-        parseFloat(
-            elemento.getAttribute("width")
-        );
-
-    let height =
-        parseFloat(
-            elemento.getAttribute("height")
-        );
-
-
-    /*
-    Rectángulos.
-    */
-
-    if (
-        Number.isFinite(x) &&
-        Number.isFinite(y) &&
-        Number.isFinite(width) &&
-        Number.isFinite(height)
-    ) {
-
-        return {
-            x,
-            y,
-            width,
-            height
-        };
-
-    }
-
-
-    /*
-    Círculos.
-    */
-
-    if (
-        elemento.hasAttribute("cx") &&
-        elemento.hasAttribute("cy")
-    ) {
-
-        const cx =
-            parseFloat(
-                elemento.getAttribute("cx")
-            );
-
-        const cy =
-            parseFloat(
-                elemento.getAttribute("cy")
-            );
-
-        const r =
-            parseFloat(
-                elemento.getAttribute("r") ||
-                "4"
-            );
-
-        return {
-            x: cx - r,
-            y: cy - r,
-            width: r * 2,
-            height: r * 2
-        };
-
-    }
-
-
-    /*
-    Elipses.
-    */
-
-    if (
-        elemento.hasAttribute("cx") &&
-        elemento.hasAttribute("cy") &&
-        elemento.hasAttribute("rx") &&
-        elemento.hasAttribute("ry")
-    ) {
-
-        const cx =
-            parseFloat(
-                elemento.getAttribute("cx")
-            );
-
-        const cy =
-            parseFloat(
-                elemento.getAttribute("cy")
-            );
-
-        const rx =
-            parseFloat(
-                elemento.getAttribute("rx")
-            );
-
-        const ry =
-            parseFloat(
-                elemento.getAttribute("ry")
-            );
-
-        return {
-            x: cx - rx,
-            y: cy - ry,
-            width: rx * 2,
-            height: ry * 2
-        };
-
-    }
-
-
-    return null;
-
-}
-
-
-/*
-============================================================
-BUSCAR LÍNEAS DEL PENTAGRAMA
-============================================================
-*/
-
-function detectarPentagramas(svg) {
 
     const elementos =
         [
-            ...svg.querySelectorAll(
-                "line,rect,path"
-            )
+            ...svg.querySelectorAll("*")
         ];
 
-    const lineas = [];
+
+    const tipos = {};
+
+    const clases = {};
+
+    const ids = {};
+
+    const atributos = {};
+
+    const textos = [];
+
+
 
     for (
         const elemento of elementos
     ) {
 
-        const caja =
-            obtenerCaja(
-                elemento
+        const nombre =
+            elemento.tagName;
+
+        tipos[nombre] =
+            (tipos[nombre] || 0) + 1;
+
+
+        const clase =
+            elemento.getAttribute(
+                "class"
             );
 
-        if (!caja)
-            continue;
+        if (clase) {
 
-
-        /*
-        Una línea muy ancha
-        y muy baja suele ser
-        una línea del pentagrama.
-        */
-
-        if (
-            caja.width >
-            100 &&
-            caja.width >
-            caja.height * 20
-        ) {
-
-            lineas.push({
-                y:
-                    caja.y +
-                    caja.height / 2,
-
-                x:
-                    caja.x,
-
-                width:
-                    caja.width
-            });
+            clases[clase] =
+                (clases[clase] || 0) + 1;
 
         }
 
-    }
 
+        const id =
+            elemento.getAttribute(
+                "id"
+            );
 
-    lineas.sort(
-        (a,b) =>
-            a.y - b.y
-    );
+        if (id) {
 
+            ids[id] =
+                (ids[id] || 0) + 1;
 
-    /*
-    Agrupar líneas separadas
-    por una distancia razonable.
-    */
-
-    const pentagramas = [];
-
-    let actual = [];
-
-    for (
-        const linea of lineas
-    ) {
-
-        if (
-            actual.length === 0
-        ) {
-
-            actual.push(linea);
-
-            continue;
         }
 
 
-        const ultima =
-            actual[
-                actual.length - 1
-            ];
+        for (
+            const atributo
+            of elemento.attributes
+        ) {
+
+            atributos[
+                atributo.name
+            ] =
+                (
+                    atributos[
+                        atributo.name
+                    ] || 0
+                ) + 1;
+
+        }
 
 
         if (
-            linea.y -
-            ultima.y <
-            15
+            elemento.tagName ===
+            "text"
         ) {
 
-            actual.push(linea);
+            const texto =
+                elemento.textContent
+                    .trim();
 
-        } else {
+            if (texto) {
 
-            if (
-                actual.length >= 4
-            ) {
-
-                pentagramas.push(
-                    actual
+                textos.push(
+                    texto
                 );
 
             }
 
-            actual = [
-                linea
-            ];
-
         }
-
-    }
-
-
-    if (
-        actual.length >= 4
-    ) {
-
-        pentagramas.push(
-            actual
-        );
-
-    }
-
-
-    return pentagramas;
-
-}
-
-
-/*
-============================================================
-DETECTAR POSIBLES CABEZAS DE NOTA
-============================================================
-*/
-
-function detectarCabezas(
-    svg,
-    pentagramas
-) {
-
-    const elementos =
-        [
-            ...svg.querySelectorAll(
-                "path,circle,ellipse,rect"
-            )
-        ];
-
-
-    const candidatos = [];
-
-
-    for (
-        const elemento of elementos
-    ) {
-
-        const caja =
-            obtenerCaja(
-                elemento
-            );
-
-        if (!caja)
-            continue;
-
-
-        const ancho =
-            caja.width;
-
-        const alto =
-            caja.height;
-
-
-        /*
-        Las cabezas de nota
-        suelen ser pequeñas
-        y aproximadamente ovaladas.
-        */
-
-        if (
-            ancho >= 3 &&
-            ancho <= 20 &&
-            alto >= 2 &&
-            alto <= 15
-        ) {
-
-            const cx =
-                caja.x +
-                ancho / 2;
-
-            const cy =
-                caja.y +
-                alto / 2;
-
-
-            /*
-            Buscar el pentagrama
-            más cercano.
-            */
-
-            let mejor =
-                null;
-
-            let distancia =
-                Infinity;
-
-
-            for (
-                const pentagrama
-                of pentagramas
-            ) {
-
-                const centro =
-                    pentagrama.reduce(
-                        (
-                            suma,
-                            linea
-                        ) =>
-                            suma +
-                            linea.y,
-                        0
-                    ) /
-                    pentagrama.length;
-
-
-                const d =
-                    Math.abs(
-                        cy -
-                        centro
-                    );
-
-
-                if (
-                    d <
-                    distancia
-                ) {
-
-                    distancia =
-                        d;
-
-                    mejor =
-                        pentagrama;
-
-                }
-
-            }
-
-
-            if (
-                mejor &&
-                distancia < 45
-            ) {
-
-                candidatos.push({
-
-                    x: cx,
-
-                    y: cy,
-
-                    width: ancho,
-
-                    height: alto,
-
-                    pentagrama:
-                        mejor
-
-                });
-
-            }
-
-        }
-
-    }
-
-
-    return candidatos;
-
-}
-
-
-/*
-============================================================
-ELIMINAR DUPLICADOS
-============================================================
-*/
-
-function eliminarDuplicados(
-    notas
-) {
-
-    const resultado = [];
-
-    for (
-        const nota of notas
-    ) {
-
-        const duplicada =
-            resultado.some(
-                otra =>
-                    Math.abs(
-                        otra.x -
-                        nota.x
-                    ) < 3 &&
-                    Math.abs(
-                        otra.y -
-                        nota.y
-                    ) < 3
-            );
-
-
-        if (!duplicada) {
-
-            resultado.push(
-                nota
-            );
-
-        }
-
-    }
-
-    return resultado;
-
-}
-
-
-/*
-============================================================
-CONVERTIR POSICIÓN Y
-A NOTA MUSICAL
-============================================================
-*/
-
-/*
-Esto usa una aproximación
-basada en el espaciado del
-pentagrama.
-
-La clave inicial se asume
-como clave de sol para el
-pentagrama superior y clave
-de fa para el inferior.
-
-*/
-
-function yANota(
-    y,
-    pentagrama,
-    indicePentagrama
-) {
-
-    const lineas =
-        pentagrama;
-
-    if (
-        lineas.length < 5
-    )
-        return 60;
-
-
-    /*
-    Ordenar líneas.
-    */
-
-    const ys =
-        lineas
-            .map(
-                linea => linea.y
-            )
-            .sort(
-                (a,b) => a-b
-            );
-
-
-    /*
-    Espacio entre líneas.
-    */
-
-    const espacio =
-        (
-            ys[4] -
-            ys[0]
-        ) / 4;
-
-
-    if (
-        !Number.isFinite(
-            espacio
-        ) ||
-        espacio <= 0
-    ) {
-
-        return 60;
-
-    }
-
-
-    /*
-    Cada espacio de línea
-    representa un paso diatónico.
-    */
-
-    const posicion =
-        (
-            ys[4] -
-            y
-        ) /
-        (
-            espacio / 2
-        );
-
-
-    /*
-    MIDI aproximado.
-
-    Pentagrama superior:
-    línea inferior = E4 (64)
-
-    Pentagrama inferior:
-    línea inferior = G2 (43)
-    */
-
-    const base =
-        indicePentagrama === 0
-            ? 64
-            : 43;
-
-
-    /*
-    Escala diatónica aproximada.
-    */
-
-    const pasos =
-        Math.round(
-            posicion
-        );
-
-
-    const escala =
-        [
-            0,
-            2,
-            4,
-            5,
-            7,
-            9,
-            11
-        ];
-
-
-    let octava =
-        Math.floor(
-            pasos / 7
-        );
-
-
-    let grado =
-        pasos % 7;
-
-
-    if (grado < 0) {
-
-        grado += 7;
-
-        octava--;
-
-    }
-
-
-    return (
-        base +
-        escala[grado] +
-        octava * 12
-    );
-
-}
-
-
-/*
-============================================================
-ASIGNAR TIEMPOS
-============================================================
-*/
-
-function asignarTiempos(
-    notas
-) {
-
-    /*
-    Agrupamos por posición X.
-
-    Notas con X muy parecido
-    forman acordes.
-    */
-
-    notas.sort(
-        (a,b) =>
-            a.x - b.x
-    );
-
-
-    let tiempo =
-        0;
-
-    let ultimoX =
-        null;
-
-
-    for (
-        const nota of notas
-    ) {
-
-        if (
-            ultimoX === null
-        ) {
-
-            tiempo = 0;
-
-        } else {
-
-            const distancia =
-                nota.x -
-                ultimoX;
-
-
-            /*
-            Aproximación:
-
-            distancia horizontal
-            grande = avance temporal.
-
-            */
-
-            if (
-                distancia > 5
-            ) {
-
-                tiempo +=
-                    0.25;
-
-            }
-
-        }
-
-
-        nota.inicio =
-            tiempo;
-
-
-        nota.duracion =
-            0.25;
-
-
-        ultimoX =
-            nota.x;
-
-    }
-
-
-    return notas;
-
-}
-
-
-/*
-============================================================
-ANALIZAR UNA PÁGINA
-============================================================
-*/
-
-function analizarPagina(
-    svg
-) {
-
-    const pentagramas =
-        detectarPentagramas(
-            svg
-        );
-
-
-    let candidatos =
-        detectarCabezas(
-            svg,
-            pentagramas
-        );
-
-
-    candidatos =
-        eliminarDuplicados(
-            candidatos
-        );
-
-
-    /*
-    Convertir candidatos
-    en notas.
-    */
-
-    const notas = [];
-
-
-    for (
-        const candidato
-        of candidatos
-    ) {
-
-        const indice =
-            pentagramas.indexOf(
-                candidato.pentagrama
-            );
-
-
-        const midi =
-            yANota(
-                candidato.y,
-                candidato.pentagrama,
-                indice
-            );
-
-
-        notas.push({
-
-            x:
-                candidato.x,
-
-            y:
-                candidato.y,
-
-            midi,
-
-            pentagrama:
-                indice
-
-        });
 
     }
 
 
     return {
-
-        pentagramas,
-
-        notas
-
+        elementos,
+        tipos,
+        clases,
+        ids,
+        atributos,
+        textos
     };
 
 }
 
 
-/*
-============================================================
-MIDI
-============================================================
-*/
 
-function vlq(numero) {
-
-    let buffer =
-        numero & 127;
-
-    const resultado = [];
-
-    while (
-        (numero >>= 7)
-    ) {
-
-        buffer <<= 8;
-
-        buffer |=
-            (
-                numero &
-                127
-            ) |
-            128;
-
-    }
-
-
-    while (true) {
-
-        resultado.push(
-            buffer & 255
-        );
-
-
-        if (
-            buffer & 128
-        ) {
-
-            buffer >>= 8;
-
-        } else {
-
-            break;
-
-        }
-
-    }
-
-
-    return resultado;
-
-}
-
-
-function u16(n) {
-
-    return [
-        (n >> 8) & 255,
-        n & 255
-    ];
-
-}
-
-
-function u32(n) {
-
-    return [
-        (n >> 24) & 255,
-        (n >> 16) & 255,
-        (n >> 8) & 255,
-        n & 255
-    ];
-
-}
-
-
-function texto(texto) {
-
-    return [
-        ...texto
-            .split("")
-            .map(
-                c =>
-                    c.charCodeAt(0)
-            )
-    ];
-
-}
-
-
-/*
-============================================================
-CREAR MIDI
-============================================================
-*/
-
-function crearMIDI(
-    notas
+function formatearObjeto(
+    titulo,
+    objeto,
+    limite = 100
 ) {
 
-    const PPQ =
-        480;
+    let salida =
+        "\n\n" +
+        "===== " +
+        titulo +
+        " =====\n";
 
 
-    const eventos = [];
-
-
-    /*
-    Instrumento piano.
-    */
-
-    eventos.push(
-        0,
-        0xc0,
-        0
-    );
-
-
-    /*
-    Ordenar.
-    */
-
-    notas.sort(
-        (a,b) =>
-            a.inicio -
-            b.inicio
-    );
-
-
-    let ultimoTiempo =
-        0;
+    const entradas =
+        Object.entries(
+            objeto
+        )
+        .sort(
+            (a,b) =>
+                b[1] -
+                a[1]
+        )
+        .slice(
+            0,
+            limite
+        );
 
 
     for (
-        const nota of notas
+        const [clave, cantidad]
+        of entradas
     ) {
 
-        const inicio =
-            Math.round(
-                nota.inicio *
-                PPQ
-            );
-
-
-        const duracion =
-            Math.round(
-                nota.duracion *
-                PPQ
-            );
-
-
-        const delta =
-            Math.max(
-                0,
-                inicio -
-                ultimoTiempo
-            );
-
-
-        eventos.push(
-            ...vlq(delta),
-            0x90,
-            Math.max(
-                0,
-                Math.min(
-                    127,
-                    nota.midi
-                )
-            ),
-            85
-        );
-
-
-        eventos.push(
-            ...vlq(
-                duracion
-            ),
-            0x80,
-            Math.max(
-                0,
-                Math.min(
-                    127,
-                    nota.midi
-                )
-            ),
-            0
-        );
-
-
-        ultimoTiempo =
-            inicio +
-            duracion;
+        salida +=
+            cantidad +
+            " × " +
+            clave +
+            "\n";
 
     }
 
 
-    eventos.push(
-        0,
-        0xff,
-        0x2f,
-        0
-    );
-
-
-    const encabezado = [
-
-        ...texto("MThd"),
-
-        ...u32(6),
-
-        ...u16(0),
-
-        ...u16(1),
-
-        ...u16(PPQ)
-
-    ];
-
-
-    const pista = [
-
-        ...texto("MTrk"),
-
-        ...u32(
-            eventos.length
-        ),
-
-        ...eventos
-
-    ];
-
-
-    return new Uint8Array([
-        ...encabezado,
-        ...pista
-    ]);
+    return salida;
 
 }
 
 
-/*
-============================================================
-ANALIZAR
-============================================================
-*/
 
 async function analizar() {
 
-    todasLasNotas = [];
-
-
-    document
-        .getElementById(
-            "descargar"
-        )
-        .style.display =
-            "none";
-
-
-    document
-        .getElementById(
-            "partituras"
-        )
-        .innerHTML =
-            "";
-
-
-    try {
-
-        estado(
-            "Cargando y analizando las cinco páginas..."
+    const resultado =
+        document.getElementById(
+            "resultado"
         );
 
+    resultado.textContent =
+        "Analizando...";
 
-        for (
-            let i = 0;
-            i < ARCHIVOS.length;
-            i++
-        ) {
 
-            estado(
-                "Página " +
+    let informe = "";
+
+
+    for (
+        let i = 0;
+        i < ARCHIVOS.length;
+        i++
+    ) {
+
+        const nombre =
+            ARCHIVOS[i];
+
+
+        try {
+
+            const texto =
+                await cargar(
+                    nombre
+                );
+
+
+            const datos =
+                analizarSVG(
+                    texto
+                );
+
+
+            informe +=
+                "\n\n\n" +
+                "########################################\n" +
+                "PÁGINA " +
                 (i + 1) +
-                " / " +
-                ARCHIVOS.length +
-                "\n\nLeyendo SVG..."
-            );
+                "\n" +
+                "########################################\n";
 
 
-            const textoSVG =
-                await cargarSVG(
-                    ARCHIVOS[i]
+            informe +=
+                "\nTotal elementos: " +
+                datos.elementos.length;
+
+
+            informe +=
+                formatearObjeto(
+                    "TIPOS DE ELEMENTOS",
+                    datos.tipos
                 );
 
 
-            const svg =
-                parsearSVG(
-                    textoSVG
+            informe +=
+                formatearObjeto(
+                    "CLASES",
+                    datos.clases
                 );
 
 
-            const resultado =
-                analizarPagina(
-                    svg
+            informe +=
+                formatearObjeto(
+                    "ATRIBUTOS",
+                    datos.atributos
                 );
 
 
-            const notas =
-                asignarTiempos(
-                    resultado.notas
-                );
+            informe +=
+                "\n\nTEXTOS EN SVG:\n";
 
 
-            todasLasNotas.push(
-                ...notas
-            );
+            informe +=
+                datos.textos
+                    .slice(0,100)
+                    .join(
+                        "\n"
+                    );
 
 
             /*
-            Mostrar página.
+            Mostrar SVG.
             */
 
             const pagina =
@@ -1353,47 +380,22 @@ async function analizar() {
                 "pagina";
 
 
-            const titulo =
-                document.createElement(
-                    "h2"
-                );
+            const parser =
+                new DOMParser();
 
-            titulo.textContent =
-                "Página " +
-                (i + 1) +
-                " — " +
-                notas.length +
-                " posibles notas";
+
+            const documento =
+                parser.parseFromString(
+                    texto,
+                    "image/svg+xml"
+                );
 
 
             pagina.appendChild(
-                titulo
-            );
-
-
-            const contenedor =
-                document.createElement(
-                    "div"
-                );
-
-            contenedor.className =
-                "svg-container";
-
-
-            const svgVisual =
                 document.importNode(
-                    svg,
+                    documento.documentElement,
                     true
-                );
-
-
-            contenedor.appendChild(
-                svgVisual
-            );
-
-
-            pagina.appendChild(
-                contenedor
+                )
             );
 
 
@@ -1406,164 +408,34 @@ async function analizar() {
                 );
 
 
-            console.log(
-                "Página",
-                i + 1,
-                resultado
-            );
+        }
+        catch(error) {
+
+            informe +=
+                "\nERROR EN " +
+                nombre +
+                ": " +
+                error.message;
 
         }
 
-
-        /*
-        Crear MIDI.
-        */
-
-        if (
-            todasLasNotas.length === 0
-        ) {
-
-            throw new Error(
-                "No se detectaron posibles cabezas de nota."
-            );
-
-        }
-
-
-        const datos =
-            crearMIDI(
-                todasLasNotas
-            );
-
-
-        midiBlob =
-            new Blob(
-                [datos],
-                {
-                    type:
-                        "audio/midi"
-                }
-            );
-
-
-        document
-            .getElementById(
-                "descargar"
-            )
-            .style.display =
-                "inline-block";
-
-
-        estado(
-            "✓ ANÁLISIS TERMINADO\n\n" +
-            "Páginas: " +
-            ARCHIVOS.length +
-            "\n" +
-            "Posibles notas detectadas: " +
-            todasLasNotas.length +
-            "\n\n" +
-            "Se ha generado un MIDI preliminar.\n\n" +
-            "IMPORTANTE: este MIDI es una " +
-            "reconstrucción automática y debe " +
-            "validarse contra la partitura."
-        );
-
-
     }
-    catch(error) {
-
-        console.error(
-            error
-        );
 
 
-        estado(
-            "❌ ERROR\n\n" +
-            error.message
-        );
-
-    }
+    resultado.textContent =
+        informe;
 
 }
 
 
-/*
-============================================================
-DESCARGAR MIDI
-============================================================
-*/
-
 document
-    .getElementById(
-        "descargar"
-    )
-    .addEventListener(
-        "click",
-        () => {
-
-            if (!midiBlob)
-                return;
-
-
-            const url =
-                URL.createObjectURL(
-                    midiBlob
-                );
-
-
-            const enlace =
-                document.createElement(
-                    "a"
-                );
-
-
-            enlace.href =
-                url;
-
-
-            enlace.download =
-                "Experience-Ludovico-Einaudi.mid";
-
-
-            document
-                .body
-                .appendChild(
-                    enlace
-                );
-
-
-            enlace.click();
-
-
-            enlace.remove();
-
-
-            setTimeout(
-                () =>
-                    URL.revokeObjectURL(
-                        url
-                    ),
-                1000
-            );
-
-        }
-    );
-
-
-/*
-============================================================
-BOTÓN
-============================================================
-*/
-
-document
-    .getElementById(
-        "analizar"
-    )
-    .addEventListener(
-        "click",
-        analizar
-    );
+.getElementById(
+    "analizar"
+)
+.addEventListener(
+    "click",
+    analizar
+);
 
 </script>
 
