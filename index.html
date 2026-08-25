@@ -4,383 +4,104 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Experience — Reconstrucción MIDI</title>
-
 <style>
 *{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:#0d1117;
-  color:#e6edf3;
-  font-family:Arial,Helvetica,sans-serif
-}
-
-header{
-  padding:24px;
-  background:#161b22;
-  border-bottom:1px solid #30363d
-}
-
-h1{
-  margin:0 0 8px;
-  font-size:28px
-}
-
-.subtitle{
-  color:#8b949e;
-  font-size:14px
-}
-
-.container{
-  max-width:1600px;
-  margin:auto;
-  padding:20px
-}
-
-.controls{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px
-}
-
-button{
-  border:0;
-  border-radius:8px;
-  padding:13px 18px;
-  font-weight:bold;
-  cursor:pointer;
-  background:#238636;
-  color:#fff
-}
-
-button.secondary{
-  background:#1f6feb
-}
-
-button.warning{
-  background:#9e6a03
-}
-
-button:disabled{
-  opacity:.45;
-  cursor:not-allowed
-}
-
-.stats{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
-  gap:12px;
-  margin-bottom:20px
-}
-
-.stat,
-.panel{
-  background:#161b22;
-  border:1px solid #30363d;
-  border-radius:10px
-}
-
-.stat{
-  padding:17px
-}
-
-.number{
-  font-size:28px;
-  font-weight:bold
-}
-
-.label{
-  color:#8b949e;
-  font-size:13px;
-  margin-top:5px
-}
-
-.panel{
-  margin-bottom:20px;
-  overflow:hidden
-}
-
-.panel-title{
-  padding:14px 18px;
-  border-bottom:1px solid #30363d;
-  font-weight:bold
-}
-
-.panel-body{
-  padding:18px
-}
-
-#log{
-  height:430px;
-  overflow:auto;
-  white-space:pre-wrap;
-  font:12px/1.55 monospace;
-  color:#c9d1d9
-}
-
-.page{
-  margin-bottom:28px;
-  border:1px solid #30363d;
-  border-radius:10px;
-  overflow:hidden
-}
-
-.page-header{
-  padding:14px;
-  background:#21262d
-}
-
-.page-info{
-  color:#8b949e;
-  font-size:13px;
-  margin-top:5px
-}
-
-.table-wrap{
-  overflow:auto;
-  max-height:600px
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:12px
-}
-
-th,
-td{
-  padding:7px;
-  border-bottom:1px solid #30363d;
-  text-align:left;
-  white-space:nowrap
-}
-
-th{
-  color:#8b949e;
-  background:#0d1117;
-  position:sticky;
-  top:0
-}
-
-.high{
-  color:#3fb950
-}
-
-.medium{
-  color:#d29922
-}
-
-.low{
-  color:#f85149
-}
-
-.element-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-top:10px
-}
-
-.element{
-  padding:5px 8px;
-  background:#21262d;
-  border:1px solid #30363d;
-  border-radius:6px;
-  font:11px monospace
-}
-
-pre{
-  max-height:600px;
-  overflow:auto;
-  background:#0d1117;
-  padding:15px;
-  border-radius:8px;
-  font-size:11px
-}
-
-.warning-box{
-  background:#3d2b00;
-  border:1px solid #9e6a03;
-  color:#d29922;
-  padding:12px;
-  border-radius:8px;
-  margin-bottom:15px
-}
-
-.success-box{
-  background:#0d2818;
-  border:1px solid #238636;
-  color:#3fb950;
-  padding:12px;
-  border-radius:8px
-}
-
-#visualizer{
-  background:#fff;
-  border-radius:8px;
-  padding:10px;
-  overflow:auto
-}
-
-.sheet{
-  position:relative;
-  margin-bottom:30px;
-  border-bottom:2px solid #ddd
-}
-
-.sheet svg{
-  width:100%;
-  height:auto;
-  display:block
-}
-
-.note-dot{
-  stroke:#fff;
-  stroke-width:1.2;
-  pointer-events:none
-}
-
-.staff-line{
-  stroke:#1f6feb;
-  stroke-width:1.2;
-  opacity:.75;
-  pointer-events:none
-}
-
-.bar-line{
-  stroke:#d29922;
-  stroke-width:1;
-  opacity:.5;
-  pointer-events:none
-}
-
-#bboxSandbox{
-  position:fixed;
-  left:-100000px;
-  top:-100000px;
-  width:4000px;
-  height:5000px;
-  visibility:hidden;
-  overflow:visible;
-  pointer-events:none
-}
-
+body{margin:0;background:#0d1117;color:#e6edf3;font-family:Arial,Helvetica,sans-serif}
+header{padding:24px;background:#161b22;border-bottom:1px solid #30363d}
+h1{margin:0 0 8px;font-size:28px}
+.subtitle{color:#8b949e;font-size:14px}
+.container{max-width:1600px;margin:auto;padding:20px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+button{border:0;border-radius:8px;padding:13px 18px;font-weight:bold;cursor:pointer;background:#238636;color:#fff}
+button.secondary{background:#1f6feb}
+button.warning{background:#9e6a03}
+button:disabled{opacity:.45;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.stat,.panel{background:#161b22;border:1px solid #30363d;border-radius:10px}
+.stat{padding:17px}
+.number{font-size:28px;font-weight:bold}
+.label{color:#8b949e;font-size:13px;margin-top:5px}
+.panel{margin-bottom:20px;overflow:hidden}
+.panel-title{padding:14px 18px;border-bottom:1px solid #30363d;font-weight:bold}
+.panel-body{padding:18px}
+#log{height:430px;overflow:auto;white-space:pre-wrap;font:12px/1.55 monospace;color:#c9d1d9}
+.page{margin-bottom:28px;border:1px solid #30363d;border-radius:10px;overflow:hidden}
+.page-header{padding:14px;background:#21262d}
+.page-info{color:#8b949e;font-size:13px;margin-top:5px}
+.table-wrap{overflow:auto;max-height:600px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px;border-bottom:1px solid #30363d;text-align:left;white-space:nowrap}
+th{color:#8b949e;background:#0d1117;position:sticky;top:0}
+.high{color:#3fb950}
+.medium{color:#d29922}
+.low{color:#f85149}
+.element-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.element{padding:5px 8px;background:#21262d;border:1px solid #30363d;border-radius:6px;font:11px monospace}
+pre{max-height:600px;overflow:auto;background:#0d1117;padding:15px;border-radius:8px;font-size:11px}
+.warning-box{background:#3d2b00;border:1px solid #9e6a03;color:#d29922;padding:12px;border-radius:8px;margin-bottom:15px}
+.success-box{background:#0d2818;border:1px solid #238636;color:#3fb950;padding:12px;border-radius:8px}
+#visualizer{background:#fff;border-radius:8px;padding:10px;overflow:auto}
+.sheet{position:relative;margin-bottom:30px;border-bottom:2px solid #ddd}
+.sheet svg{width:100%;height:auto;display:block}
+.note-dot{stroke:#fff;stroke-width:1.2;pointer-events:none}
+.staff-line{stroke:#1f6feb;stroke-width:1.2;opacity:.75;pointer-events:none}
+.bar-line{stroke:#d29922;stroke-width:1;opacity:.5;pointer-events:none}
+#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:4000px;height:5000px;visibility:hidden;overflow:visible;pointer-events:none}
 @media(max-width:700px){
-  h1{
-    font-size:22px
-  }
-
-  .container{
-    padding:10px
-  }
-
-  #log{
-    height:340px
-  }
+h1{font-size:22px}
+.container{padding:10px}
+#log{height:340px}
 }
 </style>
 </head>
-
 <body>
 
 <header>
 <h1>🎼 Experience — Reconstrucción MIDI</h1>
-<div class="subtitle">
-Extracción musical directamente desde los SVG de MuseScore
-</div>
+<div class="subtitle">Extracción musical directamente desde los SVG de MuseScore</div>
 </header>
 
 <div class="container">
 
 <div class="controls">
-<button id="analyzeBtn" type="button">
-▶ ANALIZAR PARTITURA
-</button>
-
-<button id="midiBtn" class="secondary" type="button" disabled>
-🎹 GENERAR MIDI
-</button>
-
-<button id="downloadBtn" class="warning" type="button" disabled>
-⬇ DESCARGAR MIDI
-</button>
-
-<button id="jsonBtn" type="button" disabled>
-💾 DESCARGAR JSON
-</button>
+<button id="analyzeBtn" type="button">▶ ANALIZAR PARTITURA</button>
+<button id="midiBtn" class="secondary" type="button" disabled>🎹 GENERAR MIDI</button>
+<button id="downloadBtn" class="warning" type="button" disabled>⬇ DESCARGAR MIDI</button>
+<button id="jsonBtn" type="button" disabled>💾 DESCARGAR JSON</button>
 </div>
 
 <div class="stats">
-
-<div class="stat">
-<div class="number" id="statPages">0</div>
-<div class="label">Páginas</div>
-</div>
-
-<div class="stat">
-<div class="number" id="statHeads">0</div>
-<div class="label">Cabezas</div>
-</div>
-
-<div class="stat">
-<div class="number" id="statStaves">0</div>
-<div class="label">Pentagramas</div>
-</div>
-
-<div class="stat">
-<div class="number" id="statAssigned">0</div>
-<div class="label">Asignadas</div>
-</div>
-
-<div class="stat">
-<div class="number" id="statPitch">0</div>
-<div class="label">Con pitch</div>
-</div>
-
-<div class="stat">
-<div class="number" id="statHigh">0</div>
-<div class="label">Pitch ≥ 85%</div>
-</div>
-
+<div class="stat"><div class="number" id="statPages">0</div><div class="label">Páginas</div></div>
+<div class="stat"><div class="number" id="statHeads">0</div><div class="label">Cabezas</div></div>
+<div class="stat"><div class="number" id="statStaves">0</div><div class="label">Pentagramas</div></div>
+<div class="stat"><div class="number" id="statAssigned">0</div><div class="label">Asignadas</div></div>
+<div class="stat"><div class="number" id="statPitch">0</div><div class="label">Con pitch</div></div>
+<div class="stat"><div class="number" id="statHigh">0</div><div class="label">Pitch ≥ 85%</div></div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Registro</div>
-<div class="panel-body">
-<div id="log"></div>
-</div>
+<div class="panel-body"><div id="log"></div></div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Información musical detectada</div>
-<div class="panel-body" id="results">
-Ejecuta el análisis para comenzar.
-</div>
+<div class="panel-body" id="results">Ejecuta el análisis para comenzar.</div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Vista reconstruida</div>
-<div class="panel-body">
-<div id="visualizer"></div>
-</div>
+<div class="panel-body"><div id="visualizer"></div></div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Datos JSON</div>
-<div class="panel-body">
-<pre id="jsonPreview">Sin datos.</pre>
-</div>
+<div class="panel-body"><pre id="jsonPreview">Sin datos.</pre></div>
 </div>
 
 </div>
 
-<footer style="
-padding:30px;
-text-align:center;
-color:#8b949e;
-font-size:12px
-">
+<footer style="padding:30px;text-align:center;color:#8b949e;font-size:12px">
 Experience — reconstrucción experimental desde SVG
 </footer>
 
@@ -389,1794 +110,867 @@ Experience — reconstrucción experimental desde SVG
 <script>
 "use strict";
 
-/* ============================================================
-   CONFIGURACIÓN
-   ============================================================ */
-
 const BASE="EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
-
-const SVG_FILES=[
-  "score_0.svg",
-  "score_1.svg",
-  "score_2.svg",
-  "score_3.svg",
-  "score_4.svg"
-];
-
+const SVG_FILES=["score_0.svg","score_1.svg","score_2.svg","score_3.svg","score_4.svg"];
 const PPQ=480;
 const DEFAULT_BPM=60;
 
-let score={
-  pages:[],
-  notes:[],
-  events:[],
-  metadata:{}
-};
-
+let score={pages:[],notes:[],events:[],metadata:{}};
 let midiBlob=null;
 
 const $=id=>document.getElementById(id);
 
-
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
-
 function log(s=""){
-  const e=$("log");
-  e.textContent+=s+"\n";
-  e.scrollTop=e.scrollHeight;
+const e=$("log");
+e.textContent+=s+"\n";
+e.scrollTop=e.scrollHeight;
 }
 
 function clearLog(){
-  $("log").textContent="";
+$("log").textContent="";
 }
 
 function median(a){
-  if(!a.length)return 0;
-
-  const b=[...a].sort((x,y)=>x-y);
-  const m=Math.floor(b.length/2);
-
-  return b.length%2
-    ? b[m]
-    : (b[m-1]+b[m])/2;
+if(!a.length)return 0;
+const b=[...a].sort((x,y)=>x-y);
+const m=Math.floor(b.length/2);
+return b.length%2?b[m]:(b[m-1]+b[m])/2;
 }
 
 function mean(a){
-  return a.length
-    ? a.reduce((x,y)=>x+y,0)/a.length
-    : 0;
+return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 }
 
 function clamp(v,a,b){
-  return Math.max(a,Math.min(b,v));
+return Math.max(a,Math.min(b,v));
 }
 
 function round(v,n=2){
-  const p=10**n;
-  return Math.round(v*p)/p;
+const p=10**n;
+return Math.round(v*p)/p;
 }
 
 function esc(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;");
+return String(s)
+.replaceAll("&","&amp;")
+.replaceAll("<","&lt;")
+.replaceAll(">","&gt;")
+.replaceAll('"',"&quot;");
 }
 
 function resetUI(){
-
-  $("bboxSandbox").innerHTML="";
-
-  $("statPages").textContent=0;
-  $("statHeads").textContent=0;
-  $("statStaves").textContent=0;
-  $("statAssigned").textContent=0;
-  $("statPitch").textContent=0;
-  $("statHigh").textContent=0;
-
-  $("results").innerHTML="";
-  $("visualizer").innerHTML="";
-  $("jsonPreview").textContent="Sin datos.";
-
-  $("midiBtn").disabled=true;
-  $("downloadBtn").disabled=true;
-  $("jsonBtn").disabled=true;
-
-  midiBlob=null;
+$("bboxSandbox").innerHTML="";
+$("statPages").textContent=0;
+$("statHeads").textContent=0;
+$("statStaves").textContent=0;
+$("statAssigned").textContent=0;
+$("statPitch").textContent=0;
+$("statHigh").textContent=0;
+$("results").innerHTML="";
+$("visualizer").innerHTML="";
+$("jsonPreview").textContent="Sin datos.";
+$("midiBtn").disabled=true;
+$("downloadBtn").disabled=true;
+$("jsonBtn").disabled=true;
+midiBlob=null;
 }
-
-
-/* ============================================================
-   SVG
-   ============================================================ */
 
 async function fetchSVG(file){
-
-  const url=BASE+file;
-
-  log("   "+file);
-  log("   Descargando...");
-
-  const r=await fetch(url,{cache:"no-store"});
-
-  if(!r.ok){
-    throw new Error(
-      "HTTP "+r.status+" — "+url
-    );
-  }
-
-  const text=await r.text();
-
-  log(
-    "   ✓ SVG cargado — "+
-    text.length+
-    " caracteres"
-  );
-
-  return text;
+const url=BASE+file;
+log("   "+file);
+log("   Descargando...");
+const r=await fetch(url,{cache:"no-store"});
+if(!r.ok)throw new Error("HTTP "+r.status+" — "+url);
+const text=await r.text();
+log("   ✓ SVG cargado — "+text.length+" caracteres");
+return text;
 }
-
 
 function parseSVG(text){
+const doc=new DOMParser().parseFromString(text,"image/svg+xml");
+if(doc.querySelector("parsererror"))throw new Error("SVG inválido");
 
-  const doc=
-    new DOMParser()
-    .parseFromString(text,"image/svg+xml");
+const source=doc.documentElement;
 
-  if(doc.querySelector("parsererror")){
-    throw new Error("SVG inválido");
-  }
-
-  const source=doc.documentElement;
-
-  if(
-    !source ||
-    source.nodeName.toLowerCase()!=="svg"
-  ){
-    throw new Error(
-      "No se encontró <svg>"
-    );
-  }
-
-  const live=
-    document.importNode(source,true);
-
-  live.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
-  live.style.position="absolute";
-  live.style.left="0";
-  live.style.top="0";
-  live.style.visibility="hidden";
-  live.style.display="block";
-
-  const vb=
-    (source.getAttribute("viewBox")||"")
-      .trim()
-      .split(/[\s,]+/)
-      .map(Number);
-
-  const w=
-    vb.length===4 &&
-    Number.isFinite(vb[2])
-      ? vb[2]
-      : parseFloat(
-          source.getAttribute("width")
-        )||3000;
-
-  const h=
-    vb.length===4 &&
-    Number.isFinite(vb[3])
-      ? vb[3]
-      : parseFloat(
-          source.getAttribute("height")
-        )||4200;
-
-  live.setAttribute(
-    "width",
-    String(Math.max(1,w))
-  );
-
-  live.setAttribute(
-    "height",
-    String(Math.max(1,h))
-  );
-
-  $("bboxSandbox")
-    .appendChild(live);
-
-  return {
-    doc,
-    svg:live
-  };
+if(!source||source.nodeName.toLowerCase()!=="svg"){
+throw new Error("No se encontró <svg>");
 }
 
+const live=document.importNode(source,true);
+live.setAttribute("aria-hidden","true");
 
-/* ============================================================
-   BBOX
-   ============================================================ */
+const vb=(source.getAttribute("viewBox")||"")
+.trim().split(/[\s,]+/).map(Number);
+
+const w=vb.length===4&&Number.isFinite(vb[2])
+?vb[2]
+:parseFloat(source.getAttribute("width"))||3000;
+
+const h=vb.length===4&&Number.isFinite(vb[3])
+?vb[3]
+:parseFloat(source.getAttribute("height"))||4200;
+
+live.setAttribute("width",String(Math.max(1,w)));
+live.setAttribute("height",String(Math.max(1,h)));
+live.style.position="absolute";
+live.style.left="0";
+live.style.top="0";
+live.style.display="block";
+live.style.visibility="visible";
+live.style.opacity="0";
+live.style.pointerEvents="none";
+
+$("bboxSandbox").appendChild(live);
+
+return{doc,svg:live};
+}
 
 function bbox(el){
-
-  try{
-
-    const b=el.getBBox();
-
-    if(
-      [b.x,b.y,b.width,b.height]
-        .every(Number.isFinite)
-      &&
-      (b.width>0 || b.height>0)
-    ){
-      return {
-        x:b.x,
-        y:b.y,
-        width:b.width,
-        height:b.height
-      };
-    }
-
-  }catch(e){}
-
-  return null;
+try{
+const b=el.getBBox();
+if([b.x,b.y,b.width,b.height].every(Number.isFinite)&&(b.width>0||b.height>0)){
+return{x:b.x,y:b.y,width:b.width,height:b.height};
+}
+}catch(e){}
+return null;
 }
 
+function getCTMPoint(el,x,y){
+try{
+const m=el.getScreenCTM();
+if(m){
+const p=new DOMPoint(x,y).matrixTransform(m);
+return{x:p.x,y:p.y};
+}
+}catch(e){}
+return{x,y};
+}
 
-/* ============================================================
-   PATH
-   ============================================================ */
+function localBBoxToRoot(el,b){
+try{
+const root=el.ownerSVGElement;
+if(!root)return b;
 
-/*
- * Divide un path MuseScore en subpaths.
- *
- * Ejemplo:
- *
- * M100 200c... M150 250c...
- *
- * se convierte en:
- *
- * [
- *   "M100 200c...",
- *   "M150 250c..."
- * ]
- */
+const points=[
+{x:b.x,y:b.y},
+{x:b.x+b.width,y:b.y},
+{x:b.x,y:b.y+b.height},
+{x:b.x+b.width,y:b.y+b.height}
+];
+
+const converted=points.map(p=>getCTMPoint(el,p.x,p.y));
+
+const xs=converted.map(p=>p.x);
+const ys=converted.map(p=>p.y);
+
+const minX=Math.min(...xs);
+const maxX=Math.max(...xs);
+const minY=Math.min(...ys);
+const maxY=Math.max(...ys);
+
+const rootMatrix=root.getScreenCTM();
+
+if(!rootMatrix){
+return b;
+}
+
+const inv=rootMatrix.inverse();
+
+const rp=[
+new DOMPoint(minX,minY).matrixTransform(inv),
+new DOMPoint(maxX,minY).matrixTransform(inv),
+new DOMPoint(minX,maxY).matrixTransform(inv),
+new DOMPoint(maxX,maxY).matrixTransform(inv)
+];
+
+const rx=rp.map(p=>p.x);
+const ry=rp.map(p=>p.y);
+
+return{
+x:Math.min(...rx),
+y:Math.min(...ry),
+width:Math.max(...rx)-Math.min(...rx),
+height:Math.max(...ry)-Math.min(...ry)
+};
+}catch(e){
+return b;
+}
+}
 
 function splitSubpaths(d){
-
-  if(!d)return[];
-
-  const matches=
-    d.match(/[Mm][^Mm]*/g);
-
-  return matches
-    ? matches
-      .map(x=>x.trim())
-      .filter(Boolean)
-    :[];
+if(!d)return[];
+const matches=d.match(/[Mm][^Mm]*/g);
+return matches?matches.map(x=>x.trim()).filter(Boolean):[];
 }
-
-
-/*
- * Obtiene BBox de cada subpath.
- *
- * IMPORTANTE:
- * el elemento puede ser el propio .Note.
- */
 
 function measureSubpaths(el){
+const d=el.getAttribute("d")||"";
+const parts=splitSubpaths(d);
+if(!parts.length)return[];
 
-  const d=
-    el.getAttribute("d")||"";
+const ns="http://www.w3.org/2000/svg";
+const holder=document.createElementNS(ns,"svg");
+holder.setAttribute("width","4000");
+holder.setAttribute("height","5000");
+holder.style.position="absolute";
+holder.style.left="0";
+holder.style.top="0";
+holder.style.visibility="visible";
+holder.style.opacity="0";
+holder.style.overflow="visible";
 
-  const parts=
-    splitSubpaths(d);
+const p=document.createElementNS(ns,"path");
 
-  if(!parts.length)return[];
-
-  const ns=
-    "http://www.w3.org/2000/svg";
-
-  const holder=
-    document.createElementNS(
-      ns,
-      "svg"
-    );
-
-  holder.setAttribute(
-    "width",
-    "4000"
-  );
-
-  holder.setAttribute(
-    "height",
-    "5000"
-  );
-
-  holder.style.position="absolute";
-  holder.style.left="0";
-  holder.style.top="0";
-  holder.style.visibility="hidden";
-  holder.style.overflow="visible";
-
-  const p=
-    document.createElementNS(
-      ns,
-      "path"
-    );
-
-  /*
-   * Copiamos atributos geométricos
-   * relevantes.
-   */
-
-  for(
-    const attr of [
-      "fill",
-      "fill-rule",
-      "stroke",
-      "stroke-width",
-      "stroke-linejoin",
-      "stroke-linecap",
-      "transform"
-    ]
-  ){
-
-    if(el.hasAttribute(attr)){
-      p.setAttribute(
-        attr,
-        el.getAttribute(attr)
-      );
-    }
-  }
-
-  holder.appendChild(p);
-
-  $("bboxSandbox")
-    .appendChild(holder);
-
-  const result=[];
-
-  for(
-    const part of parts
-  ){
-
-    p.setAttribute(
-      "d",
-      part
-    );
-
-    try{
-
-      const b=p.getBBox();
-
-      if(
-        [b.x,b.y,b.width,b.height]
-          .every(Number.isFinite)
-        &&
-        b.width>0
-        &&
-        b.height>0
-      ){
-
-        result.push({
-          x:b.x,
-          y:b.y,
-          width:b.width,
-          height:b.height
-        });
-
-      }
-
-    }catch(e){}
-  }
-
-  holder.remove();
-
-  return result;
+for(const attr of[
+"fill","fill-rule","stroke","stroke-width",
+"stroke-linejoin","stroke-linecap","stroke-miterlimit",
+"vector-effect","shape-rendering"
+]){
+if(el.hasAttribute(attr))p.setAttribute(attr,el.getAttribute(attr));
 }
 
+holder.appendChild(p);
+$("bboxSandbox").appendChild(holder);
 
-/* ============================================================
-   ELEMENTOS
-   ============================================================ */
+const result=[];
 
-function countClass(svg,c){
+for(const part of parts){
+p.setAttribute("d",part);
 
-  return svg.querySelectorAll(
-    "."+CSS.escape(c)
-  ).length;
+try{
+const b=p.getBBox();
+
+if([b.x,b.y,b.width,b.height].every(Number.isFinite)&&b.width>0&&b.height>0){
+result.push({
+x:b.x,
+y:b.y,
+width:b.width,
+height:b.height
+});
+}
+}catch(e){}
 }
 
+holder.remove();
+
+return result;
+}
 
 function getElementsByClassIncludingSelf(svg,c){
+const out=[];
 
-  const out=[];
-
-  if(svg.classList &&
-     svg.classList.contains(c)){
-
-    out.push(svg);
-  }
-
-  out.push(
-    ...svg.querySelectorAll(
-      "."+CSS.escape(c)
-    )
-  );
-
-  return out;
+if(svg.classList&&svg.classList.contains(c)){
+out.push(svg);
 }
 
+out.push(...svg.querySelectorAll("."+CSS.escape(c)));
 
-/* ============================================================
-   CABEZAS
-   ============================================================ */
+return out;
+}
 
-/*
- * ESTE ES EL CAMBIO PRINCIPAL.
- *
- * En MuseScore:
- *
- * <path class="Note" d="M... M... M...">
- *
- * El .Note ES el path.
- *
- * Por lo tanto no podemos hacer:
- *
- * note.querySelectorAll("path")
- *
- * porque eso no devuelve el propio elemento.
- */
+function countClass(svg,c){
+return getElementsByClassIncludingSelf(svg,c).length;
+}
+
+function isPlausibleHead(b){
+if(!b)return false;
+
+if(b.width<4||b.height<3||b.width>80||b.height>80)return false;
+
+const ratio=Math.max(b.width,b.height)/Math.max(.01,Math.min(b.width,b.height));
+
+if(ratio>4.5)return false;
+
+return true;
+}
+
+function addHead(out,x,y,w,h,noteIndex,source){
+if(!Number.isFinite(x)||!Number.isFinite(y))return;
+
+const duplicate=out.some(n=>
+Math.abs(n.x-x)<1.5&&
+Math.abs(n.y-y)<1.5
+);
+
+if(!duplicate){
+out.push({x,y,w,h,noteIndex,source});
+}
+}
 
 function extractHeads(svg){
+const out=[];
+const noteElements=getElementsByClassIncludingSelf(svg,"Note");
 
-  const out=[];
+log("   🔎 Elementos .Note reales: "+noteElements.length);
 
-  const noteElements=
-    getElementsByClassIncludingSelf(
-      svg,
-      "Note"
-    );
+for(let ni=0;ni<noteElements.length;ni++){
+const note=noteElements[ni];
 
-  log(
-    "   🔎 Elementos .Note reales: "+
-    noteElements.length
-  );
+if(note.tagName&&note.tagName.toLowerCase()==="path"&&note.hasAttribute("d")){
+const boxes=measureSubpaths(note);
 
-  for(
-    let ni=0;
-    ni<noteElements.length;
-    ni++
-  ){
+for(const b of boxes){
+if(!isPlausibleHead(b))continue;
 
-    const note=
-      noteElements[ni];
-
-    /*
-     * Caso normal MuseScore:
-     * el propio .Note tiene d.
-     */
-
-    if(
-      note.tagName &&
-      note.tagName.toLowerCase()==="path" &&
-      note.hasAttribute("d")
-    ){
-
-      const boxes=
-        measureSubpaths(note);
-
-      for(
-        const b of boxes
-      ){
-
-        /*
-         * Las cabezas de esta partitura
-         * suelen ser aproximadamente
-         * 15–30 unidades.
-         *
-         * Excluimos geometrías enormes.
-         */
-
-        if(
-          b.width<4 ||
-          b.height<3 ||
-          b.width>80 ||
-          b.height>80
-        ){
-          continue;
-        }
-
-        const ratio=
-          Math.max(
-            b.width,
-            b.height
-          )/
-          Math.max(
-            0.01,
-            Math.min(
-              b.width,
-              b.height
-            )
-          );
-
-        /*
-         * Una cabeza es aproximadamente
-         * ovalada. No aceptamos barras
-         * extremadamente alargadas.
-         */
-
-        if(ratio>4.5){
-          continue;
-        }
-
-        const x=
-          b.x+b.width/2;
-
-        const y=
-          b.y+b.height/2;
-
-        /*
-         * Evitar duplicados.
-         */
-
-        const duplicate=
-          out.some(
-            n=>
-              Math.abs(n.x-x)<1.5 &&
-              Math.abs(n.y-y)<1.5
-          );
-
-        if(!duplicate){
-
-          out.push({
-            x,
-            y,
-            w:b.width,
-            h:b.height,
-            noteIndex:ni,
-            source:"Note"
-          });
-
-        }
-      }
-    }
-
-    /*
-     * Compatibilidad adicional:
-     * si algún SVG usa .Note como
-     * grupo.
-     */
-
-    for(
-      const child
-      of note.querySelectorAll(
-        "path,ellipse,circle"
-      )
-    ){
-
-      if(child===note)continue;
-
-      if(
-        child.classList &&
-        (
-          child.classList.contains(
-            "Stem"
-          ) ||
-          child.classList.contains(
-            "Beam"
-          )
-        )
-      ){
-        continue;
-      }
-
-      if(
-        child.tagName.toLowerCase()==="path"
-      ){
-
-        for(
-          const b
-          of measureSubpaths(child)
-        ){
-
-          if(
-            b.width<4 ||
-            b.height<3 ||
-            b.width>80 ||
-            b.height>80
-          ){
-            continue;
-          }
-
-          const ratio=
-            Math.max(
-              b.width,
-              b.height
-            )/
-            Math.max(
-              0.01,
-              Math.min(
-                b.width,
-                b.height
-              )
-            );
-
-          if(ratio>4.5)continue;
-
-          const x=
-            b.x+b.width/2;
-
-          const y=
-            b.y+b.height/2;
-
-          if(
-            !out.some(
-              n=>
-                Math.abs(n.x-x)<1.5 &&
-                Math.abs(n.y-y)<1.5
-            )
-          ){
-
-            out.push({
-              x,
-              y,
-              w:b.width,
-              h:b.height,
-              noteIndex:ni,
-              source:"NoteChild"
-            });
-
-          }
-        }
-
-      }else{
-
-        const b=bbox(child);
-
-        if(!b)continue;
-
-        if(
-          b.width<4 ||
-          b.height<3 ||
-          b.width>80 ||
-          b.height>80
-        ){
-          continue;
-        }
-
-        const x=
-          b.x+b.width/2;
-
-        const y=
-          b.y+b.height/2;
-
-        if(
-          !out.some(
-            n=>
-              Math.abs(n.x-x)<1.5 &&
-              Math.abs(n.y-y)<1.5
-          )
-        ){
-
-          out.push({
-            x,
-            y,
-            w:b.width,
-            h:b.height,
-            noteIndex:ni,
-            source:"shape"
-          });
-
-        }
-      }
-    }
-  }
-
-  /*
-   * Orden musical:
-   * primero por Y y luego X.
-   */
-
-  out.sort(
-    (a,b)=>
-      a.y-b.y ||
-      a.x-b.x
-  );
-
-  return out;
+addHead(
+out,
+b.x+b.width/2,
+b.y+b.height/2,
+b.width,
+b.height,
+ni,
+"Note"
+);
+}
 }
 
+for(const child of note.querySelectorAll("path,ellipse,circle")){
+if(child===note)continue;
 
-/* ============================================================
-   PENTAGRAMAS
-   ============================================================ */
+if(child.classList&&(
+child.classList.contains("Stem")||
+child.classList.contains("Beam")
+)){
+continue;
+}
 
-/*
- * .StaffLines también es directamente
- * un <path>.
- *
- * El SVG de MuseScore contiene:
- *
- * M336.6 634.2h2428
- * M336.6 659h2428
- * ...
- */
+if(child.tagName.toLowerCase()==="path"){
+for(const b of measureSubpaths(child)){
+if(!isPlausibleHead(b))continue;
+
+const rb=localBBoxToRoot(child,b);
+
+addHead(
+out,
+rb.x+rb.width/2,
+rb.y+rb.height/2,
+rb.width,
+rb.height,
+ni,
+"NoteChild"
+);
+}
+}else{
+const b=bbox(child);
+if(!isPlausibleHead(b))continue;
+
+const rb=localBBoxToRoot(child,b);
+
+addHead(
+out,
+rb.x+rb.width/2,
+rb.y+rb.height/2,
+rb.width,
+rb.height,
+ni,
+"shape"
+);
+}
+}
+}
+
+out.sort((a,b)=>a.y-b.y||a.x-b.x);
+return out;
+}
 
 function extractStaffLines(svg){
+const ys=[];
+const elements=getElementsByClassIncludingSelf(svg,"StaffLines");
 
-  const ys=[];
+for(const el of elements){
 
-  const elements=
-    getElementsByClassIncludingSelf(
-      svg,
-      "StaffLines"
-    );
+if(el.tagName&&el.tagName.toLowerCase()==="path"){
 
-  for(
-    const el of elements
-  ){
+for(const b of measureSubpaths(el)){
 
-    if(
-      el.tagName &&
-      el.tagName.toLowerCase()==="path"
-    ){
-
-      for(
-        const b
-        of measureSubpaths(el)
-      ){
-
-        if(
-          b.width>500 &&
-          b.height<10
-        ){
-
-          ys.push(
-            b.y+b.height/2
-          );
-
-        }
-      }
-
-    }else{
-
-      const b=bbox(el);
-
-      if(
-        b &&
-        b.width>500 &&
-        b.height<10
-      ){
-
-        ys.push(
-          b.y+b.height/2
-        );
-      }
-    }
-  }
-
-  /*
-   * Fallback: buscar líneas largas.
-   */
-
-  if(ys.length<5){
-
-    for(
-      const el
-      of svg.querySelectorAll(
-        "path,line,rect"
-      )
-    ){
-
-      if(
-        el.classList.contains(
-          "BarLine"
-        ) ||
-        el.classList.contains(
-          "Stem"
-        ) ||
-        el.classList.contains(
-          "Beam"
-        )
-      ){
-        continue;
-      }
-
-      const b=bbox(el);
-
-      if(
-        b &&
-        b.width>500 &&
-        b.height<8
-      ){
-
-        ys.push(
-          b.y+b.height/2
-        );
-
-      }
-    }
-  }
-
-  ys.sort(
-    (a,b)=>a-b
-  );
-
-  /*
-   * Eliminar duplicados.
-   */
-
-  const unique=[];
-
-  for(
-    const y of ys
-  ){
-
-    if(
-      !unique.length ||
-      Math.abs(
-        y-unique.at(-1)
-      )>2
-    ){
-
-      unique.push(y);
-
-    }
-  }
-
-  /*
-   * Agrupar cinco líneas.
-   */
-
-  const groups=[];
-
-  for(
-    const y of unique
-  ){
-
-    let g=
-      groups.at(-1);
-
-    if(
-      !g ||
-      y-g.at(-1)>15
-    ){
-
-      groups.push([y]);
-
-    }else{
-
-      g.push(y);
-
-    }
-  }
-
-  /*
-   * Seleccionar grupos de cinco.
-   */
-
-  const staffs=[];
-
-  for(
-    const original
-    of groups
-  ){
-
-    let g=[...original];
-
-    if(g.length<5)continue;
-
-    if(g.length>5){
-
-      let best=
-        g.slice(0,5);
-
-      let bestSpan=
-        Infinity;
-
-      for(
-        let i=0;
-        i<=g.length-5;
-        i++
-      ){
-
-        const q=
-          g.slice(i,i+5);
-
-        const span=
-          q[4]-q[0];
-
-        if(
-          span<bestSpan
-        ){
-
-          best=q;
-          bestSpan=span;
-
-        }
-      }
-
-      g=best;
-    }
-
-    const spacing=
-      median(
-        g.slice(1)
-          .map(
-            (v,i)=>
-              v-g[i]
-          )
-      );
-
-    staffs.push({
-      lines:g,
-      center:mean(g),
-      spacing
-    });
-  }
-
-  return staffs;
+if(b.width>500&&b.height<10){
+ys.push(b.y+b.height/2);
+}
 }
 
+}else{
 
-/* ============================================================
-   CLAVES
-   ============================================================ */
+const b=bbox(el);
+
+if(b&&b.width>500&&b.height<10){
+ys.push(b.y+b.height/2);
+}
+}
+}
+
+if(ys.length<5){
+
+for(const el of svg.querySelectorAll("path,line,rect")){
+
+if(el.classList.contains("BarLine")||
+el.classList.contains("Stem")||
+el.classList.contains("Beam")){
+continue;
+}
+
+if(el.tagName.toLowerCase()==="path"){
+
+for(const b of measureSubpaths(el)){
+
+if(b.width>500&&b.height<8){
+ys.push(b.y+b.height/2);
+}
+}
+
+}else{
+
+const b=bbox(el);
+
+if(b&&b.width>500&&b.height<8){
+ys.push(b.y+b.height/2);
+}
+}
+}
+}
+
+ys.sort((a,b)=>a-b);
+
+const unique=[];
+
+for(const y of ys){
+
+if(!unique.length||Math.abs(y-unique.at(-1))>2){
+unique.push(y);
+}
+}
+
+const groups=[];
+
+for(const y of unique){
+
+let g=groups.at(-1);
+
+if(!g||y-g.at(-1)>15){
+groups.push([y]);
+}else{
+g.push(y);
+}
+}
+
+const staffs=[];
+
+for(const original of groups){
+
+let g=[...original];
+
+if(g.length<5)continue;
+
+if(g.length>5){
+
+let best=g.slice(0,5);
+let bestSpan=Infinity;
+
+for(let i=0;i<=g.length-5;i++){
+
+const q=g.slice(i,i+5);
+const span=q[4]-q[0];
+
+if(span<bestSpan){
+best=q;
+bestSpan=span;
+}
+}
+
+g=best;
+}
+
+const spacing=median(g.slice(1).map((v,i)=>v-g[i]));
+
+staffs.push({
+lines:g,
+center:mean(g),
+spacing
+});
+}
+
+return staffs;
+}
 
 function extractClefs(svg){
+const clefs=[];
 
-  const clefs=[];
+for(const el of getElementsByClassIncludingSelf(svg,"Clef")){
 
-  for(
-    const el
-    of getElementsByClassIncludingSelf(
-      svg,
-      "Clef"
-    )
-  ){
+const b=bbox(el);
 
-    const b=bbox(el);
+if(!b)continue;
 
-    if(!b)continue;
-
-    clefs.push({
-      x:b.x+b.width/2,
-      y:b.y+b.height/2,
-      w:b.width,
-      h:b.height
-    });
-  }
-
-  return clefs;
+clefs.push({
+x:b.x+b.width/2,
+y:b.y+b.height/2,
+w:b.width,
+h:b.height
+});
 }
 
-
-/*
- * Determina si una región corresponde
- * a una clave de sol o de fa.
- *
- * En esta primera etapa usamos
- * posición vertical + forma.
- */
-
-function clefForStaff(
-  staff,
-  clefs
-){
-
-  if(!clefs.length){
-    return "treble";
-  }
-
-  let best=null;
-  let bestD=Infinity;
-
-  for(
-    const c of clefs
-  ){
-
-    const d=
-      Math.abs(
-        c.y-staff.center
-      );
-
-    if(d<bestD){
-
-      best=c;
-      bestD=d;
-
-    }
-  }
-
-  if(!best){
-    return "treble";
-  }
-
-  /*
-   * Las claves de Fa suelen ocupar
-   * más altura y aparecen en la parte
-   * inferior de un sistema de piano.
-   *
-   * Para esta partitura se usa además
-   * la posición relativa.
-   */
-
-  return best.y>staff.center
-    ? "bass"
-    : "treble";
+return clefs;
 }
 
+function clefForStaff(staff,clefs){
 
-/* ============================================================
-   STAFF
-   ============================================================ */
+if(!clefs.length)return"treble";
 
-function assignStaff(
-  heads,
-  staffs
-){
+let best=null;
+let bestD=Infinity;
 
-  const assigned=[];
+for(const c of clefs){
 
-  for(
-    const n
-    of heads
-  ){
+const d=Math.abs(c.y-staff.center);
 
-    let best=null;
-    let bestD=Infinity;
-
-    staffs.forEach(
-      (s,si)=>{
-
-        const d=
-          Math.abs(
-            n.y-s.center
-          );
-
-        const limit=
-          Math.max(
-            28,
-            s.spacing*5
-          );
-
-        if(
-          d<bestD &&
-          d<=limit
-        ){
-
-          best={
-            staff:si,
-            dist:d
-          };
-
-          bestD=d;
-        }
-      }
-    );
-
-    assigned.push({
-      ...n,
-      staff:
-        best
-          ? best.staff
-          : -1,
-      staffDistance:
-        best
-          ? best.dist
-          : null
-    });
-  }
-
-  return assigned;
+if(d<bestD){
+best=c;
+bestD=d;
+}
 }
 
+if(!best)return"treble";
 
-/* ============================================================
-   PITCH
-   ============================================================ */
-
-/*
- * Diatónico desde E4.
- *
- * Step 0 = E4
- * Step 1 = F4
- * Step 2 = G4
- * Step 3 = A4
- * Step 4 = B4
- * Step 5 = C5
- * Step 6 = D5
- * Step 7 = E5
- */
-
-const TREBLE_STEPS=[
-  0,1,3,5,7,8,10
-];
-
-/*
- * Bass:
- *
- * línea inferior = G2
- * MIDI 43
- */
-
-const BASS_STEPS=[
-  0,2,3,5,7,8,10
-];
-
-
-function pitchFromStaff(
-  note,
-  staff,
-  clef
-){
-
-  if(
-    !staff ||
-    staff.lines.length<5
-  ){
-
-    return {
-      pitch:null,
-      confidence:0,
-      step:null,
-      clef:clef||null
-    };
-  }
-
-  const spacing=
-    staff.spacing||24.8;
-
-  /*
-   * línea inferior.
-   */
-
-  const bottom=
-    staff.lines[4];
-
-  /*
-   * Cada línea/espacio representa
-   * medio intervalo de línea.
-   */
-
-  const halfSteps=
-    (bottom-note.y)/
-    (spacing/2);
-
-  const diatonic=
-    Math.round(
-      halfSteps
-    );
-
-  const error=
-    Math.abs(
-      halfSteps-diatonic
-    );
-
-  /*
-   * La geometría debe quedar muy
-   * cerca de una posición diatónica.
-   */
-
-  const confidence=
-    clamp(
-      1-error/0.65,
-      0,
-      1
-    );
-
-  let midi;
-
-  if(
-    clef==="bass"
-  ){
-
-    const octave=
-      Math.floor(
-        diatonic/7
-      );
-
-    const degree=
-      ((diatonic%7)+7)%7;
-
-    midi=
-      43+
-      octave*12+
-      BASS_STEPS[degree];
-
-  }else{
-
-    const octave=
-      Math.floor(
-        diatonic/7
-      );
-
-    const degree=
-      ((diatonic%7)+7)%7;
-
-    midi=
-      64+
-      octave*12+
-      TREBLE_STEPS[degree];
-
-  }
-
-  return {
-    pitch:
-      clamp(
-        Math.round(midi),
-        0,
-        127
-      ),
-    confidence,
-    step:diatonic,
-    clef:clef||"treble"
-  };
+return best.y>staff.center?"bass":"treble";
 }
 
+function assignStaff(heads,staffs){
+const assigned=[];
 
-/* ============================================================
-   BARRAS
-   ============================================================ */
+for(const n of heads){
+
+let best=null;
+let bestD=Infinity;
+
+staffs.forEach((s,si)=>{
+
+const d=Math.abs(n.y-s.center);
+const limit=Math.max(28,s.spacing*5);
+
+if(d<bestD&&d<=limit){
+best={staff:si,dist:d};
+bestD=d;
+}
+});
+
+assigned.push({
+...n,
+staff:best?best.staff:-1,
+staffDistance:best?best.dist:null
+});
+}
+
+return assigned;
+}
+
+const TREBLE_STEPS=[0,1,3,5,7,8,10];
+const BASS_STEPS=[0,2,3,5,7,8,10];
+
+function pitchFromStaff(note,staff,clef){
+
+if(!staff||staff.lines.length<5){
+return{
+pitch:null,
+confidence:0,
+step:null,
+clef:clef||null
+};
+}
+
+const spacing=staff.spacing||24.8;
+const bottom=staff.lines[4];
+
+const halfSteps=(bottom-note.y)/(spacing/2);
+const diatonic=Math.round(halfSteps);
+const error=Math.abs(halfSteps-diatonic);
+
+const confidence=clamp(1-error/.65,0,1);
+
+let midi;
+
+if(clef==="bass"){
+
+const octave=Math.floor(diatonic/7);
+const degree=((diatonic%7)+7)%7;
+
+midi=43+octave*12+BASS_STEPS[degree];
+
+}else{
+
+const octave=Math.floor(diatonic/7);
+const degree=((diatonic%7)+7)%7;
+
+midi=64+octave*12+TREBLE_STEPS[degree];
+}
+
+return{
+pitch:clamp(Math.round(midi),0,127),
+confidence,
+step:diatonic,
+clef:clef||"treble"
+};
+}
 
 function barPositions(svg){
+const arr=[];
 
-  const arr=[];
+for(const el of getElementsByClassIncludingSelf(svg,"BarLine")){
 
-  for(
-    const el
-    of getElementsByClassIncludingSelf(
-      svg,
-      "BarLine"
-    )
-  ){
+if(el.tagName&&el.tagName.toLowerCase()==="path"){
 
-    const b=bbox(el);
+for(const b of measureSubpaths(el)){
 
-    if(!b)continue;
-
-    /*
-     * Ignorar puntos de repetición
-     * que también están dentro de
-     * BarLine.
-     */
-
-    if(
-      b.height>20
-    ){
-
-      arr.push(
-        b.x+b.width/2
-      );
-    }
-  }
-
-  return arr.sort(
-    (a,b)=>a-b
-  );
+if(b.height>20){
+arr.push(b.x+b.width/2);
+}
 }
 
+}else{
 
-function assignMeasures(
-  notes,
-  bars
-){
+const b=bbox(el);
 
-  return notes.map(
-    n=>{
-
-      let measure=1;
-
-      for(
-        const x of bars
-      ){
-
-        if(
-          n.x>x
-        ){
-
-          measure++;
-
-        }else{
-
-          break;
-
-        }
-      }
-
-      return {
-        ...n,
-        measure
-      };
-    }
-  );
+if(b&&b.height>20){
+arr.push(b.x+b.width/2);
+}
+}
 }
 
-
-/* ============================================================
-   DURACIÓN
-   ============================================================ */
-
-/*
- * Primera reconstrucción:
- *
- * usamos la distancia horizontal
- * entre cabezas y las barras.
- *
- * Esto se conserva como "inferida".
- */
-
-function inferDuration(
-  note,
-  sameStaff
-){
-
-  const sorted=
-    [...sameStaff]
-      .sort(
-        (a,b)=>a.x-b.x
-      );
-
-  const index=
-    sorted.indexOf(note);
-
-  if(index<0){
-    return 480;
-  }
-
-  const next=
-    sorted[index+1];
-
-  if(!next){
-    return 480;
-  }
-
-  const dx=
-    next.x-note.x;
-
-  /*
-   * Aproximación geométrica.
-   */
-
-  if(dx>300)return 1920;
-  if(dx>190)return 960;
-  if(dx>100)return 480;
-  if(dx>55)return 240;
-
-  return 120;
+return arr.sort((a,b)=>a-b);
 }
 
+function assignMeasures(notes,bars){
 
-/* ============================================================
-   EVENTOS
-   ============================================================ */
+return notes.map(n=>{
 
-function inferEvents(
-  notes
-){
+let measure=1;
 
-  const byStaff=
-    new Map();
+for(const x of bars){
 
-  for(
-    const n of notes
-  ){
-
-    if(n.staff<0)continue;
-
-    if(
-      !byStaff.has(n.staff)
-    ){
-
-      byStaff.set(
-        n.staff,
-        []
-      );
-    }
-
-    byStaff
-      .get(n.staff)
-      .push(n);
-  }
-
-  const events=[];
-
-  /*
-   * Agrupamos notas con la misma
-   * posición X para detectar acordes.
-   */
-
-  for(
-    const [
-      staff,
-      arr
-    ]
-    of byStaff
-  ){
-
-    arr.sort(
-      (a,b)=>a.x-b.x
-    );
-
-    const groups=[];
-
-    for(
-      const n of arr
-    ){
-
-      let g=
-        groups.at(-1);
-
-      if(
-        !g ||
-        Math.abs(
-          n.x-g.x
-        )>7
-      ){
-
-        groups.push({
-          x:n.x,
-          notes:[n],
-          staff
-        });
-
-      }else{
-
-        g.notes.push(n);
-
-      }
-    }
-
-    for(
-      const g of groups
-    ){
-
-      const duration=
-        inferDuration(
-          g.notes[0],
-          arr
-        );
-
-      events.push({
-        x:g.x,
-        staff,
-        measure:
-          g.notes[0].measure,
-        notes:g.notes,
-        durationTicks:
-          duration
-      });
-    }
-  }
-
-  return events.sort(
-    (a,b)=>
-      a.x-b.x ||
-      a.staff-b.staff
-  );
+if(n.x>x){
+measure++;
+}else{
+break;
+}
 }
 
+return{...n,measure};
+});
+}
 
-/* ============================================================
-   ELEMENTOS
-   ============================================================ */
+function inferDuration(note,sameStaff){
+
+const sorted=[...sameStaff].sort((a,b)=>a.x-b.x);
+const index=sorted.indexOf(note);
+
+if(index<0)return 480;
+
+const next=sorted[index+1];
+
+if(!next)return 480;
+
+const dx=next.x-note.x;
+
+if(dx>300)return 1920;
+if(dx>190)return 960;
+if(dx>100)return 480;
+if(dx>55)return 240;
+
+return 120;
+}
+
+function inferEvents(notes){
+
+const byStaff=new Map();
+
+for(const n of notes){
+
+if(n.staff<0)continue;
+
+if(!byStaff.has(n.staff)){
+byStaff.set(n.staff,[]);
+}
+
+byStaff.get(n.staff).push(n);
+}
+
+const events=[];
+
+for(const[staff,arr]of byStaff){
+
+arr.sort((a,b)=>a.x-b.x);
+
+const groups=[];
+
+for(const n of arr){
+
+let g=groups.at(-1);
+
+if(!g||Math.abs(n.x-g.x)>7){
+
+groups.push({
+x:n.x,
+notes:[n],
+staff
+});
+
+}else{
+g.notes.push(n);
+}
+}
+
+for(const g of groups){
+
+const duration=inferDuration(g.notes[0],arr);
+
+events.push({
+x:g.x,
+staff,
+measure:g.notes[0].measure,
+notes:g.notes,
+durationTicks:duration
+});
+}
+}
+
+return events.sort((a,b)=>a.x-b.x||a.staff-b.staff);
+}
 
 function musicalElements(svg){
 
-  const classes=[
-    "Stem",
-    "Beam",
-    "BarLine",
-    "Rest",
-    "KeySig",
-    "TimeSig",
-    "TieSegment",
-    "OttavaSegment",
-    "VoltaSegment",
-    "Dynamic",
-    "Fermata",
-    "Tempo",
-    "HairpinSegment",
-    "GradualTempoChangeSegment",
-    "Expression",
-    "LedgerLine",
-    "Clef",
-    "Note"
-  ];
+const classes=[
+"Stem","Beam","BarLine","Rest","KeySig","TimeSig",
+"TieSegment","OttavaSegment","VoltaSegment","Dynamic",
+"Fermata","Tempo","HairpinSegment",
+"GradualTempoChangeSegment","Expression",
+"LedgerLine","Clef","Note","StaffLines"
+];
 
-  const result={};
+const result={};
 
-  for(
-    const c of classes
-  ){
-
-    result[c]=
-      getElementsByClassIncludingSelf(
-        svg,
-        c
-      ).length;
-  }
-
-  return result;
+for(const c of classes){
+result[c]=getElementsByClassIncludingSelf(svg,c).length;
 }
 
-
-/* ============================================================
-   VISUALIZACIÓN
-   ============================================================ */
-
-function renderPage(page){
-
-  const wrap=
-    document.createElement(
-      "div"
-    );
-
-  wrap.className="sheet";
-
-  const clone=
-    page.svg.cloneNode(true);
-
-  clone.removeAttribute(
-    "width"
-  );
-
-  clone.style.width="100%";
-
-  /*
-   * Hacemos visible la copia.
-   */
-
-  clone.style.visibility="visible";
-  clone.style.position="relative";
-
-  wrap.appendChild(clone);
-
-  const vb=
-    getViewBox(page.svg);
-
-  const overlay=
-    document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "svg"
-    );
-
-  overlay.setAttribute(
-    "viewBox",
-    vb.join(" ")
-  );
-
-  overlay.setAttribute(
-    "preserveAspectRatio",
-    "xMinYMin meet"
-  );
-
-  overlay.style.position="absolute";
-  overlay.style.left="0";
-  overlay.style.top="0";
-  overlay.style.width="100%";
-  overlay.style.height="100%";
-  overlay.style.pointerEvents="none";
-
-  /*
-   * Pentagramas.
-   */
-
-  for(
-    const s of page.staffs
-  ){
-
-    for(
-      const y of s.lines
-    ){
-
-      const line=
-        document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "line"
-        );
-
-      line.setAttribute(
-        "x1",
-        vb[0]
-      );
-
-      line.setAttribute(
-        "x2",
-        vb[0]+vb[2]
-      );
-
-      line.setAttribute(
-        "y1",
-        y
-      );
-
-      line.setAttribute(
-        "y2",
-        y
-      );
-
-      line.setAttribute(
-        "class",
-        "staff-line"
-      );
-
-      overlay.appendChild(line);
-    }
-  }
-
-  /*
-   * Cabezas.
-   */
-
-  for(
-    const n of page.notes
-  ){
-
-    const c=
-      document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "ellipse"
-      );
-
-    c.setAttribute(
-      "cx",
-      n.x
-    );
-
-    c.setAttribute(
-      "cy",
-      n.y
-    );
-
-    c.setAttribute(
-      "rx",
-      Math.max(
-        4,
-        n.w/2
-      )
-    );
-
-    c.setAttribute(
-      "ry",
-      Math.max(
-        3,
-        n.h/2
-      )
-    );
-
-    c.setAttribute(
-      "class",
-      "note-dot"
-    );
-
-    c.setAttribute(
-      "fill",
-      n.pitch==null
-        ? "#f85149"
-        : n.confidence>=.85
-          ? "#00aa44"
-          : "#d29922"
-    );
-
-    overlay.appendChild(c);
-  }
-
-  wrap.appendChild(
-    overlay
-  );
-
-  return wrap;
+return result;
 }
-
 
 function getViewBox(svg){
 
-  const vb=
-    svg.getAttribute(
-      "viewBox"
-    );
+const vb=svg.getAttribute("viewBox");
 
-  if(vb){
+if(vb){
 
-    const p=
-      vb
-        .trim()
-        .split(/[\s,]+/)
-        .map(Number);
+const p=vb.trim().split(/[\s,]+/).map(Number);
 
-    if(
-      p.length===4
-    ){
-
-      return p;
-    }
-  }
-
-  return [
-    0,
-    0,
-    parseFloat(
-      svg.getAttribute(
-        "width"
-      )
-    )||1000,
-
-    parseFloat(
-      svg.getAttribute(
-        "height"
-      )
-    )||1400
-  ];
+if(p.length===4)return p;
 }
 
+return[
+0,
+0,
+parseFloat(svg.getAttribute("width"))||1000,
+parseFloat(svg.getAttribute("height"))||1400
+];
+}
 
-/* ============================================================
-   RESULTADOS
-   ============================================================ */
+function renderPage(page){
 
+const wrap=document.createElement("div");
+wrap.className="sheet";
+
+const clone=page.svg.cloneNode(true);
+
+clone.removeAttribute("width");
+clone.style.width="100%";
+clone.style.visibility="visible";
+clone.style.position="relative";
+clone.style.opacity="1";
+
+wrap.appendChild(clone);
+
+const vb=getViewBox(page.svg);
+
+const overlay=document.createElementNS(
+"http://www.w3.org/2000/svg",
+"svg"
+);
+
+overlay.setAttribute("viewBox",vb.join(" "));
+overlay.setAttribute("preserveAspectRatio","xMinYMin meet");
+overlay.style.position="absolute";
+overlay.style.left="0";
+overlay.style.top="0";
+overlay.style.width="100%";
+overlay.style.height="100%";
+overlay.style.pointerEvents="none";
+
+for(const s of page.staffs){
+
+for(const y of s.lines){
+
+const line=document.createElementNS(
+"http://www.w3.org/2000/svg",
+"line"
+);
+
+line.setAttribute("x1",vb[0]);
+line.setAttribute("x2",vb[0]+vb[2]);
+line.setAttribute("y1",y);
+line.setAttribute("y2",y);
+line.setAttribute("class","staff-line");
+
+overlay.appendChild(line);
+}
+}
+
+for(const n of page.notes){
+
+const c=document.createElementNS(
+"http://www.w3.org/2000/svg",
+"ellipse"
+);
+
+c.setAttribute("cx",n.x);
+c.setAttribute("cy",n.y);
+c.setAttribute("rx",Math.max(4,n.w/2));
+c.setAttribute("ry",Math.max(3,n.h/2));
+c.setAttribute("class","note-dot");
+
+c.setAttribute(
+"fill",
+n.pitch==null
+?"#f85149"
+:n.confidence>=.85
+?"#00aa44"
+:"#d29922"
+);
+
+overlay.appendChild(c);
+}
+
+wrap.appendChild(overlay);
+
+return wrap;
+}
 function renderResults(){
+let html="";
 
-  let html="";
+for(const p of score.pages){
 
-  for(
-    const p of score.pages
-  ){
+const high=p.notes.filter(n=>n.confidence>=.85).length;
+const assigned=p.notes.filter(n=>n.staff>=0).length;
 
-    const high=
-      p.notes.filter(
-        n=>n.confidence>=.85
-      ).length;
-
-    const assigned=
-      p.notes.filter(
-        n=>n.staff>=0
-      ).length;
-
-    html+=`
+html+=`
 <div class="page">
-
 <div class="page-header">
-
 <b>📄 Página ${p.index+1}</b>
-
+<div class="page-info">${esc(p.file)}</div>
 <div class="page-info">
-${esc(p.file)}
+<b>Cabezas:</b> ${p.notes.length} ·
+<b>Líneas:</b> ${p.staffLines.length} ·
+<b>Pentagramas:</b> ${p.staffs.length} ·
+<b>Barras:</b> ${p.elements.BarLine||0} ·
+<b>Asignadas:</b> ${assigned}
 </div>
-
-<div class="page-info">
-
-<b>Cabezas:</b>
-${p.notes.length}
-
-·
-
-<b>Líneas:</b>
-${p.staffLines.length}
-
-·
-
-<b>Pentagramas:</b>
-${p.staffs.length}
-
-·
-
-<b>Barras:</b>
-${p.elements.BarLine||0}
-
-·
-
-<b>Asignadas:</b>
-${assigned}
-
-</div>
-
 </div>
 
 <div class="panel-body">
@@ -2186,56 +980,28 @@ ${assigned}
 <div class="element-grid">
 `;
 
-    for(
-      const [
-        k,
-        v
-      ]
-      of Object.entries(
-        p.elements
-      )
-    ){
-
-      if(v){
-
-        html+=`
-<span class="element">
-${esc(k)}: ${v}
-</span>
+for(const[k,v]of Object.entries(p.elements)){
+if(v){
+html+=`
+<span class="element">${esc(k)}: ${v}</span>
 `;
+}
+}
 
-      }
-    }
-
-    html+=`
-
+html+=`
 </div>
 
-<div style="margin-top:12px"
-class="${
-  high/Math.max(
-    1,
-    p.notes.length
-  )>=.7
-  ?"high"
-  :"medium"
+<div style="margin-top:12px" class="${
+high/Math.max(1,p.notes.length)>=.7?"high":"medium"
 }">
-
-🟢 Alta confianza:
-${high}/${p.notes.length}
-
+🟢 Alta confianza: ${high}/${p.notes.length}
 </div>
 
-<h4>
-Primeras notas detectadas
-</h4>
+<h4>Primeras notas detectadas</h4>
 
 <div class="table-wrap">
-
 <table>
-
 <thead>
-
 <tr>
 <th>#</th>
 <th>X</th>
@@ -2247,1028 +1013,619 @@ Primeras notas detectadas
 <th>Compás</th>
 <th>Confianza</th>
 </tr>
-
 </thead>
-
 <tbody>
 `;
 
-    p.notes
-      .slice(0,120)
-      .forEach(
-        (n,i)=>{
+p.notes.slice(0,120).forEach((n,i)=>{
 
-          html+=`
+html+=`
 <tr>
-
 <td>${i+1}</td>
-
 <td>${round(n.x,1)}</td>
-
 <td>${round(n.y,1)}</td>
-
-<td>
-${
-  n.staff>=0
-    ? n.staff+1
-    : "—"
-}
+<td>${n.staff>=0?n.staff+1:"—"}</td>
+<td>${n.clef||"—"}</td>
+<td>${n.step??"—"}</td>
+<td class="${n.pitch!=null?"high":"low"}">
+${n.pitch!=null?n.pitch:"desconocida"}
 </td>
-
-<td>
-${n.clef||"—"}
-</td>
-
-<td>
-${n.step??"—"}
-</td>
-
-<td class="${
-  n.pitch!=null
-    ? "high"
-    : "low"
-}">
-${
-  n.pitch!=null
-    ? n.pitch
-    : "desconocida"
-}
-</td>
-
-<td>
-${n.measure??"—"}
-</td>
-
-<td>
-${round(
-  (n.confidence||0)*100,
-  1
-)}%
-</td>
-
+<td>${n.measure??"—"}</td>
+<td>${round((n.confidence||0)*100,1)}%</td>
 </tr>
 `;
-        }
-      );
+});
 
-    html+=`
+html+=`
 </tbody>
 </table>
 </div>
 </div>
 </div>
 `;
-  }
-
-  $("results").innerHTML=html;
 }
 
-
-/* ============================================================
-   MIDI
-   ============================================================ */
-
-function writeVarLen(
-  value,
-  bytes
-){
-
-  let buffer=
-    value&0x7f;
-
-  while(
-    (value>>=7)
-  ){
-
-    buffer<<=8;
-    buffer|=
-      (value&0x7f)|0x80;
-  }
-
-  while(true){
-
-    bytes.push(
-      buffer&0xff
-    );
-
-    if(
-      buffer&0x80
-    ){
-
-      buffer>>=8;
-
-    }else{
-
-      break;
-    }
-  }
+$("results").innerHTML=html;
 }
 
+function writeVarLen(value,bytes){
 
-function push16(
-  arr,
-  n
-){
+let buffer=value&0x7f;
 
-  arr.push(
-    (n>>8)&255,
-    n&255
-  );
+while(value>>=7){
+buffer<<=8;
+buffer|=(value&0x7f)|0x80;
 }
 
+while(true){
 
-function push32(
-  arr,
-  n
-){
+bytes.push(buffer&0xff);
 
-  arr.push(
-    (n>>24)&255,
-    (n>>16)&255,
-    (n>>8)&255,
-    n&255
-  );
+if(buffer&0x80){
+buffer>>=8;
+}else{
+break;
+}
+}
 }
 
-
-function makeMidi(
-  events
-){
-
-  const data=[];
-
-  /*
-   * Header
-   */
-
-  data.push(
-    0x4d,
-    0x54,
-    0x68,
-    0x64
-  );
-
-  push32(data,6);
-
-  /*
-   * Formato 0
-   */
-
-  push16(data,0);
-
-  /*
-   * Una pista
-   */
-
-  push16(data,1);
-
-  /*
-   * PPQ
-   */
-
-  push16(data,PPQ);
-
-  /*
-   * Track
-   */
-
-  const track=[];
-
-  /*
-   * Tempo.
-   */
-
-  const bpm=
-    DEFAULT_BPM;
-
-  const micros=
-    Math.round(
-      60000000/bpm
-    );
-
-  track.push(
-    0x00,
-    0xff,
-    0x51,
-    0x03,
-    (micros>>16)&255,
-    (micros>>8)&255,
-    micros&255
-  );
-
-  /*
-   * Program piano.
-   */
-
-  track.push(
-    0x00,
-    0xc0,
-    0x00
-  );
-
-  /*
-   * Convertir eventos a ticks.
-   */
-
-  const flat=[];
-
-  let tick=0;
-
-  const sorted=
-    [...events]
-      .sort(
-        (a,b)=>
-          a.x-b.x ||
-          a.staff-b.staff
-      );
-
-  for(
-    const event of sorted
-  ){
-
-    const duration=
-      event.durationTicks||
-      480;
-
-    for(
-      const n
-      of event.notes
-    ){
-
-      if(
-        n.pitch==null
-      ){
-        continue;
-      }
-
-      flat.push({
-        start:tick,
-        end:tick+duration,
-        pitch:n.pitch,
-        velocity:80
-      });
-    }
-
-    tick+=duration;
-  }
-
-  /*
-   * Ordenar eventos MIDI.
-   */
-
-  const midiEvents=[];
-
-  for(
-    const n of flat
-  ){
-
-    midiEvents.push({
-      tick:n.start,
-      type:"on",
-      pitch:n.pitch,
-      velocity:n.velocity
-    });
-
-    midiEvents.push({
-      tick:n.end,
-      type:"off",
-      pitch:n.pitch,
-      velocity:0
-    });
-  }
-
-  midiEvents.sort(
-    (a,b)=>
-      a.tick-b.tick ||
-      (a.type==="off"?0:1)
-  );
-
-  let lastTick=0;
-
-  for(
-    const e
-    of midiEvents
-  ){
-
-    const delta=
-      Math.max(
-        0,
-        e.tick-lastTick
-      );
-
-    writeVarLen(
-      delta,
-      track
-    );
-
-    if(
-      e.type==="on"
-    ){
-
-      track.push(
-        0x90,
-        e.pitch,
-        e.velocity
-      );
-
-    }else{
-
-      track.push(
-        0x80,
-        e.pitch,
-        0
-      );
-    }
-
-    lastTick=
-      e.tick;
-  }
-
-  /*
-   * Fin.
-   */
-
-  track.push(
-    0x00,
-    0xff,
-    0x2f,
-    0x00
-  );
-
-  data.push(
-    0x4d,
-    0x54,
-    0x72,
-    0x6b
-  );
-
-  push32(
-    data,
-    track.length
-  );
-
-  data.push(
-    ...track
-  );
-
-  return new Blob(
-    [new Uint8Array(data)],
-    {
-      type:"audio/midi"
-    }
-  );
+function push16(arr,n){
+arr.push((n>>8)&255,n&255);
 }
 
+function push32(arr,n){
+arr.push(
+(n>>24)&255,
+(n>>16)&255,
+(n>>8)&255,
+n&255
+);
+}
 
-/* ============================================================
-   ANÁLISIS PRINCIPAL
-   ============================================================ */
+function makeMidi(events){
+
+const data=[];
+
+data.push(0x4d,0x54,0x68,0x64);
+push32(data,6);
+push16(data,0);
+push16(data,1);
+push16(data,PPQ);
+
+const track=[];
+
+const bpm=DEFAULT_BPM;
+const micros=Math.round(60000000/bpm);
+
+track.push(
+0x00,
+0xff,
+0x51,
+0x03,
+(micros>>16)&255,
+(micros>>8)&255,
+micros&255
+);
+
+track.push(
+0x00,
+0xc0,
+0x00
+);
+
+const flat=[];
+let tick=0;
+
+const sorted=[...events].sort(
+(a,b)=>a.x-b.x||a.staff-b.staff
+);
+
+for(const event of sorted){
+
+const duration=event.durationTicks||480;
+
+for(const n of event.notes){
+
+if(n.pitch==null)continue;
+
+flat.push({
+start:tick,
+end:tick+duration,
+pitch:n.pitch,
+velocity:80
+});
+}
+
+tick+=duration;
+}
+
+const midiEvents=[];
+
+for(const n of flat){
+
+midiEvents.push({
+tick:n.start,
+type:"on",
+pitch:n.pitch,
+velocity:n.velocity
+});
+
+midiEvents.push({
+tick:n.end,
+type:"off",
+pitch:n.pitch,
+velocity:0
+});
+}
+
+midiEvents.sort(
+(a,b)=>
+a.tick-b.tick||
+(a.type==="off"?0:1)
+);
+
+let lastTick=0;
+
+for(const e of midiEvents){
+
+const delta=Math.max(0,e.tick-lastTick);
+
+writeVarLen(delta,track);
+
+if(e.type==="on"){
+
+track.push(
+0x90,
+e.pitch,
+e.velocity
+);
+
+}else{
+
+track.push(
+0x80,
+e.pitch,
+0
+);
+}
+
+lastTick=e.tick;
+}
+
+track.push(
+0x00,
+0xff,
+0x2f,
+0x00
+);
+
+data.push(
+0x4d,
+0x54,
+0x72,
+0x6b
+);
+
+push32(data,track.length);
+
+data.push(...track);
+
+return new Blob(
+[new Uint8Array(data)],
+{type:"audio/midi"}
+);
+}
+
+function cleanScore(){
+
+return JSON.parse(
+JSON.stringify(
+score,
+(k,v)=>k==="svg"?undefined:v
+)
+);
+}
 
 async function analyze(){
 
-  const btn=
-    $("analyzeBtn");
-
-  btn.disabled=true;
-  btn.textContent=
-    "⏳ ANALIZANDO...";
-
-  clearLog();
-  resetUI();
-
-  btn.disabled=true;
-  btn.textContent=
-    "⏳ ANALIZANDO...";
-
-  score={
-    pages:[],
-    notes:[],
-    events:[],
-    metadata:{}
-  };
-
-  log(
-    "▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO"
-  );
-
-  try{
-
-    for(
-      let i=0;
-      i<SVG_FILES.length;
-      i++
-    ){
-
-      const file=
-        SVG_FILES[i];
-
-      log(
-        `📄 Página ${i+1} / ${SVG_FILES.length}`
-      );
-
-      const text=
-        await fetchSVG(file);
-
-      const {
-        svg
-      }=
-        parseSVG(text);
-
-      const elements=
-        musicalElements(svg);
-
-      log(
-        `   .Note: ${elements.Note}`
-      );
-
-      const heads=
-        extractHeads(svg);
-
-      log(
-        `   🔴 Cabezas: ${heads.length}`
-      );
-
-      const staffs=
-        extractStaffLines(svg);
-
-      const staffLines=
-        staffs.flatMap(
-          s=>s.lines
-        );
-
-      log(
-        `   📏 Líneas: ${staffLines.length}`
-      );
-
-      log(
-        `   🎼 Pentagramas: ${staffs.length}`
-      );
-
-      for(
-        const [
-          k,
-          v
-        ]
-        of Object.entries(
-          elements
-        )
-      ){
-
-        if(v){
-
-          log(
-            `   ├ ${k}: ${v}`
-          );
-
-        }
-      }
-
-      /*
-       * Claves.
-       */
-
-      const clefs=
-        extractClefs(svg);
-
-      log(
-        `   🎼 Claves geométricas: ${clefs.length}`
-      );
-
-      /*
-       * Asignar cabezas.
-       */
-
-      let assigned=
-        assignStaff(
-          heads,
-          staffs
-        );
-
-      /*
-       * Compases.
-       */
-
-      assigned=
-        assignMeasures(
-          assigned,
-          barPositions(svg)
-        );
-
-      /*
-       * Pitch.
-       */
-
-      assigned=
-        assigned.map(
-          n=>{
-
-            const s=
-              n.staff>=0
-                ? staffs[n.staff]
-                : null;
-
-            const clef=
-              s
-                ? clefForStaff(
-                    s,
-                    clefs
-                  )
-                : null;
-
-            const p=
-              pitchFromStaff(
-                n,
-                s,
-                clef
-              );
-
-            return {
-              ...n,
-              ...p
-            };
-          }
-        );
-
-      /*
-       * Eventos.
-       */
-
-      const events=
-        inferEvents(
-          assigned
-        );
-
-      const page={
-        index:i,
-        file,
-        svg,
-        notes:assigned,
-        staffs,
-        staffLines,
-        elements,
-        events,
-        clefs
-      };
-
-      score.pages.push(
-        page
-      );
-
-      score.notes.push(
-        ...assigned
-      );
-
-      score.events.push(
-        ...events
-      );
-
-      const ok=
-        assigned.filter(
-          n=>n.staff>=0
-        ).length;
-
-      const withPitch=
-        assigned.filter(
-          n=>n.pitch!=null
-        ).length;
-
-      const high=
-        assigned.filter(
-          n=>n.confidence>=.85
-        ).length;
-
-      log(
-        `   ✓ Asignadas: ${ok}`
-      );
-
-      log(
-        `   🎵 Con pitch: ${withPitch}`
-      );
-
-      log(
-        `   🟢 Alta confianza: ${high}`
-      );
-
-      log(
-        `   🎵 Eventos/acordes: ${events.length}`
-      );
-    }
-
-    score.metadata={
-      pages:
-        score.pages.length,
-
-      heads:
-        score.notes.length,
-
-      staves:
-        score.pages.reduce(
-          (a,p)=>
-            a+p.staffs.length,
-          0
-        ),
-
-      assigned:
-        score.notes.filter(
-          n=>n.staff>=0
-        ).length,
-
-      pitch:
-        score.notes.filter(
-          n=>n.pitch!=null
-        ).length,
-
-      high:
-        score.notes.filter(
-          n=>n.confidence>=.85
-        ).length,
-
-      events:
-        score.events.length,
-
-      bpm:
-        DEFAULT_BPM
-    };
-
-    log(
-      "================================"
-    );
-
-    log(
-      "✓ ANÁLISIS MUSICAL COMPLETADO"
-    );
-
-    log(
-      "Total cabezas: "+
-      score.metadata.heads
-    );
-
-    log(
-      "Total pentagramas: "+
-      score.metadata.staves
-    );
-
-    log(
-      "Total asignadas: "+
-      score.metadata.assigned
-    );
-
-    log(
-      "Total con pitch: "+
-      score.metadata.pitch
-    );
-
-    log(
-      "Pitch alta confianza: "+
-      score.metadata.high
-    );
-
-    log(
-      "Eventos/acordes: "+
-      score.metadata.events
-    );
-
-    log(
-      "================================"
-    );
-
-    /*
-     * Estadísticas.
-     */
-
-    $("statPages").textContent=
-      score.metadata.pages;
-
-    $("statHeads").textContent=
-      score.metadata.heads;
-
-    $("statStaves").textContent=
-      score.metadata.staves;
-
-    $("statAssigned").textContent=
-      score.metadata.assigned;
-
-    $("statPitch").textContent=
-      score.metadata.pitch;
-
-    $("statHigh").textContent=
-      score.metadata.high;
-
-    /*
-     * Visualización.
-     */
-
-    $("visualizer").innerHTML="";
-
-    for(
-      const p
-      of score.pages
-    ){
-
-      $("visualizer")
-        .appendChild(
-          renderPage(p)
-        );
-    }
-
-    /*
-     * Resultados.
-     */
-
-    renderResults();
-
-    /*
-     * JSON sin referencias SVG.
-     */
-
-    const safe=
-      JSON.parse(
-        JSON.stringify(
-          score,
-          (k,v)=>
-            k==="svg"
-              ? undefined
-              : v
-        )
-      );
-
-    $("jsonPreview")
-      .textContent=
-        JSON.stringify(
-          safe,
-          null,
-          2
-        );
-
-    $("jsonBtn").disabled=false;
-
-    /*
-     * MIDI disponible si hay notas.
-     */
-
-    if(
-      score.metadata.pitch>0
-    ){
-
-      $("midiBtn")
-        .disabled=false;
-
-    }
-
-    if(
-      score.metadata.heads===0
-    ){
-
-      $("results")
-        .insertAdjacentHTML(
-          "afterbegin",
-
-          `<div class="warning-box">
-          ❌ El SVG fue cargado, pero no se encontraron cabezas.
-          Esto indicaría que el formato del SVG cambió y habrá que
-          inspeccionarlo antes de continuar.
-          </div>`
-        );
-
-    }else if(
-      score.metadata.pitch<
-      score.metadata.heads
-    ){
-
-      const missing=
-        score.metadata.heads-
-        score.metadata.pitch;
-
-      $("results")
-        .insertAdjacentHTML(
-          "afterbegin",
-
-          `<div class="warning-box">
-          ⚠️ ${missing} cabezas no tienen pitch identificado.
-          Las conservamos en el JSON para no perder información.
-          </div>`
-        );
-
-    }else{
-
-      $("results")
-        .insertAdjacentHTML(
-          "afterbegin",
-
-          `<div class="success-box">
-          ✓ Todas las cabezas detectadas tienen pitch identificado.
-          </div>`
-        );
-    }
-
-  }catch(err){
-
-    console.error(err);
-
-    log(
-      "❌ ERROR: "+
-      (
-        err?.message||
-        err
-      )
-    );
-
-    $("results")
-      .innerHTML=
-        `<div class="warning-box">
-        ❌ El análisis se detuvo:
-        ${esc(
-          err?.message||
-          err
-        )}
-        <br><br>
-        Abre la consola del navegador (F12)
-        si necesitas el detalle técnico.
-        </div>`;
-  }
-
-  finally{
-
-    btn.disabled=false;
-
-    btn.textContent=
-      "▶ ANALIZAR PARTITURA";
-  }
+const btn=$("analyzeBtn");
+
+btn.disabled=true;
+btn.textContent="⏳ ANALIZANDO...";
+
+clearLog();
+resetUI();
+
+btn.disabled=true;
+btn.textContent="⏳ ANALIZANDO...";
+
+score={
+pages:[],
+notes:[],
+events:[],
+metadata:{}
+};
+
+log("▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO");
+
+try{
+
+for(let i=0;i<SVG_FILES.length;i++){
+
+const file=SVG_FILES[i];
+
+log(
+`📄 Página ${i+1} / ${SVG_FILES.length}`
+);
+
+const text=await fetchSVG(file);
+
+const{svg}=parseSVG(text);
+
+const elements=musicalElements(svg);
+
+log(`   .Note: ${elements.Note}`);
+
+const heads=extractHeads(svg);
+
+log(`   🔴 Cabezas: ${heads.length}`);
+
+const staffs=extractStaffLines(svg);
+
+const staffLines=staffs.flatMap(
+s=>s.lines
+);
+
+log(`   📏 Líneas: ${staffLines.length}`);
+log(`   🎼 Pentagramas: ${staffs.length}`);
+
+for(const[k,v]of Object.entries(elements)){
+
+if(v){
+log(`   ├ ${k}: ${v}`);
+}
 }
 
+const clefs=extractClefs(svg);
 
-/* ============================================================
-   GENERAR MIDI
-   ============================================================ */
+log(
+`   🎼 Claves geométricas: ${clefs.length}`
+);
+
+let assigned=assignStaff(
+heads,
+staffs
+);
+
+const bars=barPositions(svg);
+
+log(
+`   │ Barras detectadas: ${bars.length}`
+);
+
+assigned=assignMeasures(
+assigned,
+bars
+);
+
+assigned=assigned.map(n=>{
+
+const s=n.staff>=0?staffs[n.staff]:null;
+
+const clef=s
+?clefForStaff(s,clefs)
+:null;
+
+const p=pitchFromStaff(
+n,
+s,
+clef
+);
+
+return{
+...n,
+...p
+};
+});
+
+const events=inferEvents(
+assigned
+);
+
+const page={
+index:i,
+file,
+svg,
+notes:assigned,
+staffs,
+staffLines,
+elements,
+events,
+clefs,
+bars
+};
+
+score.pages.push(page);
+
+score.notes.push(
+...assigned
+);
+
+score.events.push(
+...events
+);
+
+const ok=assigned.filter(
+n=>n.staff>=0
+).length;
+
+const withPitch=assigned.filter(
+n=>n.pitch!=null
+).length;
+
+const high=assigned.filter(
+n=>n.confidence>=.85
+).length;
+
+log(`   ✓ Asignadas: ${ok}`);
+log(`   🎵 Con pitch: ${withPitch}`);
+log(`   🟢 Alta confianza: ${high}`);
+log(`   🎵 Eventos/acordes: ${events.length}`);
+
+}
+
+score.metadata={
+
+pages:score.pages.length,
+
+heads:score.notes.length,
+
+staves:score.pages.reduce(
+(a,p)=>a+p.staffs.length,
+0
+),
+
+assigned:score.notes.filter(
+n=>n.staff>=0
+).length,
+
+pitch:score.notes.filter(
+n=>n.pitch!=null
+).length,
+
+high:score.notes.filter(
+n=>n.confidence>=.85
+).length,
+
+events:score.events.length,
+
+bpm:DEFAULT_BPM
+};
+
+log("================================");
+log("✓ ANÁLISIS MUSICAL COMPLETADO");
+log("Total cabezas: "+score.metadata.heads);
+log("Total pentagramas: "+score.metadata.staves);
+log("Total asignadas: "+score.metadata.assigned);
+log("Total con pitch: "+score.metadata.pitch);
+log("Pitch alta confianza: "+score.metadata.high);
+log("Eventos/acordes: "+score.metadata.events);
+log("================================");
+
+$("statPages").textContent=
+score.metadata.pages;
+
+$("statHeads").textContent=
+score.metadata.heads;
+
+$("statStaves").textContent=
+score.metadata.staves;
+
+$("statAssigned").textContent=
+score.metadata.assigned;
+
+$("statPitch").textContent=
+score.metadata.pitch;
+
+$("statHigh").textContent=
+score.metadata.high;
+
+$("visualizer").innerHTML="";
+
+for(const p of score.pages){
+
+$("visualizer").appendChild(
+renderPage(p)
+);
+}
+
+renderResults();
+
+$("jsonPreview").textContent=
+JSON.stringify(
+cleanScore(),
+null,
+2
+);
+
+$("jsonBtn").disabled=false;
+
+if(score.metadata.pitch>0){
+
+$("midiBtn").disabled=false;
+
+}
+
+if(score.metadata.heads===0){
+
+$("results").insertAdjacentHTML(
+"afterbegin",
+
+`<div class="warning-box">
+❌ El SVG fue cargado, pero no se encontraron cabezas.
+Esto indica que la estructura del SVG no coincide con los
+elementos musicales esperados.
+</div>`
+);
+
+}else if(
+score.metadata.pitch<
+score.metadata.heads
+){
+
+const missing=
+score.metadata.heads-
+score.metadata.pitch;
+
+$("results").insertAdjacentHTML(
+"afterbegin",
+
+`<div class="warning-box">
+⚠️ ${missing} cabezas no tienen pitch identificado.
+Las conservamos en el JSON para no perder información.
+</div>`
+);
+
+}else{
+
+$("results").insertAdjacentHTML(
+"afterbegin",
+
+`<div class="success-box">
+✓ Todas las cabezas detectadas tienen pitch identificado.
+</div>`
+);
+}
+
+}catch(err){
+
+console.error(err);
+
+log(
+"❌ ERROR: "+
+(err?.message||err)
+);
+
+$("results").innerHTML=
+`<div class="warning-box">
+❌ El análisis se detuvo:
+${esc(err?.message||err)}
+<br><br>
+Abre la consola del navegador (F12)
+si necesitas el detalle técnico.
+</div>`;
+
+}finally{
+
+btn.disabled=false;
+btn.textContent="▶ ANALIZAR PARTITURA";
+
+}
+}
 
 function generateMIDI(){
 
-  if(
-    !score ||
-    !score.events.length
-  ){
+if(
+!score||
+!score.events.length
+){
 
-    log(
-      "❌ No hay eventos musicales."
-    );
-
-    return;
-  }
-
-  const events=
-    score.events;
-
-  midiBlob=
-    makeMidi(
-      events
-    );
-
-  $("downloadBtn")
-    .disabled=false;
-
-  log(
-    "🎹 MIDI generado correctamente."
-  );
-
-  log(
-    "   Eventos MIDI: "+
-    events.length
-  );
-
-  log(
-    "   BPM: "+
-    DEFAULT_BPM
-  );
+log("❌ No hay eventos musicales.");
+return;
 }
 
+midiBlob=makeMidi(
+score.events
+);
 
-/* ============================================================
-   DESCARGAS
-   ============================================================ */
+$("downloadBtn").disabled=false;
+
+log("🎹 MIDI generado correctamente.");
+log("   Eventos MIDI: "+score.events.length);
+log("   BPM: "+DEFAULT_BPM);
+}
 
 function downloadMIDI(){
 
-  if(!midiBlob){
-
-    generateMIDI();
-  }
-
-  if(!midiBlob)return;
-
-  const url=
-    URL.createObjectURL(
-      midiBlob
-    );
-
-  const a=
-    document.createElement(
-      "a"
-    );
-
-  a.href=url;
-  a.download=
-    "Experience-Reconstruccion.mid";
-
-  document.body.appendChild(a);
-
-  a.click();
-
-  a.remove();
-
-  setTimeout(
-    ()=>{
-      URL.revokeObjectURL(url);
-    },
-    1000
-  );
+if(!midiBlob){
+generateMIDI();
 }
 
+if(!midiBlob)return;
+
+const url=URL.createObjectURL(
+midiBlob
+);
+
+const a=document.createElement("a");
+
+a.href=url;
+a.download="Experience-Reconstruccion.mid";
+
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+setTimeout(
+()=>URL.revokeObjectURL(url),
+1000
+);
+}
 
 function downloadJSON(){
 
-  const safe=
-    JSON.parse(
-      JSON.stringify(
-        score,
-        (k,v)=>
-          k==="svg"
-            ? undefined
-            : v
-      )
-    );
+const blob=new Blob(
+[
+JSON.stringify(
+cleanScore(),
+null,
+2
+)
+],
+{
+type:"application/json"
+}
+);
 
-  const blob=
-    new Blob(
-      [
-        JSON.stringify(
-          safe,
-          null,
-          2
-        )
-      ],
-      {
-        type:"application/json"
-      }
-    );
+const url=URL.createObjectURL(
+blob
+);
 
-  const url=
-    URL.createObjectURL(
-      blob
-    );
+const a=document.createElement("a");
 
-  const a=
-    document.createElement(
-      "a"
-    );
+a.href=url;
+a.download="Experience-Reconstruccion.json";
 
-  a.href=url;
-  a.download=
-    "Experience-Reconstruccion.json";
+document.body.appendChild(a);
+a.click();
+a.remove();
 
-  document.body.appendChild(a);
-
-  a.click();
-
-  a.remove();
-
-  setTimeout(
-    ()=>{
-      URL.revokeObjectURL(url);
-    },
-    1000
-  );
+setTimeout(
+()=>URL.revokeObjectURL(url),
+1000
+);
 }
 
+$("analyzeBtn").addEventListener(
+"click",
+analyze
+);
 
-/* ============================================================
-   EVENTOS UI
-   ============================================================ */
+$("midiBtn").addEventListener(
+"click",
+generateMIDI
+);
 
-$("analyzeBtn")
-  .addEventListener(
-    "click",
-    analyze
-  );
+$("downloadBtn").addEventListener(
+"click",
+downloadMIDI
+);
 
-$("midiBtn")
-  .addEventListener(
-    "click",
-    generateMIDI
-  );
-
-$("downloadBtn")
-  .addEventListener(
-    "click",
-    downloadMIDI
-  );
-
-$("jsonBtn")
-  .addEventListener(
-    "click",
-    downloadJSON
-  );
+$("jsonBtn").addEventListener(
+"click",
+downloadJSON
+);
 
 </script>
-
 </body>
 </html>
