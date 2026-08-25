@@ -2,45 +2,37 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Experience — Reconstrucción MIDI</title>
+<title>Experience — Análisis musical SVG</title>
 
 <style>
 body{
-    font-family:Arial,Helvetica,sans-serif;
-    max-width:1100px;
+    font-family:Arial,sans-serif;
+    max-width:1250px;
     margin:auto;
     padding:25px;
     background:#f3f3f3;
     color:#222;
 }
 
-h1{
-    margin-bottom:5px;
-}
+h1{margin-bottom:5px}
 
 .card{
     background:white;
     padding:20px;
     margin:15px 0;
     border-radius:12px;
-    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    box-shadow:0 2px 8px #0001;
 }
 
 button{
+    border:0;
     padding:13px 20px;
     margin:5px;
-    border:0;
     border-radius:8px;
-    cursor:pointer;
     font-weight:bold;
-    font-size:15px;
-}
-
-button:disabled{
-    opacity:.4;
-    cursor:not-allowed;
+    cursor:pointer;
 }
 
 #analizar{
@@ -58,18 +50,26 @@ button:disabled{
     color:white;
 }
 
+button:disabled{
+    opacity:.4;
+}
+
 .stat{
     display:inline-block;
-    min-width:120px;
-    margin:6px;
+    min-width:125px;
     padding:12px;
+    margin:5px;
+    text-align:center;
     background:#eee;
     border-radius:8px;
-    text-align:center;
 }
 
 .stat b{
     font-size:22px;
+}
+
+pre{
+    white-space:pre-wrap;
 }
 
 #log{
@@ -77,32 +77,59 @@ button:disabled{
     color:#ddd;
     padding:15px;
     border-radius:8px;
-    white-space:pre-wrap;
     max-height:500px;
     overflow:auto;
 }
 
-.small{
-    color:#666;
-    font-size:14px;
-}
-
 .page{
     border-top:1px solid #ddd;
-    margin-top:15px;
+    margin-top:20px;
     padding-top:15px;
+}
+
+.note{
+    padding:8px;
+    margin:3px 0;
+    background:#f5f5f5;
+    border-radius:5px;
+    font-family:monospace;
+}
+
+.high{
+    border-left:5px solid #2e8b57;
+}
+
+.medium{
+    border-left:5px solid #e0a000;
+}
+
+.low{
+    border-left:5px solid #c33;
+}
+
+table{
+    border-collapse:collapse;
+    width:100%;
+    font-size:13px;
+}
+
+td,th{
+    border:1px solid #ddd;
+    padding:6px;
+}
+
+th{
+    background:#eee;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎼 Experience — Reconstrucción MIDI</h1>
+<h1>🎼 Experience — Análisis musical</h1>
 
 <p>
-Extracción directamente desde los SVG de MuseScore.
-La página analiza las cabezas de nota, líneas reales de los pentagramas,
-barras de compás y posición horizontal para reconstruir un MIDI.
+Reconstrucción musical directamente desde los SVG generados por MuseScore.
 </p>
 
 <div class="card">
@@ -123,7 +150,6 @@ barras de compás y posición horizontal para reconstruir un MIDI.
 
 </div>
 
-
 <div class="card">
 
 <h2>Registro</h2>
@@ -132,10 +158,9 @@ barras de compás y posición horizontal para reconstruir un MIDI.
 
 </div>
 
-
 <div class="card">
 
-<h2>Resultados</h2>
+<h2>Información musical detectada</h2>
 
 <div id="resultados"></div>
 
@@ -151,321 +176,223 @@ barras de compás y posición horizontal para reconstruir un MIDI.
 const BASE =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
-const ARCHIVOS = [
-    "score_0.svg",
-    "score_1.svg",
-    "score_2.svg",
-    "score_3.svg",
-    "score_4.svg"
+const ARCHIVOS=[
+"score_0.svg",
+"score_1.svg",
+"score_2.svg",
+"score_3.svg",
+"score_4.svg"
 ];
 
-const estado = {
-
-    paginas: [],
-
-    midi: null
-
+const estado={
+    paginas:[],
+    midi:null
 };
 
 
 /* ============================================================
-   UTILIDADES
+   LOG
 ============================================================ */
 
-function log(texto){
+function log(t){
 
-    const elemento =
-        document.getElementById("log");
+    const e=document.getElementById("log");
 
-    elemento.textContent +=
-        texto + "\n";
+    e.textContent+=t+"\n";
 
-    elemento.scrollTop =
-        elemento.scrollHeight;
-
+    e.scrollTop=e.scrollHeight;
 }
 
+function limpiar(){
 
-function limpiarLog(){
-
-    document.getElementById("log").textContent =
-        "";
-
-}
-
-
-function numero(valor){
-
-    const n =
-        parseFloat(valor);
-
-    return Number.isFinite(n) ? n : 0;
+    document.getElementById("log").textContent="";
 
 }
 
 
 /* ============================================================
-   PARSER DE PATH SVG
+   PARSER GEOMÉTRICO SVG
 ============================================================ */
 
-function obtenerBoundsPath(d){
+function parsePath(d){
 
-    const tokens =
+    const tokens=
         d.match(
             /[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/ig
-        ) || [];
+        )||[];
 
-    let i = 0;
+    let i=0;
+    let cmd="";
+    let x=0;
+    let y=0;
 
-    let x = 0;
-    let y = 0;
+    const xs=[];
+    const ys=[];
 
-    let comando = "";
+    function n(){
 
-    const xs = [];
-    const ys = [];
+        return parseFloat(tokens[i++])||0;
 
-    while(i < tokens.length){
+    }
+
+    while(i<tokens.length){
 
         if(/[a-zA-Z]/.test(tokens[i])){
+            cmd=tokens[i++];
+        }
 
-            comando =
-                tokens[i++];
+        const c=cmd.toLowerCase();
+
+        if(c==="z"){
+            cmd="";
+            continue;
+        }
+
+        const rel=(cmd===c);
+
+        if(c==="m"||c==="l"){
+
+            const a=n();
+            const b=n();
+
+            if(rel){
+                x+=a;
+                y+=b;
+            }else{
+                x=a;
+                y=b;
+            }
+
+            xs.push(x);
+            ys.push(y);
+
+            if(c==="m")
+                cmd=rel?"l":"L";
 
         }
 
-        const c =
-            comando.toLowerCase();
+        else if(c==="h"){
 
-        const relativo =
-            comando === c;
+            const a=n();
 
-        try{
+            x=rel?x+a:a;
 
-            if(c === "m" || c === "l"){
-
-                const a =
-                    numero(tokens[i++]);
-
-                const b =
-                    numero(tokens[i++]);
-
-                if(relativo){
-
-                    x += a;
-                    y += b;
-
-                }else{
-
-                    x = a;
-                    y = b;
-
-                }
-
-                xs.push(x);
-                ys.push(y);
-
-                if(c === "m"){
-
-                    comando =
-                        relativo ? "l" : "L";
-
-                }
-
-            }
-
-            else if(c === "h"){
-
-                const a =
-                    numero(tokens[i++]);
-
-                x =
-                    relativo ? x + a : a;
-
-                xs.push(x);
-                ys.push(y);
-
-            }
-
-            else if(c === "v"){
-
-                const a =
-                    numero(tokens[i++]);
-
-                y =
-                    relativo ? y + a : a;
-
-                xs.push(x);
-                ys.push(y);
-
-            }
-
-            else if(c === "c"){
-
-                for(let k=0;k<3;k++){
-
-                    const a =
-                        numero(tokens[i++]);
-
-                    const b =
-                        numero(tokens[i++]);
-
-                    if(relativo){
-
-                        x += a;
-                        y += b;
-
-                    }else{
-
-                        x = a;
-                        y = b;
-
-                    }
-
-                    xs.push(x);
-                    ys.push(y);
-
-                }
-
-            }
-
-            else if(c === "s" || c === "q"){
-
-                for(let k=0;k<2;k++){
-
-                    const a =
-                        numero(tokens[i++]);
-
-                    const b =
-                        numero(tokens[i++]);
-
-                    if(relativo){
-
-                        x += a;
-                        y += b;
-
-                    }else{
-
-                        x = a;
-                        y = b;
-
-                    }
-
-                    xs.push(x);
-                    ys.push(y);
-
-                }
-
-            }
-
-            else if(c === "t"){
-
-                const a =
-                    numero(tokens[i++]);
-
-                const b =
-                    numero(tokens[i++]);
-
-                if(relativo){
-
-                    x += a;
-                    y += b;
-
-                }else{
-
-                    x = a;
-                    y = b;
-
-                }
-
-                xs.push(x);
-                ys.push(y);
-
-            }
-
-            else if(c === "a"){
-
-                /*
-                 Arco SVG:
-                 rx ry x-axis-rotation large-arc sweep x y
-                */
-
-                i += 5;
-
-                const a =
-                    numero(tokens[i++]);
-
-                const b =
-                    numero(tokens[i++]);
-
-                if(relativo){
-
-                    x += a;
-                    y += b;
-
-                }else{
-
-                    x = a;
-                    y = b;
-
-                }
-
-                xs.push(x);
-                ys.push(y);
-
-            }
-
-            else if(c === "z"){
-
-                comando = "";
-
-            }
-
-            else{
-
-                i++;
-
-            }
-
-        }catch(error){
-
-            break;
+            xs.push(x);
+            ys.push(y);
 
         }
 
+        else if(c==="v"){
+
+            const a=n();
+
+            y=rel?y+a:a;
+
+            xs.push(x);
+            ys.push(y);
+
+        }
+
+        else if(c==="c"){
+
+            for(let k=0;k<3;k++){
+
+                const a=n();
+                const b=n();
+
+                if(rel){
+                    x+=a;
+                    y+=b;
+                }else{
+                    x=a;
+                    y=b;
+                }
+
+                xs.push(x);
+                ys.push(y);
+            }
+        }
+
+        else if(c==="s"||c==="q"){
+
+            for(let k=0;k<2;k++){
+
+                const a=n();
+                const b=n();
+
+                if(rel){
+                    x+=a;
+                    y+=b;
+                }else{
+                    x=a;
+                    y=b;
+                }
+
+                xs.push(x);
+                ys.push(y);
+            }
+        }
+
+        else if(c==="t"){
+
+            const a=n();
+            const b=n();
+
+            if(rel){
+                x+=a;
+                y+=b;
+            }else{
+                x=a;
+                y=b;
+            }
+
+            xs.push(x);
+            ys.push(y);
+
+        }
+
+        else if(c==="a"){
+
+            n();
+            n();
+            n();
+            n();
+            n();
+
+            const a=n();
+            const b=n();
+
+            if(rel){
+                x+=a;
+                y+=b;
+            }else{
+                x=a;
+                y=b;
+            }
+
+            xs.push(x);
+            ys.push(y);
+
+        }
+
+        else{
+
+            i++;
+
+        }
     }
 
-    if(!xs.length){
-
+    if(!xs.length)
         return null;
 
-    }
-
-    const xmin =
-        Math.min(...xs);
-
-    const xmax =
-        Math.max(...xs);
-
-    const ymin =
-        Math.min(...ys);
-
-    const ymax =
-        Math.max(...ys);
-
     return {
-
-        x:xmin,
-        y:ymin,
-
-        x2:xmax,
-        y2:ymax,
-
-        width:xmax-xmin,
-        height:ymax-ymin
-
+        x:Math.min(...xs),
+        y:Math.min(...ys),
+        x2:Math.max(...xs),
+        y2:Math.max(...ys),
+        width:Math.max(...xs)-Math.min(...xs),
+        height:Math.max(...ys)-Math.min(...ys)
     };
-
 }
 
 
@@ -473,278 +400,228 @@ function obtenerBoundsPath(d){
    SUBPATHS
 ============================================================ */
 
-function obtenerSubpaths(path){
+function subpaths(path){
 
-    const d =
-        path.getAttribute("d") || "";
+    const d=
+        path.getAttribute("d")||"";
 
-    const posiciones =
+    const starts=
         [...d.matchAll(/[Mm]/g)]
-        .map(x => x.index);
+        .map(x=>x.index);
 
-    const resultado = [];
+    const result=[];
 
-    for(let i=0;i<posiciones.length;i++){
+    for(let i=0;i<starts.length;i++){
 
-        const inicio =
-            posiciones[i];
+        const start=starts[i];
 
-        const final =
-            i + 1 < posiciones.length
-            ? posiciones[i+1]
-            : d.length;
+        const end=
+            i+1<starts.length
+            ?starts[i+1]
+            :d.length;
 
-        const fragmento =
-            d.substring(
-                inicio,
-                final
-            );
+        const part=
+            d.substring(start,end);
 
-        const bounds =
-            obtenerBoundsPath(
-                fragmento
-            );
+        const b=parsePath(part);
 
-        if(bounds){
-
-            resultado.push(
-                bounds
-            );
-
-        }
-
+        if(b)
+            result.push(b);
     }
 
-    return resultado;
-
+    return result;
 }
 
 
 /* ============================================================
-   DETECTAR CABEZAS
+   CABEZAS
 ============================================================ */
 
 function detectarCabezas(svg){
 
-    const cabezas = [];
+    const result=[];
 
-    svg
-        .querySelectorAll(".Note")
-        .forEach((elemento,indice)=>{
+    svg.querySelectorAll(".Note")
+    .forEach((note,noteIndex)=>{
 
-            const partes =
-                obtenerSubpaths(
-                    elemento
-                );
+        subpaths(note)
+        .forEach((b,subIndex)=>{
 
-            partes.forEach(bounds=>{
+            /*
+             Las cabezas son pequeños óvalos.
+             Ignoramos geometrías enormes.
+            */
 
-                /*
-                 Las cabezas de las notas
-                 de este SVG están dentro
-                 de este rango geométrico.
-                */
+            if(
+                b.width>=8 &&
+                b.width<=90 &&
+                b.height>=8 &&
+                b.height<=90
+            ){
 
-                if(
-                    bounds.width >= 8 &&
-                    bounds.width <= 90 &&
-                    bounds.height >= 8 &&
-                    bounds.height <= 90
-                ){
+                result.push({
 
-                    cabezas.push({
+                    x:b.x+b.width/2,
+                    y:b.y+b.height/2,
 
-                        x:
-                            bounds.x +
-                            bounds.width/2,
+                    width:b.width,
+                    height:b.height,
 
-                        y:
-                            bounds.y +
-                            bounds.height/2,
+                    noteIndex,
+                    subIndex
 
-                        width:
-                            bounds.width,
-
-                        height:
-                            bounds.height,
-
-                        origen:
-                            indice
-
-                    });
-
-                }
-
-            });
+                });
+            }
 
         });
+    });
 
-    return cabezas;
-
+    return result;
 }
 
 
 /* ============================================================
-   DETECTAR STAFFLINES
+   ELEMENTOS MUSICALES
+============================================================ */
+
+function detectarElementos(svg){
+
+    const clases=[
+        "Stem",
+        "Beam",
+        "BarLine",
+        "Rest",
+        "KeySig",
+        "TimeSig",
+        "TieSegment",
+        "OttavaSegment",
+        "VoltaSegment",
+        "Dynamic",
+        "Fermata",
+        "HairpinSegment",
+        "GradualTempoChangeSegment",
+        "Tempo",
+        "Expression"
+    ];
+
+    const salida={};
+
+    for(const clase of clases){
+
+        salida[clase]=[];
+
+        svg.querySelectorAll(
+            "."+clase
+        )
+        .forEach(el=>{
+
+            const b=
+                parsePath(
+                    el.getAttribute("d")||""
+                );
+
+            salida[clase].push({
+
+                element:el,
+                bounds:b
+
+            });
+
+        });
+    }
+
+    return salida;
+}
+
+
+/* ============================================================
+   STAFFLINES
 ============================================================ */
 
 function detectarLineas(svg){
 
-    const lineas = [];
+    const lineas=[];
 
-    svg
-        .querySelectorAll(".StaffLines")
-        .forEach(elemento=>{
+    svg.querySelectorAll(".StaffLines")
+    .forEach(el=>{
 
-            obtenerSubpaths(
-                elemento
-            ).forEach(bounds=>{
+        subpaths(el)
+        .forEach(b=>{
 
-                if(bounds.width > 100){
+            if(b.width>100){
 
-                    lineas.push(bounds);
+                lineas.push(b);
 
-                }
-
-            });
-
+            }
         });
+    });
 
     return lineas.sort(
         (a,b)=>a.y-b.y
     );
-
 }
 
 
 /* ============================================================
-   AGRUPAR PENTAGRAMAS
+   AGRUPAR LÍNEAS EN PENTAGRAMAS
 ============================================================ */
 
-function detectarPentagramas(lineas){
+function agruparPentagramas(lineas){
 
-    const grupos = [];
+    const grupos=[];
 
     for(const linea of lineas){
 
-        let grupo = null;
+        let grupo=null;
 
         for(const g of grupos){
 
             if(
                 Math.abs(
                     g.centro-linea.y
-                ) < 80
+                )<80
             ){
 
-                grupo = g;
+                grupo=g;
                 break;
-
             }
-
         }
 
         if(!grupo){
 
-            grupo = {
-
+            grupo={
                 lineas:[],
-
-                centro:linea.y,
-
                 arriba:linea.y,
-
-                abajo:linea.y
-
+                abajo:linea.y,
+                centro:linea.y
             };
 
-            grupos.push(
-                grupo
-            );
-
+            grupos.push(grupo);
         }
 
-        grupo.lineas.push(
-            linea
-        );
+        grupo.lineas.push(linea);
 
-        grupo.arriba =
+        grupo.arriba=
             Math.min(
                 grupo.arriba,
                 linea.y
             );
 
-        grupo.abajo =
+        grupo.abajo=
             Math.max(
                 grupo.abajo,
                 linea.y
             );
 
-        grupo.centro =
+        grupo.centro=
             (grupo.arriba+
              grupo.abajo)/2;
-
     }
 
     return grupos
         .sort(
-            (a,b)=>
-                a.centro-b.centro
-        )
-        .map(
-            (g,i)=>({
-
-                ...g,
-
-                indice:i
-
-            })
+            (a,b)=>a.centro-b.centro
         );
-
-}
-
-
-/* ============================================================
-   DETECTAR BARRAS
-============================================================ */
-
-function detectarBarras(svg){
-
-    const posiciones = [];
-
-    svg
-        .querySelectorAll(".BarLine")
-        .forEach(elemento=>{
-
-            const bounds =
-                obtenerBoundsPath(
-                    elemento.getAttribute("d") || ""
-                );
-
-            if(
-                bounds &&
-                bounds.height > 20
-            ){
-
-                posiciones.push(
-                    bounds.x
-                );
-
-            }
-
-        });
-
-    return [
-        ...new Set(
-            posiciones.map(
-                x =>
-                    Math.round(x*10)/10
-            )
-        )
-    ].sort(
-        (a,b)=>a-b
-    );
-
 }
 
 
@@ -752,378 +629,551 @@ function detectarBarras(svg){
    STAFF MÁS CERCANO
 ============================================================ */
 
-function staffMasCercano(y,pentagramas){
+function staffCercano(y,pentagramas){
 
-    let mejor = null;
+    let mejor=null;
+    let distancia=Infinity;
 
-    let distancia =
-        Infinity;
+    for(
+        let i=0;
+        i<pentagramas.length;
+        i++
+    ){
 
-    for(const staff of pentagramas){
+        const s=pentagramas[i];
 
         let d;
 
-        if(y < staff.arriba){
-
-            d =
-                staff.arriba-y;
-
-        }
-
-        else if(y > staff.abajo){
-
-            d =
-                y-staff.abajo;
-
-        }
-
-        else{
-
+        if(y<s.arriba)
+            d=s.arriba-y;
+        else if(y>s.abajo)
+            d=y-s.abajo;
+        else
             d=0;
 
-        }
-
-        if(d < distancia){
+        if(d<distancia){
 
             distancia=d;
 
-            mejor=staff;
-
+            mejor={
+                ...s,
+                index:i,
+                distancia:d
+            };
         }
-
     }
 
     return mejor;
-
 }
 
 
 /* ============================================================
-   PITCH
+   PITCH DIATÓNICO
 ============================================================ */
 
-function obtenerPitch(y,staff){
+function pitchDesdeStaff(y,staff){
 
-    const espacio =
+    /*
+     Distancia entre líneas.
+    */
+
+    const espacio=
         Math.max(
             1,
             (staff.abajo-staff.arriba)/4
         );
 
     /*
-     Cinco líneas = cuatro espacios.
-     Medio espacio = una posición diatónica.
+     Cada línea/espacio representa
+     un grado diatónico.
     */
 
-    const pasos =
+    const grados=
         Math.round(
-            (staff.centro-y) /
+            (staff.centro-y)/
             (espacio/2)
         );
 
     /*
-     En este documento alternamos
-     los pentagramas superior/inferior.
+     Alternancia inicial:
+     pentagrama superior = clave Sol
+     pentagrama inferior = clave Fa.
 
-     Sol:
-     línea central = B4 = MIDI 71
-
-     Fa:
-     línea central = D3 = MIDI 50
+     Esto es una aproximación inicial.
+     La próxima etapa leerá Clef.
     */
 
-    const claveFa =
-        staff.indice % 2 === 1;
+    const esFa=
+        staff.index%2===1;
 
-    const centro =
-        claveFa
-        ? 50
-        : 71;
+    const base=
+        esFa?50:71;
 
     /*
-     Una posición diatónica
-     aproximadamente equivale
-     a 7 semitonos / 12 posiciones.
+     Tabla cromática aproximada
+     para convertir grados diatónicos.
     */
 
-    const pitch =
-        centro +
-        Math.round(
-            pasos * 7/12
-        );
+    const semitonos=[
+        0,2,4,5,7,9,11
+    ];
+
+    let octava=Math.floor(grados/7);
+
+    let grado=
+        ((grados%7)+7)%7;
+
+    let midi=
+        base+
+        octava*12+
+        semitonos[grado];
 
     return Math.max(
         21,
         Math.min(
             108,
-            pitch
+            midi
         )
     );
-
 }
 
 
 /* ============================================================
-   ASIGNAR NOTAS
+   ASIGNAR CABEZAS
 ============================================================ */
 
-function asignarNotas(page){
+function asignarCabezas(page){
 
-    const notas = [];
+    const notas=[];
 
     for(const cabeza of page.cabezas){
 
-        const staff =
-            staffMasCercano(
+        const staff=
+            staffCercano(
                 cabeza.y,
                 page.pentagramas
             );
 
-        if(!staff){
-
+        if(!staff)
             continue;
 
-        }
+        const pitch=
+            pitchDesdeStaff(
+                cabeza.y,
+                staff
+            );
 
         notas.push({
 
             ...cabeza,
 
             staff:
-                staff.indice,
+                staff.index,
 
-            pitch:
-                obtenerPitch(
-                    cabeza.y,
-                    staff
-                )
+            pitch,
+
+            distanciaStaff:
+                staff.distancia
 
         });
-
     }
 
     notas.sort(
         (a,b)=>
-            a.staff-b.staff ||
-            a.x-b.x ||
+            a.staff-b.staff||
+            a.x-b.x||
             a.y-b.y
     );
 
-    /*
-     Agrupamos cabezas prácticamente
-     verticales para detectar acordes.
-    */
+    return notas;
+}
 
-    const acordes = [];
+
+/* ============================================================
+   DETECTAR ACORDES
+============================================================ */
+
+function detectarAcordes(notas){
+
+    const acordes=[];
 
     for(const nota of notas){
 
-        let acorde =
+        let acorde=
             acordes.find(
-                a =>
-                    a.staff === nota.staff &&
+                a=>
+                    a.staff===nota.staff &&
                     Math.abs(
                         a.x-nota.x
-                    ) < 12
+                    )<15
             );
 
         if(!acorde){
 
-            acorde = {
-
-                staff:
-                    nota.staff,
-
-                x:
-                    nota.x,
-
+            acorde={
+                staff:nota.staff,
+                x:nota.x,
                 notas:[]
-
             };
 
-            acordes.push(
-                acorde
-            );
-
+            acordes.push(acorde);
         }
 
-        acorde.notas.push(
-            nota
-        );
+        acorde.notas.push(nota);
+    }
+
+    return acordes;
+}
+
+
+/* ============================================================
+   COMPASES
+============================================================ */
+
+function detectarCompasDeNota(
+    nota,
+    barras
+){
+
+    let anterior=null;
+    let siguiente=null;
+
+    for(const x of barras){
+
+        if(x<=nota.x)
+            anterior=x;
+
+        if(x>nota.x){
+
+            siguiente=x;
+            break;
+        }
+    }
+
+    /*
+     Número de compás:
+     depende de la barra anterior.
+     Se conserva la posición para
+     reconstrucción posterior.
+    */
+
+    return {
+
+        anterior,
+        siguiente,
+
+        posicion:
+            siguiente!==null
+            ?nota.x-anterior
+            :nota.x-(anterior||0)
+
+    };
+}
+
+
+/* ============================================================
+   ANALIZAR FIGURAS RÍTMICAS
+============================================================ */
+
+function analizarRitmo(nota,page){
+
+    /*
+     Buscamos Stem y Beam cerca
+     de la cabeza.
+
+     Esto NO adivina todavía una figura
+     solamente por distancia horizontal.
+    */
+
+    let stem=null;
+    let beam=null;
+
+    for(const s of page.elementos.Stem){
+
+        if(!s.bounds)
+            continue;
+
+        const b=s.bounds;
+
+        const centroX=
+            b.x+b.width/2;
+
+        if(
+            Math.abs(
+                centroX-nota.x
+            )<80 &&
+            (
+                b.y<=nota.y+100 &&
+                b.y2>=nota.y-100
+            )
+        ){
+
+            stem=s;
+            break;
+        }
+    }
+
+    for(const b of page.elementos.Beam){
+
+        if(!b.bounds)
+            continue;
+
+        const box=b.bounds;
+
+        if(
+            nota.x>=box.x-30 &&
+            nota.x<=box.x2+30 &&
+            nota.y>=box.y-150 &&
+            nota.y<=box.y2+150
+        ){
+
+            beam=b;
+            break;
+        }
+    }
+
+    /*
+     Estado preliminar.
+    */
+
+    let figura="desconocida";
+
+    if(beam){
+
+        figura="beam";
+
+    }else if(stem){
+
+        figura="stem";
 
     }
 
     return {
 
-        notas,
+        figura,
 
-        acordes
+        tieneStem:!!stem,
+
+        tieneBeam:!!beam
 
     };
-
 }
 
 
 /* ============================================================
-   DURACIÓN ESTIMADA
+   RITMO ESTRUCTURAL
 ============================================================ */
 
-function estimarDuracion(
-    acorde,
-    todasLasNotas
-){
+function construirEventos(page){
 
-    const mismas =
-        todasLasNotas
-        .filter(
-            n =>
-                n.staff ===
-                acorde.staff
-        )
-        .sort(
-            (a,b)=>a.x-b.x
+    const acordes=
+        detectarAcordes(
+            page.notas
         );
 
-    const indice =
-        mismas.findIndex(
-            n =>
-                Math.abs(
-                    n.x-acorde.x
-                ) < 12
-        );
+    const eventos=[];
 
-    let distancia=100;
+    for(const acorde of acordes){
 
-    if(
-        indice >= 0 &&
-        indice < mismas.length-1
-    ){
+        const notas=
+            acorde.notas;
 
-        distancia =
-            Math.max(
-                5,
-                mismas[indice+1].x -
-                acorde.x
+        const primera=notas[0];
+
+        const compas=
+            detectarCompasDeNota(
+                primera,
+                page.barras
             );
 
+        const ritmos=
+            notas.map(
+                n=>
+                    analizarRitmo(
+                        n,
+                        page
+                    )
+            );
+
+        eventos.push({
+
+            x:acorde.x,
+
+            staff:acorde.staff,
+
+            compas,
+
+            notas,
+
+            ritmos
+
+        });
     }
 
-    /*
-     480 ticks = negra.
-
-     La geometría horizontal
-     se transforma en una primera
-     estimación rítmica.
-    */
-
-    if(distancia < 35){
-
-        return 120;
-
-    }
-
-    if(distancia < 70){
-
-        return 240;
-
-    }
-
-    if(distancia < 130){
-
-        return 480;
-
-    }
-
-    if(distancia < 230){
-
-        return 960;
-
-    }
-
-    return 1920;
-
+    return eventos;
 }
 
 
 /* ============================================================
-   MOSTRAR PÁGINA
+   RESUMEN DE ELEMENTOS
 ============================================================ */
 
-function mostrarPagina(page,indice){
+function resumenElementos(elementos){
 
-    const contenedor =
-        document.createElement(
-            "div"
-        );
+    const lista=[];
 
-    contenedor.className =
-        "page";
+    for(
+        const [nombre,items]
+        of Object.entries(elementos)
+    ){
 
-    contenedor.innerHTML =
+        if(items.length){
 
-        "<h3>Página "+
-        (indice+1)+
-        "</h3>"+
+            lista.push(
+                nombre+
+                ": "+
+                items.length
+            );
+        }
+    }
 
-        "<div class='small'>"+
-        "Cabezas: "+
-        page.cabezas.length+
-        " · Líneas: "+
-        page.lineas.length+
-        " · Pentagramas: "+
-        page.pentagramas.length+
-        " · Barras: "+
-        page.barras.length+
-        " · Asignadas: "+
-        page.asignadas.notas.length+
-        "</div>";
-
-    document
-        .getElementById(
-            "resultados"
-        )
-        .appendChild(
-            contenedor
-        );
-
+    return lista.join(" · ");
 }
 
 
 /* ============================================================
-   ANALIZAR
+   MOSTRAR RESULTADOS
+============================================================ */
+
+function mostrarPagina(page,index){
+
+    const div=
+        document.createElement("div");
+
+    div.className="page";
+
+    const cantidadAlta=
+        page.notas.filter(
+            n=>
+                n.distanciaStaff<20
+        ).length;
+
+    div.innerHTML=`
+
+<h3>📄 Página ${index+1}</h3>
+
+<p>
+<b>Cabezas:</b> ${page.cabezas.length}
+· <b>Líneas:</b> ${page.lineas.length}
+· <b>Pentagramas:</b> ${page.pentagramas.length}
+· <b>Barras:</b> ${page.barras.length}
+· <b>Asignadas:</b> ${page.notas.length}
+</p>
+
+<p>
+<b>Elementos musicales:</b><br>
+${resumenElementos(page.elementos)}
+</p>
+
+<p>
+🟢 Alta confianza de pentagrama:
+${cantidadAlta}/${page.notas.length}
+</p>
+
+<h4>Primeros eventos musicales</h4>
+
+<table>
+
+<tr>
+<th>#</th>
+<th>X</th>
+<th>Staff</th>
+<th>Pitch</th>
+<th>Compás</th>
+<th>Ritmo</th>
+<th>Notas simultáneas</th>
+</tr>
+
+${page.eventos
+.slice(0,50)
+.map(
+(e,i)=>`
+
+<tr>
+
+<td>${i+1}</td>
+
+<td>${e.x.toFixed(1)}</td>
+
+<td>${e.staff+1}</td>
+
+<td>
+${e.notas
+.map(n=>n.pitch)
+.join(", ")}
+</td>
+
+<td>
+${
+e.compas.anterior===null
+?"inicio"
+:"posición "+e.compas.posicion.toFixed(1)
+}
+</td>
+
+<td>
+${e.ritmos
+.map(r=>r.figura)
+.join(", ")}
+</td>
+
+<td>
+${e.notas.length}
+</td>
+
+</tr>
+`
+)
+.join("")}
+
+</table>
+`;
+
+    document
+        .getElementById("resultados")
+        .appendChild(div);
+}
+
+
+/* ============================================================
+   ANÁLISIS PRINCIPAL
 ============================================================ */
 
 async function analizar(){
 
-    limpiarLog();
+    limpiar();
 
     document
-        .getElementById(
-            "resultados"
-        )
+        .getElementById("resultados")
         .innerHTML="";
 
     document
-        .getElementById(
-            "midi"
-        )
+        .getElementById("midi")
         .disabled=true;
 
     document
-        .getElementById(
-            "descargar"
-        )
+        .getElementById("descargar")
         .disabled=true;
 
     estado.paginas=[];
 
-    log(
-        "▶ Iniciando reconstrucción musical..."
-    );
-
     let totalCabezas=0;
-    let totalPentagramas=0;
     let totalAsignadas=0;
+    let totalPentagramas=0;
+
+    log(
+        "▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO"
+    );
 
     for(
         let i=0;
@@ -1140,96 +1190,102 @@ async function analizar(){
 
         try{
 
-            const url =
-                BASE+
-                ARCHIVOS[i];
-
-            log(
-                "   "+
-                ARCHIVOS[i]
-            );
-
-            const respuesta =
+            const respuesta=
                 await fetch(
-                    url,
+                    BASE+ARCHIVOS[i],
                     {
                         cache:"no-store"
                     }
                 );
 
-            if(!respuesta.ok){
-
+            if(!respuesta.ok)
                 throw new Error(
                     "HTTP "+
                     respuesta.status
                 );
 
-            }
-
-            const texto =
+            const texto=
                 await respuesta.text();
 
-            const documento =
+            const doc=
                 new DOMParser()
                 .parseFromString(
                     texto,
                     "image/svg+xml"
                 );
 
-            const svg =
-                documento.documentElement;
+            const svg=
+                doc.documentElement;
 
             const page={
 
-                texto,
-
                 svg,
 
+                texto,
+
                 cabezas:
-                    detectarCabezas(
-                        svg
-                    ),
+                    detectarCabezas(svg),
 
                 lineas:
-                    detectarLineas(
-                        svg
-                    ),
+                    detectarLineas(svg),
 
                 pentagramas:[],
 
                 barras:[],
 
-                asignadas:null
+                elementos:{},
+
+                notas:[],
+
+                eventos:[]
 
             };
 
-            page.pentagramas =
-                detectarPentagramas(
+            page.pentagramas=
+                agruparPentagramas(
                     page.lineas
                 );
 
-            page.barras =
-                detectarBarras(
-                    svg
+            page.barras=
+                [...new Set(
+                    page.elementos.Bars||[]
+                )];
+
+            page.elementos=
+                detectarElementos(svg);
+
+            /*
+             Barras reales.
+            */
+
+            page.barras=
+                page.elementos.BarLine
+                .filter(
+                    x=>x.bounds
+                )
+                .map(
+                    x=>x.bounds.x
+                )
+                .sort(
+                    (a,b)=>a-b
                 );
 
-            page.asignadas =
-                asignarNotas(
-                    page
-                );
+            page.notas=
+                asignarCabezas(page);
 
-            estado.paginas.push(
-                page
-            );
+            page.eventos=
+                construirEventos(page);
 
-            totalCabezas +=
+            estado.paginas.push(page);
+
+            totalCabezas+=
                 page.cabezas.length;
 
-            totalPentagramas +=
-                page.pentagramas.length;
+            totalAsignadas+=
+                page.notas.length;
 
-            totalAsignadas +=
-                page.asignadas.notas.length;
+            totalPentagramas+=
+                page.pentagramas.length;
 
             log(
                 "   ✓ SVG cargado — "+
@@ -1239,9 +1295,7 @@ async function analizar(){
 
             log(
                 "   .Note: "+
-                svg.querySelectorAll(
-                    ".Note"
-                ).length
+                svg.querySelectorAll(".Note").length
             );
 
             log(
@@ -1250,7 +1304,7 @@ async function analizar(){
             );
 
             log(
-                "   📏 Líneas reales: "+
+                "   📏 Líneas: "+
                 page.lineas.length
             );
 
@@ -1260,8 +1314,53 @@ async function analizar(){
             );
 
             log(
+                "   ├ BarLine: "+
+                page.elementos.BarLine.length
+            );
+
+            log(
+                "   ├ Stem: "+
+                page.elementos.Stem.length
+            );
+
+            log(
+                "   ├ Beam: "+
+                page.elementos.Beam.length
+            );
+
+            log(
+                "   ├ Rest: "+
+                page.elementos.Rest.length
+            );
+
+            log(
+                "   ├ KeySig: "+
+                page.elementos.KeySig.length
+            );
+
+            log(
+                "   ├ TimeSig: "+
+                page.elementos.TimeSig.length
+            );
+
+            log(
+                "   ├ TieSegment: "+
+                page.elementos.TieSegment.length
+            );
+
+            log(
+                "   ├ OttavaSegment: "+
+                page.elementos.OttavaSegment.length
+            );
+
+            log(
                 "   ✓ Asignadas: "+
-                page.asignadas.notas.length
+                page.notas.length
+            );
+
+            log(
+                "   🎵 Eventos/acordes: "+
+                page.eventos.length
             );
 
             mostrarPagina(
@@ -1270,43 +1369,35 @@ async function analizar(){
             );
 
         }
-
         catch(error){
 
             log(
-                "   ❌ ERROR: "+
+                "❌ ERROR: "+
                 error.message
             );
-
         }
-
     }
 
     document
-        .getElementById(
-            "stats"
-        )
-        .innerHTML=
+        .getElementById("stats")
+        .innerHTML=`
 
-        "<div class='stat'>"+
-        "<b>"+
-        estado.paginas.length+
-        "</b><br>Páginas</div>"+
+<div class="stat">
+<b>${estado.paginas.length}</b><br>Páginas
+</div>
 
-        "<div class='stat'>"+
-        "<b>"+
-        totalCabezas+
-        "</b><br>Cabezas</div>"+
+<div class="stat">
+<b>${totalCabezas}</b><br>Cabezas
+</div>
 
-        "<div class='stat'>"+
-        "<b>"+
-        totalPentagramas+
-        "</b><br>Pentagramas</div>"+
+<div class="stat">
+<b>${totalPentagramas}</b><br>Pentagramas
+</div>
 
-        "<div class='stat'>"+
-        "<b>"+
-        totalAsignadas+
-        "</b><br>Asignadas</div>";
+<div class="stat">
+<b>${totalAsignadas}</b><br>Asignadas
+</div>
+`;
 
     log(
         "================================"
@@ -1331,78 +1422,66 @@ async function analizar(){
         totalAsignadas
     );
 
-    if(totalAsignadas>0){
+    log(
+        "================================"
+    );
+
+    if(totalAsignadas){
 
         document
-            .getElementById(
-                "midi"
-            )
+            .getElementById("midi")
             .disabled=false;
-
     }
-
 }
 
 
 /* ============================================================
-   VARIABLE LENGTH QUANTITY
+   MIDI
 ============================================================ */
 
-function VLQ(valor){
+function vlq(value){
 
-    let buffer =
-        valor & 127;
+    let buffer=value&127;
 
     const bytes=[];
 
-    while(
-        (valor >>= 7)
-    ){
+    while(value>>=7){
 
-        buffer <<= 8;
+        buffer<<=8;
 
-        buffer |=
-            (valor & 127) |
-            128;
-
+        buffer|=
+            (value&127)|128;
     }
 
     while(true){
 
         bytes.push(
-            buffer & 255
+            buffer&255
         );
 
-        if(
-            buffer & 128
-        ){
+        if(buffer&128){
 
-            buffer >>= 8;
+            buffer>>=8;
 
         }else{
 
             break;
-
         }
-
     }
 
     return bytes;
-
 }
 
-
-function U32(v){
+function u32(n){
 
     return [
 
-        (v>>>24)&255,
-        (v>>>16)&255,
-        (v>>>8)&255,
-        v&255
+        (n>>24)&255,
+        (n>>16)&255,
+        (n>>8)&255,
+        n&255
 
     ];
-
 }
 
 
@@ -1414,308 +1493,196 @@ function generarMIDI(){
 
     const TPQ=480;
 
-    const clusters=[];
-
-    let tiempoPagina=0;
-
-    /*
-     Procesamos página por página.
-    */
-
-    for(
-        const page
-        of estado.paginas
-    ){
-
-        const acordes =
-            [...page.asignadas.acordes]
-            .sort(
-                (a,b)=>
-                    a.x-b.x
-            );
-
-        let tiempo =
-            tiempoPagina;
-
-        for(
-            const acorde
-            of acordes
-        ){
-
-            const duracion =
-                estimarDuracion(
-                    acorde,
-                    page.asignadas.notas
-                );
-
-            clusters.push({
-
-                tiempo,
-
-                duracion,
-
-                notas:
-                    acorde.notas
-
-            });
-
-            tiempo +=
-                duracion;
-
-        }
-
-        /*
-         Separación pequeña
-         entre páginas.
-        */
-
-        tiempoPagina =
-            tiempo +
-            TPQ;
-
-    }
-
-
-    /*
-     Creamos eventos NOTE ON / OFF.
-    */
-
     const eventos=[];
-
-    for(
-        const acorde
-        of clusters
-    ){
-
-        for(
-            const nota
-            of acorde.notas
-        ){
-
-            eventos.push({
-
-                tiempo:
-                    acorde.tiempo,
-
-                tipo:"on",
-
-                pitch:
-                    nota.pitch
-
-            });
-
-            eventos.push({
-
-                tiempo:
-                    acorde.tiempo+
-                    acorde.duracion,
-
-                tipo:"off",
-
-                pitch:
-                    nota.pitch
-
-            });
-
-        }
-
-    }
-
 
     /*
      IMPORTANTE:
-     los NOTE OFF se procesan antes
-     que los NOTE ON en el mismo tick.
+     todavía no inventamos las duraciones.
+     Esta versión usa la estructura espacial
+     como orden temporal, pero conserva
+     los grupos de acordes.
     */
 
-    eventos.sort(
-        (a,b)=>{
+    let tiempoGlobal=0;
 
-            if(
-                a.tiempo !==
-                b.tiempo
-            ){
+    for(const page of estado.paginas){
 
-                return (
-                    a.tiempo-
-                    b.tiempo
-                );
+        const eventosPagina=
+            [...page.eventos]
+            .sort(
+                (a,b)=>a.x-b.x
+            );
 
+        let anteriorX=null;
+
+        for(const evento of eventosPagina){
+
+            if(anteriorX===null){
+
+                anteriorX=evento.x;
+
+            }else{
+
+                const dx=
+                    evento.x-anteriorX;
+
+                /*
+                 Conversión provisional.
+                 */
+
+                if(dx<40)
+                    tiempoGlobal+=120;
+
+                else if(dx<80)
+                    tiempoGlobal+=240;
+
+                else if(dx<150)
+                    tiempoGlobal+=480;
+
+                else
+                    tiempoGlobal+=960;
+
+                anteriorX=
+                    evento.x;
             }
 
-            if(
-                a.tipo ===
-                b.tipo
-            ){
+            /*
+             Acorde:
+             todas las notas del mismo evento
+             comienzan simultáneamente.
+            */
 
-                return 0;
+            for(const nota of evento.notas){
 
+                eventos.push({
+
+                    tiempo:tiempoGlobal,
+
+                    tipo:1,
+
+                    pitch:nota.pitch,
+
+                    velocity:85
+
+                });
+
+                eventos.push({
+
+                    tiempo:
+                        tiempoGlobal+480,
+
+                    tipo:0,
+
+                    pitch:nota.pitch,
+
+                    velocity:0
+
+                });
             }
-
-            return a.tipo === "off"
-                ? -1
-                : 1;
-
         }
+
+        tiempoGlobal+=480;
+    }
+
+
+    eventos.sort(
+        (a,b)=>
+            a.tiempo-b.tiempo||
+            a.tipo-b.tipo
     );
 
 
-    const data=[];
-
+    const track=[];
 
     /*
-     Tempo = 60 BPM.
+     120 BPM
     */
 
-    data.push(
+    track.push(
         0,
         0xff,
         0x51,
         3,
-        0x0f,
-        0x42,
-        0x40
+        0x07,
+        0xa1,
+        0x20
     );
 
 
-    let ultimoTiempo=0;
+    let ultimo=0;
 
-    for(
-        const evento
-        of eventos
-    ){
+    for(const e of eventos){
 
-        const delta =
-            evento.tiempo-
-            ultimoTiempo;
+        const delta=
+            e.tiempo-ultimo;
 
-        ultimoTiempo =
-            evento.tiempo;
+        ultimo=e.tiempo;
 
+        track.push(
+            ...vlq(
+                Math.max(
+                    0,
+                    delta
+                )
+            )
+        );
 
-        if(
-            evento.tipo ===
-            "on"
-        ){
+        track.push(
+            e.tipo
+            ?0x90
+            :0x80
+        );
 
-            data.push(
-
-                ...VLQ(
-                    Math.max(
-                        0,
-                        delta
-                    )
-                ),
-
-                0x90,
-
-                evento.pitch,
-
-                80
-
-            );
-
-        }else{
-
-            data.push(
-
-                ...VLQ(
-                    Math.max(
-                        0,
-                        delta
-                    )
-                ),
-
-                0x80,
-
-                evento.pitch,
-
-                0
-
-            );
-
-        }
-
+        track.push(
+            e.pitch,
+            e.velocity
+        );
     }
 
-
-    /*
-     Fin de pista.
-    */
-
-    data.push(
-
+    track.push(
         0,
         0xff,
         0x2f,
         0
-
     );
 
-
-    const track=[
-
-        0x4d,
-        0x54,
-        0x72,
-        0x6b,
-
-        ...U32(
-            data.length
-        ),
-
-        ...data
-
-    ];
-
-
-    /*
-     MIDI Format 0
-     1 pista
-     480 ticks/negra
-    */
 
     const header=[
 
-        0x4d,
-        0x54,
-        0x68,
-        0x64,
+        0x4d,0x54,0x68,0x64,
 
-        0,
-        0,
-        0,
-        6,
+        0,0,0,6,
 
-        0,
-        0,
+        0,0,
 
-        0,
-        1,
+        0,1,
 
-        1,
-        0xE0
+        1,0xe0
 
     ];
 
 
-    const archivo =
-        new Uint8Array(
-            [
-                ...header,
-                ...track
-            ]
-        );
+    const chunk=[
+
+        0x4d,0x54,0x72,0x6b,
+
+        ...u32(track.length),
+
+        ...track
+    ];
 
 
     return new Blob(
-        [archivo],
+        [
+            new Uint8Array([
+                ...header,
+                ...chunk
+            ])
+        ],
         {
-            type:
-                "audio/midi"
+            type:"audio/midi"
         }
     );
-
 }
 
 
@@ -1724,117 +1691,82 @@ function generarMIDI(){
 ============================================================ */
 
 document
-    .getElementById(
-        "analizar"
-    )
-    .onclick =
-    analizar;
+.getElementById("analizar")
+.addEventListener(
+    "click",
+    analizar
+);
 
 
 document
-    .getElementById(
-        "midi"
-    )
-    .onclick =
+.getElementById("midi")
+.addEventListener(
+    "click",
     ()=>{
 
-        try{
+        estado.midi=
+            generarMIDI();
 
-            estado.midi =
-                generarMIDI();
+        document
+            .getElementById("descargar")
+            .disabled=false;
 
-            document
-                .getElementById(
-                    "descargar"
-                )
-                .disabled=false;
+        log("");
+        log(
+            "🎹 MIDI generado."
+        );
 
-            log(
-                "🎹 MIDI GENERADO CORRECTAMENTE"
-            );
+        log(
+            "⚠️ Las alturas ya se reconstruyen desde las cabezas."
+        );
 
-            log(
-                "✓ Las notas simultáneas se conservaron como acordes."
-            );
+        log(
+            "⚠️ Los acordes se conservan simultáneamente."
+        );
 
-            log(
-                "✓ Las alturas se calcularon desde la posición vertical."
-            );
+        log(
+            "⚠️ El ritmo todavía es provisional."
+        );
 
-            log(
-                "✓ El tiempo se reconstruyó desde la geometría horizontal."
-            );
-
-            log(
-                "⚠️ Esta versión todavía estima el ritmo."
-            );
-
-            log(
-                "⚠️ Alteraciones, ligaduras y figuras complejas serán refinadas en la siguiente etapa."
-            );
-
-        }
-
-        catch(error){
-
-            log(
-                "❌ ERROR GENERANDO MIDI: "+
-                error.message
-            );
-
-        }
-
-    };
+        log(
+            "➡️ La siguiente etapa será convertir Stem/Beam/Rest/Tie en duraciones musicales reales."
+        );
+    }
+);
 
 
 document
-    .getElementById(
-        "descargar"
-    )
-    .onclick =
+.getElementById("descargar")
+.addEventListener(
+    "click",
     ()=>{
 
-        if(
-            !estado.midi
-        ){
-
+        if(!estado.midi)
             return;
 
-        }
-
-        const url =
+        const url=
             URL.createObjectURL(
                 estado.midi
             );
 
-        const enlace =
-            document.createElement(
-                "a"
-            );
+        const a=
+            document.createElement("a");
 
-        enlace.href=url;
+        a.href=url;
 
-        enlace.download =
+        a.download=
             "Experience_reconstruccion.mid";
 
-        document.body.appendChild(
-            enlace
-        );
-
-        enlace.click();
-
-        enlace.remove();
+        a.click();
 
         setTimeout(
             ()=>{
-                URL.revokeObjectURL(
-                    url
-                );
+                URL.revokeObjectURL(url);
             },
             1000
         );
-
-    };
+    }
+);
 
 </script>
 
