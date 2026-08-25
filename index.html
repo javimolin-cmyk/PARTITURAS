@@ -1,287 +1,107 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Experience — Generador MIDI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #222;
-  color: white;
-  margin: 0;
-  padding: 30px;
-}
+  <title>Experience — Partitura PNG</title>
 
-.container {
-  max-width: 900px;
-  margin: auto;
-}
+  <style>
+    body {
+      margin: 0;
+      padding: 30px;
+      background: #222;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
 
-button {
-  font-size: 18px;
-  padding: 14px 22px;
-  margin: 8px 0;
-  cursor: pointer;
-  border: 0;
-  border-radius: 8px;
-}
+    h1 {
+      text-align: center;
+    }
 
-#generar {
-  background: #4caf50;
-  color: white;
-}
+    #estado {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 15px;
+      background: #333;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
 
-#descargar {
-  background: #2196f3;
-  color: white;
-  display: none;
-}
+    .pagina {
+      max-width: 1400px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      color: black;
+      box-shadow: 0 3px 15px rgba(0,0,0,.4);
+    }
 
-#estado {
-  background: #333;
-  padding: 15px;
-  margin-top: 20px;
-  border-radius: 8px;
-  white-space: pre-wrap;
-}
+    .pagina h2 {
+      margin-top: 0;
+    }
 
-.page {
-  background: white;
-  margin-top: 30px;
-  padding: 20px;
-  color: black;
-}
+    .pagina img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+    }
 
-svg {
-  width: 100%;
-  height: auto;
-}
-</style>
+    .botones {
+      margin-top: 15px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-right: 8px;
+    }
+
+    .descargar {
+      background: #1976d2;
+      color: white;
+    }
+
+    .original {
+      background: #555;
+      color: white;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
-
 <h1>Experience — Ludovico Einaudi</h1>
 
-<p>
-Este programa lee las cinco páginas SVG de la partitura
-y construye un archivo MIDI.
-</p>
-
-<button id="generar">
-🎹 GENERAR MIDI
-</button>
-
-<button id="descargar">
-⬇️ DESCARGAR MIDI
-</button>
-
 <div id="estado">
-Esperando...
+  Iniciando...
 </div>
 
-<div id="partitura"></div>
-
-</div>
+<div id="partituras"></div>
 
 
 <script>
 
-/*
-==========================================================
-CONFIGURACIÓN
-==========================================================
-*/
+const CARPETA =
+  "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
-const carpeta =
-"EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
-
-const paginas = [
-"score_0.svg",
-"score_1.svg",
-"score_2.svg",
-"score_3.svg",
-"score_4.svg"
+const ARCHIVOS = [
+  "score_0.svg",
+  "score_1.svg",
+  "score_2.svg",
+  "score_3.svg",
+  "score_4.svg"
 ];
 
+const estado =
+  document.getElementById("estado");
 
-/*
-==========================================================
-UTILIDADES MIDI
-==========================================================
-*/
-
-function vlq(numero) {
-
-    let buffer = numero & 0x7f;
-
-    const bytes = [];
-
-    while (
-        (numero >>= 7)
-    ) {
-
-        buffer <<= 8;
-
-        buffer |=
-            ((numero & 0x7f) | 0x80);
-    }
-
-    while (true) {
-
-        bytes.push(
-            buffer & 0xff
-        );
-
-        if (
-            buffer & 0x80
-        ) {
-
-            buffer >>= 8;
-
-        } else {
-
-            break;
-        }
-    }
-
-    return bytes;
-}
-
-
-function textoMIDI(texto) {
-
-    return [
-        ...texto
-            .split("")
-            .map(
-                c => c.charCodeAt(0)
-            )
-    ];
-}
-
-
-function numero16(n) {
-
-    return [
-        (n >> 8) & 255,
-        n & 255
-    ];
-}
-
-
-function numero32(n) {
-
-    return [
-        (n >> 24) & 255,
-        (n >> 16) & 255,
-        (n >> 8) & 255,
-        n & 255
-    ];
-}
-
-
-/*
-==========================================================
-CREAR MIDI
-==========================================================
-*/
-
-function crearMIDI(notas) {
-
-    const ticks =
-        480;
-
-    const eventos = [];
-
-    /*
-    Programa de piano.
-    */
-
-    eventos.push(
-        0xC0,
-        0
-    );
-
-    let tiempoAnterior = 0;
-
-    for (const nota of notas) {
-
-        const inicio =
-            Math.round(
-                nota.inicio *
-                ticks
-            );
-
-        const duracion =
-            Math.max(
-                1,
-                Math.round(
-                    nota.duracion *
-                    ticks
-                )
-            );
-
-        const deltaInicio =
-            inicio -
-            tiempoAnterior;
-
-        eventos.push(
-            ...vlq(
-                deltaInicio
-            ),
-            0x90,
-            nota.midi,
-            90
-        );
-
-        eventos.push(
-            ...vlq(
-                duracion
-            ),
-            0x80,
-            nota.midi,
-            0
-        );
-
-        tiempoAnterior =
-            inicio + duracion;
-    }
-
-    /*
-    Fin de pista.
-    */
-
-    eventos.push(
-        0,
-        0xff,
-        0x2f,
-        0
-    );
-
-    const encabezado = [
-        ...textoMIDI("MThd"),
-        ...numero32(6),
-        ...numero16(0),
-        ...numero16(1),
-        ...numero16(ticks)
-    ];
-
-    const pista = [
-        ...textoMIDI("MTrk"),
-        ...numero32(eventos.length),
-        ...eventos
-    ];
-
-    return new Uint8Array([
-        ...encabezado,
-        ...pista
-    ]);
-}
+const contenedor =
+  document.getElementById("partituras");
 
 
 /*
@@ -290,371 +110,508 @@ CARGAR SVG
 ==========================================================
 */
 
-async function cargarSVG() {
+async function cargarSVG(nombre) {
 
-    const estado =
-        document.getElementById(
-            "estado"
+  const url =
+    CARPETA +
+    nombre;
+
+  const respuesta =
+    await fetch(url);
+
+  if (!respuesta.ok) {
+
+    throw new Error(
+      nombre +
+      " → HTTP " +
+      respuesta.status
+    );
+  }
+
+  return await respuesta.text();
+}
+
+
+/*
+==========================================================
+OBTENER DIMENSIONES DEL SVG
+==========================================================
+*/
+
+function dimensionesSVG(svgTexto) {
+
+  const parser =
+    new DOMParser();
+
+  const documento =
+    parser.parseFromString(
+      svgTexto,
+      "image/svg+xml"
+    );
+
+  const svg =
+    documento.documentElement;
+
+  let width =
+    parseFloat(
+      svg.getAttribute("width")
+    );
+
+  let height =
+    parseFloat(
+      svg.getAttribute("height")
+    );
+
+  /*
+  Si no hay width/height,
+  usamos viewBox.
+  */
+
+  if (
+    (!width || !height) &&
+    svg.hasAttribute("viewBox")
+  ) {
+
+    const vb =
+      svg.getAttribute("viewBox")
+        .trim()
+        .split(/\s+/)
+        .map(Number);
+
+    if (vb.length === 4) {
+
+      width = vb[2];
+      height = vb[3];
+    }
+  }
+
+  /*
+  Valores de seguridad.
+  */
+
+  if (!width)
+    width = 1600;
+
+  if (!height)
+    height = 2200;
+
+  return {
+    width,
+    height
+  };
+}
+
+
+/*
+==========================================================
+SVG → PNG
+==========================================================
+*/
+
+function convertirPNG(
+  svgTexto,
+  nombre
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const dimensiones =
+        dimensionesSVG(
+          svgTexto
         );
 
-    const contenedor =
-        document.getElementById(
-            "partitura"
+      /*
+      Creamos un Blob SVG.
+      */
+
+      const blob =
+        new Blob(
+          [svgTexto],
+          {
+            type:
+              "image/svg+xml"
+          }
         );
 
-    contenedor.innerHTML = "";
+      const url =
+        URL.createObjectURL(
+          blob
+        );
 
-    const svgs = [];
+      const imagen =
+        new Image();
+
+      imagen.onload =
+        function() {
+
+          /*
+          Factor de resolución.
+
+          2 = buena calidad
+          3 = alta calidad
+          */
+
+          const escala = 3;
+
+          const canvas =
+            document.createElement(
+              "canvas"
+            );
+
+          canvas.width =
+            Math.round(
+              dimensiones.width *
+              escala
+            );
+
+          canvas.height =
+            Math.round(
+              dimensiones.height *
+              escala
+            );
+
+          const contexto =
+            canvas.getContext(
+              "2d"
+            );
+
+          /*
+          Fondo blanco.
+          */
+
+          contexto.fillStyle =
+            "white";
+
+          contexto.fillRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+          /*
+          Dibujar SVG.
+          */
+
+          contexto.drawImage(
+            imagen,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+          /*
+          Convertir a PNG.
+          */
+
+          canvas.toBlob(
+            function(png) {
+
+              URL.revokeObjectURL(
+                url
+              );
+
+              if (!png) {
+
+                reject(
+                  new Error(
+                    "No se pudo crear PNG"
+                  )
+                );
+
+                return;
+              }
+
+              resolve(png);
+
+            },
+            "image/png"
+          );
+        };
+
+      imagen.onerror =
+        function() {
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          reject(
+            new Error(
+              "No se pudo rasterizar " +
+              nombre
+            )
+          );
+        };
+
+      imagen.src =
+        url;
+    }
+  );
+}
+
+
+/*
+==========================================================
+MOSTRAR PÁGINA
+==========================================================
+*/
+
+async function procesarPagina(
+  nombre,
+  numero
+) {
+
+  estado.textContent =
+    `Procesando página ${
+      numero + 1
+    } de ${
+      ARCHIVOS.length
+    }...\n\n` +
+    nombre;
+
+  /*
+  Cargar SVG.
+  */
+
+  const svg =
+    await cargarSVG(
+      nombre
+    );
+
+  /*
+  Convertir SVG a PNG.
+  */
+
+  const png =
+    await convertirPNG(
+      svg,
+      nombre
+    );
+
+  /*
+  URL temporal del PNG.
+  */
+
+  const pngURL =
+    URL.createObjectURL(
+      png
+    );
+
+  /*
+  Crear contenedor.
+  */
+
+  const pagina =
+    document.createElement(
+      "section"
+    );
+
+  pagina.className =
+    "pagina";
+
+  /*
+  Título.
+  */
+
+  const titulo =
+    document.createElement(
+      "h2"
+    );
+
+  titulo.textContent =
+    "Página " +
+    (numero + 1);
+
+  pagina.appendChild(
+    titulo
+  );
+
+  /*
+  Imagen PNG.
+  */
+
+  const imagen =
+    document.createElement(
+      "img"
+    );
+
+  imagen.src =
+    pngURL;
+
+  imagen.alt =
+    "Partitura página " +
+    (numero + 1);
+
+  pagina.appendChild(
+    imagen
+  );
+
+  /*
+  Botones.
+  */
+
+  const botones =
+    document.createElement(
+      "div"
+    );
+
+  botones.className =
+    "botones";
+
+  /*
+  Descargar PNG.
+  */
+
+  const descargarPNG =
+    document.createElement(
+      "button"
+    );
+
+  descargarPNG.className =
+    "descargar";
+
+  descargarPNG.textContent =
+    "⬇ Descargar PNG";
+
+  descargarPNG.onclick =
+    function() {
+
+      const enlace =
+        document.createElement(
+          "a"
+        );
+
+      enlace.href =
+        pngURL;
+
+      enlace.download =
+        "experience-pagina-" +
+        (numero + 1) +
+        ".png";
+
+      enlace.click();
+    };
+
+  botones.appendChild(
+    descargarPNG
+  );
+
+  /*
+  Descargar SVG original.
+  */
+
+  const descargarSVG =
+    document.createElement(
+      "button"
+    );
+
+  descargarSVG.className =
+    "original";
+
+  descargarSVG.textContent =
+    "⬇ Descargar SVG original";
+
+  descargarSVG.onclick =
+    function() {
+
+      const blob =
+        new Blob(
+          [svg],
+          {
+            type:
+              "image/svg+xml"
+          }
+        );
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+      const enlace =
+        document.createElement(
+          "a"
+        );
+
+      enlace.href =
+        url;
+
+      enlace.download =
+        nombre;
+
+      enlace.click();
+
+      setTimeout(
+        () =>
+          URL.revokeObjectURL(
+            url
+          ),
+        1000
+      );
+    };
+
+  botones.appendChild(
+    descargarSVG
+  );
+
+  pagina.appendChild(
+    botones
+  );
+
+  contenedor.appendChild(
+    pagina
+  );
+
+  return pngURL;
+}
+
+
+/*
+==========================================================
+PROCESAR LAS CINCO PÁGINAS
+==========================================================
+*/
+
+async function iniciar() {
+
+  try {
 
     for (
-        let i = 0;
-        i < paginas.length;
-        i++
+      let i = 0;
+      i < ARCHIVOS.length;
+      i++
     ) {
 
-        estado.textContent =
-            `Cargando página ${
-                i + 1
-            } de ${
-                paginas.length
-            }...`;
-
-        const respuesta =
-            await fetch(
-                carpeta +
-                paginas[i]
-            );
-
-        if (!respuesta.ok) {
-
-            throw new Error(
-                "No se pudo cargar " +
-                paginas[i]
-            );
-        }
-
-        const texto =
-            await respuesta.text();
-
-        svgs.push(texto);
-
-        const pagina =
-            document.createElement(
-                "div"
-            );
-
-        pagina.className =
-            "page";
-
-        const parser =
-            new DOMParser();
-
-        const doc =
-            parser.parseFromString(
-                texto,
-                "image/svg+xml"
-            );
-
-        const svg =
-            doc.documentElement;
-
-        pagina.appendChild(
-            document.importNode(
-                svg,
-                true
-            )
-        );
-
-        contenedor.appendChild(
-            pagina
-        );
+      await procesarPagina(
+        ARCHIVOS[i],
+        i
+      );
     }
 
-    return svgs;
+    estado.textContent =
+      "✓ TERMINADO\n\n" +
+      "Las cinco páginas fueron " +
+      "convertidas a PNG.\n\n" +
+      "Ahora las partituras están " +
+      "rasterizadas como imágenes " +
+      "PNG de alta resolución.";
+
+  }
+  catch(error) {
+
+    console.error(error);
+
+    estado.textContent =
+      "❌ ERROR\n\n" +
+      error.message;
+  }
 }
 
 
-/*
-==========================================================
-EXTRACCIÓN DE NOTAS
-==========================================================
-*/
-
-/*
-IMPORTANTE:
-
-MuseScore puede generar SVG con diferentes
-estructuras dependiendo de la versión.
-
-Esta función busca información musical
-que pueda estar embebida en atributos,
-IDs o texto.
-
-*/
-
-function analizarSVG(svg) {
-
-    const notas = [];
-
-    const parser =
-        new DOMParser();
-
-    const doc =
-        parser.parseFromString(
-            svg,
-            "image/svg+xml"
-        );
-
-    const elementos =
-        [
-            ...doc.querySelectorAll("*")
-        ];
-
-    for (const elemento of elementos) {
-
-        const texto =
-            (
-                elemento.textContent ||
-                ""
-            ).trim();
-
-        const id =
-            elemento.id ||
-            "";
-
-        const clase =
-            elemento.getAttribute(
-                "class"
-            ) || "";
-
-        /*
-        Buscamos nombres que MuseScore
-        pueda utilizar para identificar
-        notas.
-        */
-
-        const datos =
-            (
-                id + " " +
-                clase + " " +
-                texto
-            ).toLowerCase();
-
-        if (
-            datos.includes("note") ||
-            datos.includes("chord")
-        ) {
-
-            /*
-            Si el SVG contiene atributos
-            musicales, se podrían recuperar aquí.
-            */
-
-            const pitch =
-                elemento.getAttribute(
-                    "data-pitch"
-                );
-
-            const time =
-                elemento.getAttribute(
-                    "data-time"
-                );
-
-            const duration =
-                elemento.getAttribute(
-                    "data-duration"
-                );
-
-            if (
-                pitch !== null &&
-                time !== null
-            ) {
-
-                notas.push({
-                    midi:
-                        Number(pitch),
-
-                    inicio:
-                        Number(time),
-
-                    duracion:
-                        Number(
-                            duration ||
-                            1
-                        )
-                });
-            }
-        }
-    }
-
-    return notas;
-}
-
-
-/*
-==========================================================
-GENERAR
-==========================================================
-*/
-
-let midiBlob = null;
-
-
-document
-.getElementById("generar")
-.addEventListener(
-"click",
-async () => {
-
-    const estado =
-        document.getElementById(
-            "estado"
-        );
-
-    try {
-
-        estado.textContent =
-            "Cargando las partituras...";
-
-        const svgs =
-            await cargarSVG();
-
-        let notas = [];
-
-        for (
-            let i = 0;
-            i < svgs.length;
-            i++
-        ) {
-
-            estado.textContent =
-                `Analizando página ${
-                    i + 1
-                }...`;
-
-            const encontradas =
-                analizarSVG(
-                    svgs[i]
-                );
-
-            notas.push(
-                ...encontradas
-            );
-        }
-
-        /*
-        Orden temporal.
-        */
-
-        notas.sort(
-            (a,b) =>
-                a.inicio -
-                b.inicio
-        );
-
-        estado.textContent =
-            `Análisis terminado.
-
-Notas encontradas:
-${notas.length}
-
-`;
-
-        if (!notas.length) {
-
-            estado.textContent +=
-                `No se encontraron atributos
-musicales directamente en los SVG.
-
-Esto significa que estos SVG contienen
-la representación gráfica de la partitura,
-pero no los datos MIDI semánticos.
-
-En ese caso necesitamos hacer reconocimiento
-visual de las notas o utilizar el archivo
-musescore_pages.json / datos originales
-de MuseScore.`;
-
-            return;
-        }
-
-        const datos =
-            crearMIDI(notas);
-
-        midiBlob =
-            new Blob(
-                [datos],
-                {
-                    type:
-                    "audio/midi"
-                }
-            );
-
-        const boton =
-            document.getElementById(
-                "descargar"
-            );
-
-        boton.style.display =
-            "inline-block";
-
-        estado.textContent +=
-            "MIDI generado correctamente.";
-
-    }
-    catch(error) {
-
-        console.error(error);
-
-        estado.textContent =
-            "ERROR:\n\n" +
-            error.message;
-    }
-});
-
-
-/*
-==========================================================
-DESCARGAR
-==========================================================
-*/
-
-document
-.getElementById("descargar")
-.addEventListener(
-"click",
-() => {
-
-    if (!midiBlob)
-        return;
-
-    const url =
-        URL.createObjectURL(
-            midiBlob
-        );
-
-    const a =
-        document.createElement(
-            "a"
-        );
-
-    a.href = url;
-
-    a.download =
-        "Experience-Ludovico-Einaudi.mid";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    a.remove();
-
-    setTimeout(
-        () =>
-            URL.revokeObjectURL(url),
-        1000
-    );
-});
+iniciar();
 
 </script>
 
