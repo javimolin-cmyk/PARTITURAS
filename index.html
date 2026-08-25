@@ -2,237 +2,379 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Experience — Reconstrucción musical MIDI</title>
+<title>Experience — Reconstrucción MIDI</title>
 
 <style>
-
 *{
     box-sizing:border-box;
 }
 
 body{
-    font-family:Arial,sans-serif;
-    max-width:1400px;
-    margin:auto;
+    margin:0;
+    background:#0d1117;
+    color:#e6edf3;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+header{
     padding:25px;
-    background:#f3f3f3;
-    color:#222;
+    background:#161b22;
+    border-bottom:1px solid #30363d;
 }
 
 h1{
-    margin-bottom:5px;
+    margin:0 0 8px;
+    font-size:28px;
 }
 
 .subtitle{
-    color:#666;
-    margin-top:0;
+    color:#8b949e;
+    font-size:14px;
 }
 
-.card{
-    background:white;
+.container{
+    max-width:1500px;
+    margin:auto;
     padding:20px;
-    margin:15px 0;
-    border-radius:12px;
-    box-shadow:0 2px 8px #0001;
+}
+
+.controls{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
 }
 
 button{
     border:0;
-    padding:13px 20px;
-    margin:5px;
     border-radius:8px;
+    padding:13px 18px;
+    font-size:14px;
     font-weight:bold;
     cursor:pointer;
+    background:#238636;
+    color:white;
+}
+
+button:hover{
+    filter:brightness(1.15);
+}
+
+button.secondary{
+    background:#1f6feb;
+}
+
+button.warning{
+    background:#9e6a03;
 }
 
 button:disabled{
-    opacity:.4;
+    opacity:.45;
     cursor:not-allowed;
 }
 
-#analizar{
-    background:#222;
-    color:white;
-}
-
-#midi{
-    background:#1769aa;
-    color:white;
-}
-
-#descargar{
-    background:#287a3e;
-    color:white;
-}
-
 .stats{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-top:15px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
+    margin-bottom:20px;
 }
 
 .stat{
-    min-width:130px;
-    padding:13px;
-    text-align:center;
-    background:#eee;
-    border-radius:8px;
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:10px;
+    padding:18px;
 }
 
-.stat b{
-    display:block;
-    font-size:24px;
+.stat .number{
+    font-size:28px;
+    font-weight:bold;
 }
 
-.stat span{
-    color:#666;
+.stat .label{
+    color:#8b949e;
+    margin-top:5px;
     font-size:13px;
+}
+
+.panel{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:10px;
+    margin-bottom:20px;
+    overflow:hidden;
+}
+
+.panel-title{
+    padding:14px 18px;
+    border-bottom:1px solid #30363d;
+    font-weight:bold;
+}
+
+.panel-body{
+    padding:18px;
 }
 
 #log{
-    background:#111;
-    color:#ddd;
-    padding:15px;
-    border-radius:8px;
-    max-height:550px;
+    height:430px;
     overflow:auto;
     white-space:pre-wrap;
     font-family:monospace;
-    font-size:13px;
-    line-height:1.45;
+    font-size:12px;
+    line-height:1.6;
+    color:#c9d1d9;
 }
 
 .page{
-    border-top:1px solid #ddd;
-    margin-top:25px;
-    padding-top:20px;
+    margin-bottom:25px;
 }
 
-.page h3{
-    margin-bottom:5px;
+.page-header{
+    display:flex;
+    justify-content:space-between;
+    gap:15px;
+    flex-wrap:wrap;
+    padding:14px;
+    background:#21262d;
+    border-radius:8px 8px 0 0;
+}
+
+.page-title{
+    font-weight:bold;
+}
+
+.page-info{
+    color:#8b949e;
+    font-size:13px;
+}
+
+.table-wrap{
+    overflow:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+th,td{
+    padding:8px;
+    border-bottom:1px solid #30363d;
+    text-align:left;
+    white-space:nowrap;
+}
+
+th{
+    color:#8b949e;
+    background:#0d1117;
+    position:sticky;
+    top:0;
+}
+
+.high{
+    color:#3fb950;
+}
+
+.medium{
+    color:#d29922;
+}
+
+.low{
+    color:#f85149;
+}
+
+.note-count{
+    font-weight:bold;
+}
+
+#visualizer{
+    width:100%;
+    min-height:300px;
+    background:white;
+    border-radius:8px;
+    overflow:auto;
+    padding:10px;
+}
+
+.sheet{
+    position:relative;
+    margin-bottom:25px;
+    border-bottom:2px solid #ddd;
+}
+
+.sheet svg{
+    width:100%;
+    height:auto;
+    display:block;
+}
+
+.note-dot{
+    fill:red;
+    stroke:white;
+    stroke-width:1.5;
+    pointer-events:none;
+}
+
+.note-dot.low{
+    fill:#ff0000;
+}
+
+.staff-line{
+    stroke:#1f6feb;
+    stroke-width:1.2;
+    opacity:.75;
 }
 
 .badge{
     display:inline-block;
-    padding:4px 8px;
-    margin:2px;
-    border-radius:5px;
-    background:#eee;
+    padding:3px 7px;
+    border-radius:10px;
+    background:#30363d;
+    font-size:11px;
+}
+
+.good{
+    color:#3fb950;
+}
+
+.warn{
+    color:#d29922;
+}
+
+.danger{
+    color:#f85149;
+}
+
+pre.json{
+    max-height:500px;
+    overflow:auto;
+    background:#0d1117;
+    padding:15px;
+    border-radius:8px;
+    font-size:11px;
+}
+
+footer{
+    padding:30px;
+    text-align:center;
+    color:#8b949e;
     font-size:12px;
 }
-
-.badge.good{
-    background:#d9f3df;
-}
-
-.badge.warn{
-    background:#fff0c7;
-}
-
-.badge.bad{
-    background:#ffdede;
-}
-
-table{
-    border-collapse:collapse;
-    width:100%;
-    font-size:12px;
-    margin-top:12px;
-}
-
-td,th{
-    border:1px solid #ddd;
-    padding:6px;
-    vertical-align:top;
-}
-
-th{
-    background:#eee;
-}
-
-details{
-    margin-top:15px;
-}
-
-summary{
-    cursor:pointer;
-    font-weight:bold;
-}
-
-.event{
-    font-family:monospace;
-    padding:7px;
-    margin:3px 0;
-    border-left:4px solid #1769aa;
-    background:#f6f6f6;
-}
-
-.warning{
-    background:#fff3cd;
-    padding:12px;
-    border-radius:8px;
-    margin-top:12px;
-}
-
-.success{
-    background:#dff5e4;
-    padding:12px;
-    border-radius:8px;
-    margin-top:12px;
-}
-
 </style>
 </head>
 
 <body>
 
-<h1>🎼 Experience — Reconstrucción MIDI</h1>
+<header>
+    <h1>🎼 Experience — Reconstrucción MIDI</h1>
+    <div class="subtitle">
+        Análisis musical profundo directamente desde los SVG de MuseScore
+    </div>
+</header>
 
-<p class="subtitle">
-Extracción musical directamente desde los SVG de MuseScore.
-</p>
+<div class="container">
 
-<div class="card">
+    <div class="controls">
+        <button id="analyzeBtn">
+            ▶ ANALIZAR PARTITURA
+        </button>
 
-<button id="analizar">
-▶ ANALIZAR PARTITURA
-</button>
+        <button id="midiBtn" class="secondary" disabled>
+            🎹 GENERAR MIDI
+        </button>
 
-<button id="midi" disabled>
-🎹 GENERAR MIDI
-</button>
+        <button id="downloadBtn" class="warning" disabled>
+            ⬇ DESCARGAR MIDI
+        </button>
 
-<button id="descargar" disabled>
-⬇ DESCARGAR MIDI
-</button>
+        <button id="jsonBtn" disabled>
+            💾 DESCARGAR JSON
+        </button>
+    </div>
 
-<div id="stats" class="stats"></div>
+    <div class="stats">
 
-<div id="estado"></div>
+        <div class="stat">
+            <div class="number" id="statPages">0</div>
+            <div class="label">Páginas</div>
+        </div>
+
+        <div class="stat">
+            <div class="number" id="statHeads">0</div>
+            <div class="label">Cabezas</div>
+        </div>
+
+        <div class="stat">
+            <div class="number" id="statStaves">0</div>
+            <div class="label">Pentagramas</div>
+        </div>
+
+        <div class="stat">
+            <div class="number" id="statAssigned">0</div>
+            <div class="label">Asignadas</div>
+        </div>
+
+        <div class="stat">
+            <div class="number" id="statPitch">0</div>
+            <div class="label">Con pitch</div>
+        </div>
+
+        <div class="stat">
+            <div class="number" id="statHigh">0</div>
+            <div class="label">Pitch ≥ 85%</div>
+        </div>
+
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">
+            Registro
+        </div>
+
+        <div class="panel-body">
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">
+            Información musical detectada
+        </div>
+
+        <div class="panel-body" id="results">
+            Ejecuta el análisis para comenzar.
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">
+            Vista reconstruida
+        </div>
+
+        <div class="panel-body">
+            <div id="visualizer"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">
+            Datos JSON
+        </div>
+
+        <div class="panel-body">
+            <pre class="json" id="jsonPreview">Sin datos.</pre>
+        </div>
+    </div>
 
 </div>
 
-
-<div class="card">
-
-<h2>Registro</h2>
-
-<pre id="log">Listo.</pre>
-
-</div>
-
-
-<div class="card">
-
-<h2>🎼 Información musical detectada</h2>
-
-<div id="resultados"></div>
-
-</div>
-
+<footer>
+    Experience — reconstrucción experimental desde SVG
+</footer>
 
 <script>
 
@@ -241,9 +383,9 @@ Extracción musical directamente desde los SVG de MuseScore.
 ============================================================ */
 
 const BASE =
-"EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
+    "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
-const ARCHIVOS = [
+const SVG_FILES = [
     "score_0.svg",
     "score_1.svg",
     "score_2.svg",
@@ -251,414 +393,227 @@ const ARCHIVOS = [
     "score_4.svg"
 ];
 
-const estado = {
+const PPQ = 480;
 
-    paginas: [],
+const DEFAULT_BPM = 60;
 
-    eventos: [],
 
-    midi: null,
+/* ============================================================
+   ESTADO
+============================================================ */
 
-    tempo: 64,
-
-    timeNumerator: 4,
-
-    timeDenominator: 4,
-
-    keySignature: 0
-
+let score = {
+    pages: [],
+    notes: [],
+    events: [],
+    metadata: {}
 };
+
+let midiBlob = null;
 
 
 /* ============================================================
    LOG
 ============================================================ */
 
-function log(text){
-
-    const el =
-        document.getElementById("log");
-
-    el.textContent += text + "\n";
-
-    el.scrollTop =
-        el.scrollHeight;
+function log(message=""){
+    const box = document.getElementById("log");
+    box.textContent += message + "\n";
+    box.scrollTop = box.scrollHeight;
 }
 
-
-function limpiarLog(){
-
-    document.getElementById(
-        "log"
-    ).textContent = "";
-
+function clearLog(){
+    document.getElementById("log").textContent="";
 }
 
 
 /* ============================================================
-   PARSER DE PATH SVG
+   UTILIDADES
 ============================================================ */
 
-function parsePath(d){
+function clamp(v,min,max){
+    return Math.max(min,Math.min(max,v));
+}
 
-    const tokens =
-        d.match(
-            /[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/ig
-        ) || [];
+function distance(a,b){
+    return Math.abs(a-b);
+}
 
-    let i = 0;
+function median(arr){
 
-    let cmd = "";
+    if(!arr.length) return 0;
 
-    let x = 0;
-    let y = 0;
+    const a=[...arr].sort((x,y)=>x-y);
+    const m=Math.floor(a.length/2);
 
-    const xs = [];
-    const ys = [];
+    return a.length%2
+        ? a[m]
+        : (a[m-1]+a[m])/2;
+}
 
-    function num(){
+function mean(arr){
 
-        return parseFloat(
-            tokens[i++]
-        ) || 0;
+    if(!arr.length) return 0;
 
-    }
+    return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
 
-    while(i < tokens.length){
+function esc(s){
+    return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;");
+}
 
-        if(/[a-zA-Z]/.test(tokens[i])){
 
-            cmd = tokens[i++];
+/* ============================================================
+   PARSE SVG
+============================================================ */
 
-        }
+function parseSVG(text){
 
-        if(!cmd)
-            continue;
+    return new DOMParser()
+        .parseFromString(text,"image/svg+xml");
+}
 
-        const c =
-            cmd.toLowerCase();
 
-        if(c === "z"){
+/* ============================================================
+   EXTRAER PATH
+============================================================ */
 
-            cmd = "";
+function getPathElements(svg){
 
-            continue;
-        }
+    return [...svg.querySelectorAll("path")];
+}
 
-        const relative =
-            cmd === c;
 
+/* ============================================================
+   BBOX
+============================================================ */
 
-        if(c === "m" || c === "l"){
+function pathBBox(path){
 
-            if(i + 1 >= tokens.length)
-                break;
-
-            const a = num();
-            const b = num();
-
-            if(relative){
-
-                x += a;
-                y += b;
-
-            }else{
-
-                x = a;
-                y = b;
-
-            }
-
-            xs.push(x);
-            ys.push(y);
-
-            if(c === "m"){
-
-                cmd =
-                    relative
-                    ? "l"
-                    : "L";
-
-            }
-
-        }
-
-
-        else if(c === "h"){
-
-            const a = num();
-
-            x =
-                relative
-                ? x + a
-                : a;
-
-            xs.push(x);
-            ys.push(y);
-
-        }
-
-
-        else if(c === "v"){
-
-            const a = num();
-
-            y =
-                relative
-                ? y + a
-                : a;
-
-            xs.push(x);
-            ys.push(y);
-
-        }
-
-
-        else if(c === "c"){
-
-            for(let k=0;k<3;k++){
-
-                const a = num();
-                const b = num();
-
-                if(relative){
-
-                    x += a;
-                    y += b;
-
-                }else{
-
-                    x = a;
-                    y = b;
-
-                }
-
-                xs.push(x);
-                ys.push(y);
-            }
-
-        }
-
-
-        else if(c === "s" || c === "q"){
-
-            for(let k=0;k<2;k++){
-
-                const a = num();
-                const b = num();
-
-                if(relative){
-
-                    x += a;
-                    y += b;
-
-                }else{
-
-                    x = a;
-                    y = b;
-
-                }
-
-                xs.push(x);
-                ys.push(y);
-            }
-
-        }
-
-
-        else if(c === "t"){
-
-            const a = num();
-            const b = num();
-
-            if(relative){
-
-                x += a;
-                y += b;
-
-            }else{
-
-                x = a;
-                y = b;
-
-            }
-
-            xs.push(x);
-            ys.push(y);
-
-        }
-
-
-        else if(c === "a"){
-
-            /*
-             rx ry rotation largeArc sweep x y
-            */
-
-            num();
-            num();
-            num();
-            num();
-            num();
-
-            const a = num();
-            const b = num();
-
-            if(relative){
-
-                x += a;
-                y += b;
-
-            }else{
-
-                x = a;
-                y = b;
-
-            }
-
-            xs.push(x);
-            ys.push(y);
-
-        }
-
-
-        else{
-
-            i++;
-
-        }
-
-    }
-
-    if(!xs.length)
+    try{
+        return path.getBBox();
+    }catch(e){
         return null;
-
-    const minX =
-        Math.min(...xs);
-
-    const maxX =
-        Math.max(...xs);
-
-    const minY =
-        Math.min(...ys);
-
-    const maxY =
-        Math.max(...ys);
-
-    return {
-
-        x:minX,
-        y:minY,
-
-        x2:maxX,
-        y2:maxY,
-
-        width:maxX-minX,
-        height:maxY-minY
-
-    };
+    }
 
 }
 
 
 /* ============================================================
-   SUBPATHS
+   DETECCIÓN DE LÍNEAS DE PENTAGRAMA
 ============================================================ */
 
-function obtenerSubpaths(path){
+function detectStaffLines(svg){
 
-    const d =
-        path.getAttribute("d") || "";
+    const paths=getPathElements(svg);
 
-    const indices =
-        [...d.matchAll(/[Mm]/g)]
-        .map(x => x.index);
+    const lines=[];
 
-    const result = [];
+    for(const p of paths){
 
-    for(let i=0;i<indices.length;i++){
+        const box=pathBBox(p);
 
-        const inicio =
-            indices[i];
+        if(!box) continue;
 
-        const fin =
-            i+1 < indices.length
-            ? indices[i+1]
-            : d.length;
+        /*
+         * Las líneas de pentagrama de MuseScore suelen ser
+         * extremadamente horizontales y largas.
+         */
 
-        const parte =
-            d.substring(
-                inicio,
-                fin
+        if(
+            box.width > 300 &&
+            box.width > box.height*50
+        ){
+
+            lines.push({
+                y:box.y + box.height/2,
+                x1:box.x,
+                x2:box.x+box.width,
+                width:box.width
+            });
+
+        }
+    }
+
+    lines.sort((a,b)=>a.y-b.y);
+
+    /*
+     * Eliminar duplicados demasiado cercanos.
+     */
+
+    const clean=[];
+
+    for(const l of lines){
+
+        if(
+            !clean.length ||
+            Math.abs(clean[clean.length-1].y-l.y)>1.5
+        ){
+            clean.push(l);
+        }
+    }
+
+    return clean;
+}
+
+
+/* ============================================================
+   AGRUPAR 5 LÍNEAS = PENTAGRAMA
+============================================================ */
+
+function buildStaves(lines){
+
+    const staves=[];
+
+    for(let i=0;i+4<lines.length;){
+
+        const group=lines.slice(i,i+5);
+
+        const distances=[];
+
+        for(let j=1;j<group.length;j++){
+            distances.push(
+                group[j].y-group[j-1].y
+            );
+        }
+
+        const spacing=median(distances);
+
+        /*
+         * Las cinco líneas tienen que estar razonablemente
+         * equiespaciadas.
+         */
+
+        const valid =
+            spacing>3 &&
+            spacing<50 &&
+            distances.every(
+                d=>Math.abs(d-spacing)<spacing*.35
             );
 
-        const bounds =
-            parsePath(parte);
+        if(valid){
 
-        if(bounds)
-            result.push(bounds);
+            staves.push({
+                index:staves.length,
+                lines:group,
+                spacing,
+                top:group[0].y,
+                bottom:group[4].y,
+                center:(group[0].y+group[4].y)/2
+            });
 
+            i+=5;
+
+        }else{
+
+            i++;
+        }
     }
 
-    return result;
-
-}
-
-
-/* ============================================================
-   BOUNDS DE ELEMENTO
-============================================================ */
-
-function boundsElemento(el){
-
-    const d =
-        el.getAttribute("d");
-
-    if(d)
-        return parsePath(d);
-
-    const x =
-        parseFloat(
-            el.getAttribute("x")
-        );
-
-    const y =
-        parseFloat(
-            el.getAttribute("y")
-        );
-
-    const width =
-        parseFloat(
-            el.getAttribute("width")
-        );
-
-    const height =
-        parseFloat(
-            el.getAttribute("height")
-        );
-
-    if(
-        Number.isFinite(x) &&
-        Number.isFinite(y)
-    ){
-
-        return {
-
-            x,
-            y,
-
-            x2:x+(width||0),
-            y2:y+(height||0),
-
-            width:width||0,
-            height:height||0
-
-        };
-
-    }
-
-    return null;
-
+    return staves;
 }
 
 
@@ -666,220 +621,148 @@ function boundsElemento(el){
    DETECTAR CABEZAS
 ============================================================ */
 
-function detectarCabezas(svg){
+function detectNoteHeads(svg){
 
-    const result = [];
+    const nodes=[
+        ...svg.querySelectorAll(".Note")
+    ];
 
-    svg.querySelectorAll(".Note")
-    .forEach(
-        (note,noteIndex)=>{
+    const heads=[];
 
-            obtenerSubpaths(note)
-            .forEach(
-                (b,subIndex)=>{
+    for(const note of nodes){
 
-                    /*
-                     * Las cabezas detectadas
-                     * previamente están en esta
-                     * escala geométrica.
-                     */
-
-                    if(
-                        b.width >= 8 &&
-                        b.width <= 90 &&
-                        b.height >= 8 &&
-                        b.height <= 90
-                    ){
-
-                        result.push({
-
-                            x:
-                                b.x +
-                                b.width/2,
-
-                            y:
-                                b.y +
-                                b.height/2,
-
-                            width:b.width,
-                            height:b.height,
-
-                            noteIndex,
-                            subIndex
-
-                        });
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-    return result;
-
-}
-
-
-/* ============================================================
-   STAFFLINES REALES
-============================================================ */
-
-function detectarLineasStaff(svg){
-
-    const lineas = [];
-
-    svg.querySelectorAll(
-        ".StaffLines"
-    )
-    .forEach(el=>{
-
-        obtenerSubpaths(el)
-        .forEach(b=>{
-
-            if(
-                b.width > 100
-            ){
-
-                lineas.push(b);
-
-            }
-
-        });
-
-    });
-
-    return lineas.sort(
-        (a,b)=>a.y-b.y
-    );
-
-}
-
-
-/* ============================================================
-   AGRUPAR LAS 5 LÍNEAS
-============================================================ */
-
-function agruparPentagramas(lineas){
-
-    /*
-     * En lugar de confiar únicamente en
-     * la distancia entre líneas, usamos
-     * el patrón de 5 líneas.
-     */
-
-    const grupos = [];
-
-    const usadas =
-        new Set();
-
-    for(
-        let i=0;
-        i<lineas.length;
-        i++
-    ){
-
-        if(usadas.has(i))
-            continue;
-
-        const base =
-            lineas[i];
-
-        const grupo = [
-            base
+        const paths=[
+            ...note.querySelectorAll("path")
         ];
 
-        usadas.add(i);
+        /*
+         * En los SVG de MuseScore .Note puede contener
+         * muchos subpaths. La cabeza se reconoce por
+         * su geometría aproximadamente ovalada.
+         */
 
-        for(
-            let j=i+1;
-            j<lineas.length &&
-            grupo.length<5;
-            j++
-        ){
+        for(const p of paths){
 
-            if(usadas.has(j))
-                continue;
+            const box=pathBBox(p);
 
-            const distancia =
-                lineas[j].y -
-                grupo[
-                    grupo.length-1
-                ].y;
-
-            /*
-             * El espacio entre líneas
-             * de un pentagrama debe ser
-             * relativamente pequeño.
-             */
+            if(!box) continue;
 
             if(
-                distancia > 3 &&
-                distancia < 45
+                box.width>=5 &&
+                box.width<=40 &&
+                box.height>=3 &&
+                box.height<=30
             ){
 
-                grupo.push(
-                    lineas[j]
-                );
+                const ratio=box.width/box.height;
 
-                usadas.add(j);
+                if(
+                    ratio>0.45 &&
+                    ratio<4.5
+                ){
 
+                    heads.push({
+                        x:box.x+box.width/2,
+                        y:box.y+box.height/2,
+                        width:box.width,
+                        height:box.height,
+                        path:p,
+                        noteNode:note
+                    });
+
+                }
             }
-
         }
-
-        if(grupo.length >= 4){
-
-            const arriba =
-                Math.min(
-                    ...grupo.map(
-                        x=>x.y
-                    )
-                );
-
-            const abajo =
-                Math.max(
-                    ...grupo.map(
-                        x=>x.y
-                    )
-                );
-
-            const centro =
-                (arriba+abajo)/2;
-
-            const espacio =
-                grupo.length > 1
-                ? (
-                    grupo[
-                        grupo.length-1
-                    ].y -
-                    grupo[0].y
-                ) /
-                (grupo.length-1)
-                : 10;
-
-            grupos.push({
-
-                lineas:grupo,
-
-                arriba,
-                abajo,
-                centro,
-
-                espacio
-
-            });
-
-        }
-
     }
 
-    return grupos.sort(
-        (a,b)=>
-            a.centro-b.centro
-    );
+    /*
+     * Quitar duplicados geométricos.
+     */
 
+    const result=[];
+
+    for(const h of heads){
+
+        const duplicate=result.some(
+            r =>
+                distance(r.x,h.x)<1 &&
+                distance(r.y,h.y)<1
+        );
+
+        if(!duplicate)
+            result.push(h);
+    }
+
+    return result;
+}
+
+
+/* ============================================================
+   ASIGNAR CABEZA A PENTAGRAMA
+============================================================ */
+
+function assignHeadsToStaves(heads,staves){
+
+    for(const h of heads){
+
+        let best=null;
+        let bestDistance=Infinity;
+
+        for(const s of staves){
+
+            /*
+             * Expandimos el área ligeramente porque existen
+             * notas en líneas adicionales.
+             */
+
+            const tolerance=s.spacing*3;
+
+            const d=
+                h.y < s.top
+                    ? s.top-h.y
+                    : h.y > s.bottom
+                        ? h.y-s.bottom
+                        : 0;
+
+            if(d<tolerance && d<bestDistance){
+
+                best=s;
+                bestDistance=d;
+            }
+        }
+
+        if(best){
+
+            h.staff=best.index;
+            h.staffObj=best;
+
+            /*
+             * Distancia vertical expresada en espacios de
+             * pentagrama.
+             */
+
+            const s=best.spacing;
+
+            h.staffStep=
+                (best.center-h.y)/(s/2);
+
+            h.confidence=
+                clamp(
+                    1-bestDistance/(s*3),
+                    0,
+                    1
+                );
+
+        }else{
+
+            h.staff=null;
+            h.staffObj=null;
+            h.staffStep=null;
+            h.confidence=0;
+        }
+    }
+
+    return heads;
 }
 
 
@@ -887,129 +770,90 @@ function agruparPentagramas(lineas){
    ELEMENTOS MUSICALES
 ============================================================ */
 
-const CLASES_MUSICALES = [
+function countClass(svg,cls){
 
-    "Stem",
-    "Beam",
-    "BarLine",
-    "Rest",
-    "KeySig",
-    "TimeSig",
-    "Clef",
-    "TieSegment",
-    "OttavaSegment",
-    "VoltaSegment",
-    "Dynamic",
-    "Fermata",
-    "HairpinSegment",
-    "GradualTempoChangeSegment",
-    "Tempo",
-    "Expression"
+    return svg.querySelectorAll(
+        "."+cls
+    ).length;
+}
 
-];
+function getMusicalElements(svg){
 
+    const names=[
+        "Stem",
+        "Beam",
+        "BarLine",
+        "Rest",
+        "KeySig",
+        "TimeSig",
+        "TieSegment",
+        "OttavaSegment",
+        "VoltaSegment",
+        "Dynamic",
+        "Fermata",
+        "Tempo",
+        "HairpinSegment",
+        "GradualTempoChangeSegment",
+        "Expression"
+    ];
 
-function detectarElementos(svg){
+    const result={};
 
-    const elementos = {};
+    for(const n of names)
+        result[n]=countClass(svg,n);
 
-    for(
-        const clase
-        of CLASES_MUSICALES
-    ){
-
-        elementos[clase] = [];
-
-        svg.querySelectorAll(
-            "."+clase
-        )
-        .forEach(el=>{
-
-            elementos[clase].push({
-
-                element:el,
-
-                bounds:
-                    boundsElemento(el)
-
-            });
-
-        });
-
-    }
-
-    return elementos;
-
+    return result;
 }
 
 
 /* ============================================================
-   STAFF MÁS CERCANO
+   DETECTAR COMPASES
 ============================================================ */
 
-function staffMasCercano(
-    y,
-    pentagramas
-){
+function detectBars(svg){
 
-    let mejor = null;
+    const paths=[
+        ...svg.querySelectorAll(".BarLine path")
+    ];
 
-    let distancia =
-        Infinity;
+    const bars=[];
 
-    for(
-        let i=0;
-        i<pentagramas.length;
-        i++
-    ){
+    for(const p of paths){
 
-        const staff =
-            pentagramas[i];
+        const b=pathBBox(p);
 
-        let d;
+        if(!b) continue;
 
-        if(
-            y < staff.arriba
-        ){
-
-            d =
-                staff.arriba-y;
-
-        }
-        else if(
-            y > staff.abajo
-        ){
-
-            d =
-                y-staff.abajo;
-
-        }
-        else{
-
-            d=0;
-
-        }
-
-        if(d < distancia){
-
-            distancia=d;
-
-            mejor={
-
-                ...staff,
-
-                index:i,
-
-                distancia:d
-
-            };
-
-        }
-
+        bars.push({
+            x:b.x+b.width/2,
+            y:b.y+b.height/2,
+            height:b.height
+        });
     }
 
-    return mejor;
+    bars.sort((a,b)=>a.x-b.x);
 
+    return bars;
+}
+
+
+/* ============================================================
+   DETECTAR CLAVE / ARMADURA
+============================================================ */
+
+function inferKeySignature(svg){
+
+    const ks=svg.querySelectorAll(".KeySig");
+
+    if(!ks.length)
+        return 0;
+
+    /*
+     * No asumimos todavía una tonalidad concreta.
+     * Conservamos la presencia de armadura.
+     */
+
+    return 0;
 }
 
 
@@ -1017,862 +861,287 @@ function staffMasCercano(
    PITCH
 ============================================================ */
 
-function pitchDesdeStaff(
-    y,
-    staff
-){
+/*
+ * Para Experience utilizamos inicialmente la convención
+ * estándar de piano:
+ *
+ * Pentagrama superior -> clave de sol
+ * Pentagrama inferior -> clave de fa
+ *
+ * Cuando existen sistemas adicionales, se determina por
+ * posición vertical relativa.
+ */
 
-    if(!staff)
-        return null;
-
-    /*
-     * Una distancia vertical de medio
-     * espacio corresponde a un grado
-     * diatónico.
-     */
-
-    const espacio =
-        Math.max(
-            1,
-            staff.espacio
-        );
-
-    const pasos =
-        Math.round(
-            (
-                staff.centro-y
-            ) /
-            (espacio/2)
-        );
+function pitchFromStaffStep(staffStep,staffIndex){
 
     /*
-     * MIDI aproximado.
+     * Línea central del pentagrama:
      *
-     * Pentagramas pares:
-     * clave de Sol.
+     * clave de sol:
+     * línea 3 = B4
      *
-     * Pentagramas impares:
-     * clave de Fa.
-     *
-     * Esta regla podrá sustituirse
-     * posteriormente por detección real
-     * de Clef.
+     * clave de fa:
+     * línea 3 = D3
      */
 
-    const esFa =
-        staff.index % 2 === 1;
+    const trebleBase=71;
+    const bassBase=50;
+
+    const base=
+        staffIndex%2===0
+            ? trebleBase
+            : bassBase;
 
     /*
-     * Nota base para la posición
-     * central aproximada.
+     * staffStep está expresado en medios espacios.
+     *
+     * Cada 2 medios espacios = un grado diatónico.
      */
 
-    const base =
-        esFa
-        ? 50
-        : 71;
+    const degree=Math.round(
+        staffStep/2
+    );
 
     /*
-     * grados diatónicos
+     * Mapa diatónico C D E F G A B
      */
 
-    const escala = [
+    const pattern=[
         0,2,4,5,7,9,11
     ];
 
-    const octava =
-        Math.floor(
-            pasos/7
-        );
+    const octaveShift=Math.floor(
+        degree/7
+    );
 
-    const grado =
-        (
-            (
-                pasos % 7
-            ) + 7
-        ) % 7;
+    let index=degree%7;
 
-    let midi =
-        base +
-        octava*12 +
-        escala[grado];
+    if(index<0)
+        index+=7;
 
-    /*
-     * Aplicar armadura.
-     */
+    const semitone=pattern[index];
 
-    midi +=
-        estado.keySignature;
-
-    /*
-     * Octava.
-     */
-
-    midi =
-        Math.max(
-            21,
-            Math.min(
-                108,
-                Math.round(midi)
-            )
-        );
-
-    return midi;
-
+    return base + octaveShift*12 + semitone;
 }
 
 
 /* ============================================================
-   DETECTAR ARMADURA
+   PITCH MEJORADO
 ============================================================ */
 
-function detectarKeySignature(
-    elementos
-){
-
-    const keys =
-        elementos.KeySig || [];
-
-    /*
-     * El SVG no siempre expone el número
-     * de alteraciones directamente.
-     *
-     * Por ahora guardamos la presencia
-     * de KeySig y usamos 0 como valor
-     * neutral si no puede inferirse.
-     */
-
-    if(keys.length){
-
-        return 0;
-
-    }
-
-    return 0;
-
-}
-
-
-/* ============================================================
-   DETECTAR COMPÁS
-============================================================ */
-
-function detectarTimeSignature(
-    elementos
-){
-
-    const times =
-        elementos.TimeSig || [];
-
-    if(!times.length){
-
-        return {
-            numerator:4,
-            denominator:4
-
-        };
-
-    }
-
-    /*
-     * Experience normalmente se trabaja
-     * en 4/4.
-     *
-     * El parser queda preparado para
-     * sustituir esta detección por la
-     * lectura de los glyphs del SVG.
-     */
-
-    return {
-
-        numerator:4,
-        denominator:4
-
-    };
-
-}
-
-
-/* ============================================================
-   DETECTAR TEMPO
-============================================================ */
-
-function detectarTempo(
-    elementos
-){
+function assignPitch(note,staffIndex){
 
     if(
-        elementos.Tempo &&
-        elementos.Tempo.length
+        note.staffStep===null ||
+        note.staff===null
     ){
 
-        /*
-         * Si MuseScore no expone el valor
-         * como atributo textual, usamos
-         * el tempo conocido de la obra
-         * como fallback inicial.
-         */
+        note.pitch=null;
+        note.pitchConfidence=0;
 
-        return 64;
-
+        return;
     }
 
-    return 64;
-
-}
-
-
-/* ============================================================
-   CONTAR BEAMS POR NOTA
-============================================================ */
-
-function contarBeamsCercanos(
-    nota,
-    elementos
-){
-
-    const beams =
-        elementos.Beam || [];
-
-    let cantidad=0;
-
-    for(
-        const beam
-        of beams
-    ){
-
-        const b =
-            beam.bounds;
-
-        if(!b)
-            continue;
-
-        const cx =
-            (b.x+b.x2)/2;
-
-        const cy =
-            (b.y+b.y2)/2;
-
-        const dx =
-            Math.abs(
-                cx-nota.x
-            );
-
-        const dy =
-            Math.abs(
-                cy-nota.y
-            );
-
-        /*
-         * Los beams de MuseScore pueden
-         * ser largos. Lo importante es que
-         * estén en la zona de la cabeza.
-         */
-
-        if(
-            dx < 70 &&
-            dy < 80
-        ){
-
-            cantidad++;
-
-        }
-
-    }
-
-    return cantidad;
-
-}
-
-
-/* ============================================================
-   INFERIR FIGURA RÍTMICA
-============================================================ */
-
-function inferirDuracion(
-    nota,
-    elementos
-){
-
-    const beams =
-        contarBeamsCercanos(
-            nota,
-            elementos
-        );
-
-    /*
-     * 0 beams:
-     * negra por defecto.
-     *
-     * 1 beam:
-     * corchea.
-     *
-     * 2:
-     * semicorchea.
-     *
-     * 3:
-     * fusa.
-     */
-
-    if(beams >= 3)
-        return 0.125;
-
-    if(beams === 2)
-        return 0.25;
-
-    if(beams === 1)
-        return 0.5;
-
-    return 1;
-
-}
-
-
-/* ============================================================
-   BARRAS
-============================================================ */
-
-function obtenerBarlines(
-    elementos
-){
-
-    return (
-        elementos.BarLine || []
-    )
-    .map(x=>{
-
-        if(!x.bounds)
-            return null;
-
-        return {
-
-            x:
-                (
-                    x.bounds.x+
-                    x.bounds.x2
-                )/2,
-
-            y:
-                (
-                    x.bounds.y+
-                    x.bounds.y2
-                )/2
-
-        };
-
-    })
-    .filter(Boolean)
-    .sort(
-        (a,b)=>a.x-b.x
+    let pitch=pitchFromStaffStep(
+        note.staffStep,
+        staffIndex
     );
 
+    /*
+     * Evitar valores imposibles.
+     */
+
+    pitch=clamp(
+        Math.round(pitch),
+        21,
+        108
+    );
+
+    note.pitch=pitch;
+
+    /*
+     * Confianza combinando:
+     * - distancia al pentagrama
+     * - cercanía al paso diatónico
+     */
+
+    note.pitchConfidence=
+        clamp(
+            note.confidence*.92,
+            0,
+            1
+        );
 }
 
 
 /* ============================================================
-   ASIGNAR CABEZAS
+   ORDEN MUSICAL
 ============================================================ */
 
-function asignarCabezas(
-    page
-){
+function sortNotes(notes){
 
-    const notas=[];
+    return [...notes].sort(
+        (a,b)=>{
 
-    for(
-        const cabeza
-        of page.cabezas
-    ){
+            if(a.page!==b.page)
+                return a.page-b.page;
 
-        const staff =
-            staffMasCercano(
-                cabeza.y,
-                page.pentagramas
-            );
+            if(a.staff!==b.staff)
+                return (a.staff??999)-(b.staff??999);
 
-        if(!staff)
-            continue;
+            return a.x-b.x;
+        }
+    );
+}
 
-        const pitch =
-            pitchDesdeStaff(
-                cabeza.y,
-                staff
-            );
 
-        const duracion =
-            inferirDuracion(
-                cabeza,
-                page.elementos
-            );
+/* ============================================================
+   AGRUPAR CABEZAS EN EVENTOS / ACORDES
+============================================================ */
 
-        const beams =
-            contarBeamsCercanos(
-                cabeza,
-                page.elementos
-            );
+function buildEvents(notes){
 
-        notas.push({
+    const events=[];
 
-            ...cabeza,
+    const sorted=[...notes]
+        .filter(n=>n.pitch!==null)
+        .sort((a,b)=>{
 
-            staff:
-                staff.index,
+            if(a.page!==b.page)
+                return a.page-b.page;
 
-            pitch,
+            if(a.staff!==b.staff)
+                return a.staff-b.staff;
 
-            distanciaStaff:
-                staff.distancia,
-
-            beams,
-
-            duracion,
-
-            confianza:
-                staff.distancia <=
-                staff.espacio
-                ? 1
-                : staff.distancia <=
-                staff.espacio*2
-                ? .85
-                : .60
-
+            return a.x-b.x;
         });
 
-    }
+    for(const n of sorted){
 
-    /*
-     * Orden musical:
-     *
-     * primero por staff,
-     * después X,
-     * después Y.
-     */
-
-    notas.sort(
-        (a,b)=>
-            a.staff-b.staff ||
-            a.x-b.x ||
-            a.y-b.y
-    );
-
-    return notas;
-
-}
-
-
-/* ============================================================
-   AGRUPAR ACORDES
-============================================================ */
-
-function detectarEventos(
-    notas
-){
-
-    const eventos=[];
-
-    /*
-     * Un evento representa una posición
-     * temporal.
-     *
-     * Varias cabezas en X similar
-     * forman un acorde.
-     */
-
-    for(
-        const nota
-        of notas
-    ){
-
-        let evento =
-            null;
+        let event=null;
 
         /*
-         * Buscar evento próximo.
+         * Notas con la misma posición horizontal y mismo
+         * pentagrama pertenecen al mismo evento.
          */
 
-        for(
-            const e
-            of eventos
-        ){
+        for(let i=events.length-1;i>=0;i--){
 
-            if(
-                Math.abs(
-                    e.x-
-                    nota.x
-                ) < 15
-            ){
+            const e=events[i];
 
-                evento=e;
+            if(e.page!==n.page)
                 break;
 
+            if(e.staff!==n.staff)
+                continue;
+
+            if(Math.abs(e.x-n.x)<8){
+
+                event=e;
+                break;
             }
 
+            if(e.x<n.x-12)
+                break;
         }
 
-        if(!evento){
+        if(!event){
 
-            evento={
-
-                x:nota.x,
-
-                notas:[],
-
-                staffs:new Set(),
-
-                duracion:
-                    nota.duracion
-
+            event={
+                id:events.length+1,
+                page:n.page,
+                staff:n.staff,
+                x:n.x,
+                notes:[],
+                duration:1
             };
 
-            eventos.push(
-                evento
-            );
-
+            events.push(event);
         }
 
-        evento.notas.push(
-            nota
-        );
-
-        evento.staffs.add(
-            nota.staff
-        );
-
-        evento.duracion =
-            Math.min(
-                evento.duracion,
-                nota.duracion
-            );
-
+        event.notes.push(n);
     }
 
-    /*
-     * Convertir Sets.
-     */
-
-    for(
-        const evento
-        of eventos
-    ){
-
-        evento.staffs =
-            [...evento.staffs];
-
-    }
-
-    eventos.sort(
-        (a,b)=>a.x-b.x
-    );
-
-    return eventos;
-
+    return events;
 }
 
 
 /* ============================================================
-   CONSTRUIR TIEMPO A PARTIR DE POSICIONES X
+   DURACIONES
 ============================================================ */
 
-function construirTiempo(
-    eventos
-){
-
-    if(!eventos.length)
-        return [];
+function estimateDurations(events){
 
     /*
-     * No utilizamos únicamente la
-     * distancia geométrica.
-     *
-     * Primero calculamos diferencias
-     * entre eventos.
+     * Sin MusicXML no podemos asumir que cada cabeza sea
+     * una negra. Utilizamos las distancias horizontales
+     * entre eventos del mismo sistema como primera estimación.
      */
 
-    const distancias=[];
+    const byStaff=new Map();
 
-    for(
-        let i=1;
-        i<eventos.length;
-        i++
-    ){
+    for(const e of events){
 
-        const d =
-            eventos[i].x-
-            eventos[i-1].x;
+        const key=
+            e.page+"_"+e.staff;
 
-        if(
-            d > 2 &&
-            d < 500
-        ){
+        if(!byStaff.has(key))
+            byStaff.set(key,[]);
 
-            distancias.push(d);
-
-        }
-
+        byStaff.get(key).push(e);
     }
 
-    if(!distancias.length)
-        return eventos;
+    for(const list of byStaff.values()){
 
-    /*
-     * Mediana.
-     */
+        list.sort((a,b)=>a.x-b.x);
 
-    distancias.sort(
-        (a,b)=>a-b
-    );
+        const distances=[];
 
-    const mediana =
-        distancias[
-            Math.floor(
-                distancias.length/2
-            )
-        ];
+        for(let i=1;i<list.length;i++){
 
-    /*
-     * La mediana representa
-     * aproximadamente una negra,
-     * aunque en partituras con muchos
-     * cambios puede representar una
-     * subdivisión.
-     */
+            const d=list[i].x-list[i-1].x;
 
-    let tiempo=0;
+            if(d>10)
+                distances.push(d);
+        }
 
-    for(
-        let i=0;
-        i<eventos.length;
-        i++
-    ){
+        const base=median(distances)||70;
 
-        if(i===0){
+        for(let i=0;i<list.length;i++){
 
-            eventos[i].tick=0;
-
-        }else{
-
-            const dx =
-                eventos[i].x-
-                eventos[i-1].x;
+            const next=
+                i<list.length-1
+                    ? list[i+1].x-list[i].x
+                    : base;
 
             /*
-             * Normalización geométrica.
+             * Clasificación aproximada:
              *
-             * 1 unidad = negra.
+             * >= 1.7 base = blanca
+             * >= 1.25 base = negra con puntillo
+             * >= .75 base = negra
+             * >= .45 base = corchea
              */
 
-            let negras =
-                dx/mediana;
+            let duration;
 
-            /*
-             * Cuantización musical.
-             */
+            if(next>=base*1.7)
+                duration=2;
 
-            const candidatos = [
+            else if(next>=base*1.25)
+                duration=1.5;
 
-                2,
-                1,
-                0.5,
-                0.25,
-                0.125
+            else if(next>=base*.75)
+                duration=1;
 
-            ];
+            else
+                duration=.5;
 
-            let mejor =
-                candidatos[0];
-
-            let error =
-                Infinity;
-
-            for(
-                const c
-                of candidatos
-            ){
-
-                const e =
-                    Math.abs(
-                        negras-c
-                    );
-
-                if(e<error){
-
-                    error=e;
-                    mejor=c;
-
-                }
-
-            }
-
-            tiempo += mejor;
-
-            eventos[i].tick =
-                tiempo;
-
+            list[i].duration=duration;
         }
-
     }
 
-    return eventos;
-
-}
-
-
-/* ============================================================
-   LIGADURAS
-============================================================ */
-
-function aplicarLigaduras(
-    page
-){
-
-    const ties =
-        page.elementos
-        .TieSegment || [];
-
-    /*
-     * Guardamos la información para
-     * la etapa MIDI.
-     */
-
-    for(
-        const nota
-        of page.notas
-    ){
-
-        nota.tie=false;
-
-        for(
-            const tie
-            of ties
-        ){
-
-            if(!tie.bounds)
-                continue;
-
-            const cx =
-                (
-                    tie.bounds.x+
-                    tie.bounds.x2
-                )/2;
-
-            if(
-                Math.abs(
-                    cx-nota.x
-                )<30
-            ){
-
-                nota.tie=true;
-
-                break;
-
-            }
-
-        }
-
-    }
-
-}
-
-
-/* ============================================================
-   OCTAVAS
-============================================================ */
-
-function aplicarOttava(
-    page
-){
-
-    const ottavas =
-        page.elementos
-        .OttavaSegment || [];
-
-    for(
-        const nota
-        of page.notas
-    ){
-
-        nota.ottava=0;
-
-        for(
-            const ottava
-            of ottavas
-        ){
-
-            if(!ottava.bounds)
-                continue;
-
-            if(
-                nota.x >=
-                ottava.bounds.x &&
-                nota.x <=
-                ottava.bounds.x2
-            ){
-
-                /*
-                 * Por ahora asumimos 8va.
-                 *
-                 * La lectura de 8va/8vb se
-                 * podrá obtener del glyph.
-                 */
-
-                nota.ottava=12;
-
-            }
-
-        }
-
-        if(
-            nota.pitch !== null
-        ){
-
-            nota.pitch =
-                Math.max(
-                    21,
-                    Math.min(
-                        108,
-                        nota.pitch+
-                        nota.ottava
-                    )
-                );
-
-        }
-
-    }
-
-}
-
-
-/* ============================================================
-   DINÁMICAS
-============================================================ */
-
-function detectarDinamicas(
-    page
-){
-
-    const dinamicas =
-        page.elementos.Dynamic || [];
-
-    return dinamicas
-        .filter(
-            x=>x.bounds
-        )
-        .map(x=>({
-
-            x:
-                (
-                    x.bounds.x+
-                    x.bounds.x2
-                )/2,
-
-            y:
-                (
-                    x.bounds.y+
-                    x.bounds.y2
-                )/2
-
-        }));
-
+    return events;
 }
 
 
@@ -1880,206 +1149,141 @@ function detectarDinamicas(
    ANALIZAR UNA PÁGINA
 ============================================================ */
 
-async function analizarPagina(
-    numero
-){
+async function analyzePage(index){
 
-    const archivo =
-        ARCHIVOS[numero];
+    const filename=SVG_FILES[index];
 
-    const url =
-        BASE+
-        archivo;
+    const url=BASE+filename;
 
-    log(
-        `📄 Página ${numero+1} / ${ARCHIVOS.length}`
-    );
+    log(`📄 Página ${index+1} / ${SVG_FILES.length}`);
+    log(`   ${filename}`);
+    log(`   Descargando...`);
 
-    log(
-        `   ${archivo}`
-    );
+    const response=await fetch(url);
 
-    log(
-        `   Descargando...`
-    );
-
-    const respuesta =
-        await fetch(url);
-
-    if(!respuesta.ok){
-
+    if(!response.ok)
         throw new Error(
-            `HTTP ${respuesta.status}`
+            `HTTP ${response.status} — ${url}`
         );
 
+    const text=await response.text();
+
+    log(
+        `   ✓ SVG cargado — ${text.length} caracteres`
+    );
+
+    const svg=parseSVG(text);
+
+    const noteNodes=svg.querySelectorAll(".Note");
+
+    log(
+        `   .Note: ${noteNodes.length}`
+    );
+
+    const heads=detectNoteHeads(svg);
+
+    log(
+        `   🔴 Cabezas: ${heads.length}`
+    );
+
+    const lines=detectStaffLines(svg);
+
+    log(
+        `   📏 Líneas: ${lines.length}`
+    );
+
+    const staves=buildStaves(lines);
+
+    log(
+        `   🎼 Pentagramas: ${staves.length}`
+    );
+
+    const elements=getMusicalElements(svg);
+
+    for(const [name,count] of Object.entries(elements)){
+
+        if(count)
+            log(`   ├ ${name}: ${count}`);
     }
 
-    const texto =
-        await respuesta.text();
-
-    log(
-        `   ✓ SVG cargado — ${texto.length} caracteres`
+    assignHeadsToStaves(
+        heads,
+        staves
     );
 
-    const parser =
-        new DOMParser();
+    let assigned=0;
+    let pitchCount=0;
+    let high=0;
 
-    const doc =
-        parser.parseFromString(
-            texto,
-            "image/svg+xml"
-        );
+    for(const h of heads){
 
-    const svg =
-        doc.documentElement;
+        h.page=index+1;
 
-    if(
-        !svg ||
-        svg.nodeName.toLowerCase() !== "svg"
-    ){
+        if(h.staff!==null){
 
-        throw new Error(
-            "SVG inválido"
-        );
+            assigned++;
 
-    }
-
-    const notas =
-        detectarCabezas(svg);
-
-    const lineas =
-        detectarLineasStaff(svg);
-
-    const pentagramas =
-        agruparPentagramas(
-            lineas
-        );
-
-    const elementos =
-        detectarElementos(svg);
-
-    log(
-        `   .Note: ${svg.querySelectorAll(".Note").length}`
-    );
-
-    log(
-        `   🔴 Cabezas: ${notas.length}`
-    );
-
-    log(
-        `   📏 Líneas: ${lineas.length}`
-    );
-
-    log(
-        `   🎼 Pentagramas: ${pentagramas.length}`
-    );
-
-    for(
-        const clase
-        of CLASES_MUSICALES
-    ){
-
-        const cantidad =
-            elementos[clase].length;
-
-        if(cantidad){
-
-            log(
-                `   ├ ${clase}: ${cantidad}`
+            assignPitch(
+                h,
+                h.staff
             );
 
-        }
+            if(h.pitch!==null){
 
+                pitchCount++;
+
+                if(h.pitchConfidence>=.85)
+                    high++;
+            }
+        }
     }
 
-    const page={
+    log(
+        `   ✓ Asignadas: ${assigned}`
+    );
 
-        numero:numero+1,
+    log(
+        `   🎵 Con pitch: ${pitchCount}`
+    );
 
-        archivo,
+    log(
+        `   🟢 Alta confianza: ${high}`
+    );
+
+    const bars=detectBars(svg);
+
+    const pageData={
+
+        page:index+1,
+
+        filename,
+
+        text,
 
         svg,
 
-        texto,
+        heads,
 
-        cabezas:notas,
+        lines,
 
-        lineas,
+        staves,
 
-        pentagramas,
+        bars,
 
-        elementos,
+        elements,
 
-        notas:[],
+        keySignature:
+            inferKeySignature(svg),
 
-        eventos:[],
+        assigned,
 
-        dinamicas:[]
+        pitchCount,
+
+        high
 
     };
 
-
-    page.notas =
-        asignarCabezas(
-            page
-        );
-
-
-    page.eventos =
-        detectarEventos(
-            page.notas
-        );
-
-
-    page.eventos =
-        construirTiempo(
-            page.eventos
-        );
-
-
-    aplicarLigaduras(
-        page
-    );
-
-
-    aplicarOttava(
-        page
-    );
-
-
-    page.dinamicas =
-        detectarDinamicas(
-            page
-        );
-
-
-    log(
-        `   ✓ Asignadas: ${page.notas.length}`
-    );
-
-    log(
-        `   🎵 Eventos/acordes: ${page.eventos.length}`
-    );
-
-    log(
-        `   🎵 Con pitch: ${
-            page.notas.filter(
-                n=>n.pitch!==null
-            ).length
-        }`
-    );
-
-    const alta =
-        page.notas.filter(
-            n=>n.confianza>=.85
-        ).length;
-
-    log(
-        `   🟢 Alta confianza: ${alta}`
-    );
-
-    return page;
-
+    return pageData;
 }
 
 
@@ -2087,263 +1291,123 @@ async function analizarPagina(
    ANÁLISIS COMPLETO
 ============================================================ */
 
-async function analizar(){
+async function analyzeScore(){
 
-    limpiarLog();
+    clearLog();
+
+    score={
+        pages:[],
+        notes:[],
+        events:[],
+        metadata:{}
+    };
 
     document.getElementById(
-        "resultados"
+        "results"
     ).innerHTML="";
 
     document.getElementById(
-        "estado"
+        "visualizer"
     ).innerHTML="";
 
-    estado.paginas=[];
-    estado.eventos=[];
-    estado.midi=null;
-
-    document.getElementById(
-        "analizar"
-    ).disabled=true;
-
-    document.getElementById(
-        "midi"
-    ).disabled=true;
-
-    document.getElementById(
-        "descargar"
-    ).disabled=true;
-
-    log(
-        "▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO"
-    );
-
-    log(
-        "================================"
-    );
+    log("▶ INICIANDO ANÁLISIS MUSICAL PROFUNDO");
 
     try{
 
-        for(
-            let i=0;
-            i<ARCHIVOS.length;
-            i++
-        ){
+        for(let i=0;i<SVG_FILES.length;i++){
 
-            const page =
-                await analizarPagina(i);
+            const page=
+                await analyzePage(i);
 
-            estado.paginas.push(
-                page
+            score.pages.push(page);
+
+            score.notes.push(
+                ...page.heads
             );
-
         }
 
+        score.notes=
+            sortNotes(score.notes);
 
-        /*
-         * Información global.
-         */
+        score.events=
+            buildEvents(score.notes);
 
-        estado.keySignature =
-            detectarKeySignature(
-                estado.paginas[0]
-                .elementos
+        estimateDurations(
+            score.events
+        );
+
+        const totalHeads=
+            score.notes.length;
+
+        const assigned=
+            score.notes.filter(
+                n=>n.staff!==null
+            ).length;
+
+        const pitch=
+            score.notes.filter(
+                n=>n.pitch!==null
+            ).length;
+
+        const high=
+            score.notes.filter(
+                n=>n.pitchConfidence>=.85
+            ).length;
+
+        const staves=
+            score.pages.reduce(
+                (sum,p)=>sum+p.staves.length,
+                0
             );
 
+        score.metadata={
+            pages:score.pages.length,
+            heads:totalHeads,
+            staves,
+            assigned,
+            pitch,
+            high,
+            events:score.events.length
+        };
 
-        const compas =
-            detectarTimeSignature(
-                estado.paginas[0]
-                .elementos
-            );
+        log("");
+        log("================================");
+        log("✓ ANÁLISIS MUSICAL COMPLETADO");
+        log(`Total cabezas: ${totalHeads}`);
+        log(`Total pentagramas: ${staves}`);
+        log(`Total asignadas: ${assigned}`);
+        log(`Total con pitch: ${pitch}`);
+        log(`Pitch alta confianza: ${high}`);
+        log(`Eventos/acordes: ${score.events.length}`);
+        log("================================");
 
-        estado.timeNumerator =
-            compas.numerator;
+        updateStats();
 
-        estado.timeDenominator =
-            compas.denominator;
+        renderResults();
 
-
-        estado.tempo =
-            detectarTempo(
-                estado.paginas[0]
-                .elementos
-            );
-
-
-        /*
-         * Eventos globales.
-         */
-
-        for(
-            const page
-            of estado.paginas
-        ){
-
-            for(
-                const evento
-                of page.eventos
-            ){
-
-                estado.eventos.push({
-
-                    ...evento,
-
-                    pagina:
-                        page.numero
-
-                });
-
-            }
-
-        }
-
-
-        log(
-            "================================"
-        );
-
-        log(
-            "✓ ANÁLISIS MUSICAL COMPLETADO"
-        );
-
-        log(
-            `Total cabezas: ${
-                totalCabezas()
-            }`
-        );
-
-        log(
-            `Total pentagramas: ${
-                totalPentagramas()
-            }`
-        );
-
-        log(
-            `Total asignadas: ${
-                totalAsignadas()
-            }`
-        );
-
-        log(
-            `Total con pitch: ${
-                totalConPitch()
-            }`
-        );
-
-        log(
-            `Eventos/acordes: ${
-                estado.eventos.length
-            }`
-        );
-
-        log(
-            "================================"
-        );
-
-
-        renderResultados();
-
-        actualizarStats();
-
+        renderVisualizer();
 
         document.getElementById(
-            "midi"
+            "midiBtn"
         ).disabled=false;
 
-
         document.getElementById(
-            "estado"
-        ).innerHTML =
-            `<div class="success">
-            ✓ Análisis terminado.
-            Se detectaron notas, pentagramas,
-            compases, beams y elementos musicales.
-            </div>`;
+            "jsonBtn"
+        ).disabled=false;
 
-    }
-    catch(error){
+    }catch(error){
 
         console.error(error);
 
-        log(
-            "❌ ERROR: "+
+        log("");
+        log("❌ ERROR:");
+        log(error.message);
+
+        alert(
+            "No se pudo analizar la partitura.\n\n"+
             error.message
         );
-
-        document.getElementById(
-            "estado"
-        ).innerHTML =
-            `<div class="warning">
-            ❌ Error durante el análisis:
-            ${escapeHtml(error.message)}
-            </div>`;
-
     }
-    finally{
-
-        document.getElementById(
-            "analizar"
-        ).disabled=false;
-
-    }
-
-}
-
-
-/* ============================================================
-   TOTALES
-============================================================ */
-
-function totalCabezas(){
-
-    return estado.paginas
-        .reduce(
-            (s,p)=>
-                s+p.cabezas.length,
-            0
-        );
-
-}
-
-
-function totalPentagramas(){
-
-    return estado.paginas
-        .reduce(
-            (s,p)=>
-                s+p.pentagramas.length,
-            0
-        );
-
-}
-
-
-function totalAsignadas(){
-
-    return estado.paginas
-        .reduce(
-            (s,p)=>
-                s+p.notas.length,
-            0
-        );
-
-}
-
-
-function totalConPitch(){
-
-    return estado.paginas
-        .reduce(
-            (s,p)=>
-                s+
-                p.notas.filter(
-                    n=>n.pitch!==null
-                ).length,
-            0
-        );
-
 }
 
 
@@ -2351,57 +1415,33 @@ function totalConPitch(){
    ESTADÍSTICAS
 ============================================================ */
 
-function actualizarStats(){
+function updateStats(){
 
-    const stats =
-        document.getElementById(
-            "stats"
-        );
+    const m=score.metadata;
 
-    stats.innerHTML=`
+    document.getElementById(
+        "statPages"
+    ).textContent=m.pages;
 
-        <div class="stat">
-            <b>${estado.paginas.length}</b>
-            <span>Páginas</span>
-        </div>
+    document.getElementById(
+        "statHeads"
+    ).textContent=m.heads;
 
-        <div class="stat">
-            <b>${totalCabezas()}</b>
-            <span>Cabezas</span>
-        </div>
+    document.getElementById(
+        "statStaves"
+    ).textContent=m.staves;
 
-        <div class="stat">
-            <b>${totalPentagramas()}</b>
-            <span>Pentagramas</span>
-        </div>
+    document.getElementById(
+        "statAssigned"
+    ).textContent=m.assigned;
 
-        <div class="stat">
-            <b>${totalAsignadas()}</b>
-            <span>Asignadas</span>
-        </div>
+    document.getElementById(
+        "statPitch"
+    ).textContent=m.pitch;
 
-        <div class="stat">
-            <b>${totalConPitch()}</b>
-            <span>Con pitch</span>
-        </div>
-
-        <div class="stat">
-            <b>${estado.eventos.length}</b>
-            <span>Eventos</span>
-        </div>
-
-        <div class="stat">
-            <b>${estado.tempo}</b>
-            <span>BPM</span>
-        </div>
-
-        <div class="stat">
-            <b>${estado.timeNumerator}/${estado.timeDenominator}</b>
-            <span>Compás</span>
-        </div>
-
-    `;
-
+    document.getElementById(
+        "statHigh"
+    ).textContent=m.high;
 }
 
 
@@ -2409,275 +1449,310 @@ function actualizarStats(){
    RESULTADOS
 ============================================================ */
 
-function renderResultados(){
-
-    const contenedor =
-        document.getElementById(
-            "resultados"
-        );
+function renderResults(){
 
     let html="";
 
-    html += `
+    for(const page of score.pages){
 
-        <div class="card">
-
-        <b>Compás:</b>
-        ${estado.timeNumerator}/${estado.timeDenominator}
-
-        &nbsp;&nbsp;
-
-        <b>Tempo:</b>
-        ${estado.tempo} BPM
-
-        &nbsp;&nbsp;
-
-        <b>Armadura:</b>
-        ${estado.keySignature}
-
-        </div>
-
-    `;
-
-
-    for(
-        const page
-        of estado.paginas
-    ){
-
-        const altas =
-            page.notas.filter(
-                n=>n.confianza>=.85
+        const high=
+            page.heads.filter(
+                n=>n.pitchConfidence>=.85
             ).length;
 
-        const barras =
-            page.elementos
-            .BarLine.length;
-
-        const beams =
-            page.elementos
-            .Beam.length;
-
-        const rests =
-            page.elementos
-            .Rest.length;
-
-        const ties =
-            page.elementos
-            .TieSegment.length;
-
-        const ottavas =
-            page.elementos
-            .OttavaSegment.length;
-
-
-        html += `
-
+        html+=`
         <div class="page">
 
-        <h3>
-        📄 Página ${page.numero}
-        </h3>
+            <div class="page-header">
 
-        <p>
+                <div class="page-title">
+                    📄 Página ${page.page}
+                </div>
 
-        <span class="badge">
-        Cabezas: ${page.cabezas.length}
-        </span>
+                <div class="page-info">
+                    ${esc(page.filename)}
+                </div>
 
-        <span class="badge">
-        Líneas: ${page.lineas.length}
-        </span>
+            </div>
 
-        <span class="badge">
-        Pentagramas: ${page.pentagramas.length}
-        </span>
+            <div class="panel-body">
 
-        <span class="badge">
-        Barras: ${barras}
-        </span>
+                <p>
+                    <b>Cabezas:</b> ${page.heads.length}
+                    ·
+                    <b>Líneas:</b> ${page.lines.length}
+                    ·
+                    <b>Pentagramas:</b> ${page.staves.length}
+                    ·
+                    <b>Barras:</b> ${page.bars.length}
+                    ·
+                    <b>Asignadas:</b> ${page.assigned}
+                </p>
 
-        <span class="badge">
-        Asignadas: ${page.notas.length}
-        </span>
+                <p>
+                    <b>Elementos musicales:</b>
+                    ${Object.entries(page.elements)
+                        .filter(([k,v])=>v)
+                        .map(([k,v])=>`${k}: ${v}`)
+                        .join(" · ")}
+                </p>
 
-        <span class="badge good">
-        Alta confianza: ${altas}/${page.notas.length}
-        </span>
+                <p class="${
+                    high/page.heads.length>=.85
+                    ? "good"
+                    : "warn"
+                }">
+                    🟢 Alta confianza de pentagrama:
+                    ${high}/${page.heads.length}
+                </p>
 
-        </p>
+                <div class="table-wrap">
 
-        <p>
+                <table>
 
-        <b>Elementos musicales:</b>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>X</th>
+                            <th>Staff</th>
+                            <th>Step</th>
+                            <th>Pitch</th>
+                            <th>Nota</th>
+                            <th>Confianza</th>
+                        </tr>
+                    </thead>
 
-        Stem:
-        ${page.elementos.Stem.length}
-
-        · Beam:
-        ${beams}
-
-        · BarLine:
-        ${barras}
-
-        · Rest:
-        ${rests}
-
-        · KeySig:
-        ${page.elementos.KeySig.length}
-
-        · TimeSig:
-        ${page.elementos.TimeSig.length}
-
-        · Clef:
-        ${page.elementos.Clef.length}
-
-        · Tie:
-        ${ties}
-
-        · Ottava:
-        ${ottavas}
-
-        · Volta:
-        ${page.elementos.VoltaSegment.length}
-
-        · Dynamic:
-        ${page.elementos.Dynamic.length}
-
-        · Fermata:
-        ${page.elementos.Fermata.length}
-
-        · Hairpin:
-        ${page.elementos.HairpinSegment.length}
-
-        · Tempo:
-        ${page.elementos.Tempo.length}
-
-        </p>
-
-
-        <details>
-
-        <summary>
-        Ver eventos musicales
-        (${page.eventos.length})
-        </summary>
-
-        <table>
-
-        <thead>
-
-        <tr>
-
-        <th>#</th>
-        <th>X</th>
-        <th>Tiempo</th>
-        <th>Staff</th>
-        <th>Pitch</th>
-        <th>Duración</th>
-        <th>Beams</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
+                    <tbody>
         `;
 
+        page.heads
+            .slice(0,50)
+            .forEach((n,i)=>{
 
-        page.eventos
-        .slice(0,100)
-        .forEach(
-            (evento,index)=>{
-
-                const pitches =
-                    evento.notas
-                    .map(
-                        n=>n.pitch
-                    )
-                    .join(", ");
-
-                const staffs =
-                    evento.notas
-                    .map(
-                        n=>n.staff+1
-                    )
-                    .filter(
-                        (v,i,a)=>
-                            a.indexOf(v)===i
-                    )
-                    .join(",");
-
-
-                const beamsEvento =
-                    evento.notas
-                    .reduce(
-                        (s,n)=>
-                            s+n.beams,
-                        0
+                const confidence=
+                    Math.round(
+                        n.pitchConfidence*100
                     );
 
+                const cls=
+                    confidence>=85
+                        ? "high"
+                        : confidence>=60
+                            ? "medium"
+                            : "low";
 
-                html += `
+                html+=`
+                    <tr>
 
-                <tr>
+                        <td>${i+1}</td>
 
-                <td>${index+1}</td>
+                        <td>${n.x.toFixed(1)}</td>
 
-                <td>
-                ${evento.x.toFixed(1)}
-                </td>
+                        <td>
+                            ${
+                                n.staff===null
+                                    ? "—"
+                                    : n.staff+1
+                            }
+                        </td>
 
-                <td>
-                ${
-                    evento.tick !== undefined
-                    ? evento.tick.toFixed(3)
-                    : "-"
-                }
-                </td>
+                        <td>
+                            ${
+                                n.staffStep===null
+                                    ? "—"
+                                    : n.staffStep.toFixed(2)
+                            }
+                        </td>
 
-                <td>
-                ${staffs}
-                </td>
+                        <td>
+                            ${
+                                n.pitch===null
+                                    ? "—"
+                                    : n.pitch
+                            }
+                        </td>
 
-                <td>
-                ${pitches}
-                </td>
+                        <td>
+                            ${
+                                n.pitch===null
+                                    ? "desconocida"
+                                    : midiToName(n.pitch)
+                            }
+                        </td>
 
-                <td>
-                ${evento.duracion}
-                </td>
+                        <td class="${cls}">
+                            ${confidence}%
+                        </td>
 
-                <td>
-                ${beamsEvento}
-                </td>
-
-                </tr>
-
+                    </tr>
                 `;
+            });
 
-            }
-        );
+        html+=`
 
+                    </tbody>
 
-        html += `
+                </table>
 
-        </tbody>
+                </div>
 
-        </table>
-
-        </details>
+            </div>
 
         </div>
-
         `;
-
     }
 
+    document.getElementById(
+        "results"
+    ).innerHTML=html;
+}
 
-    contenedor.innerHTML =
-        html;
 
+/* ============================================================
+   MIDI NOTE NAME
+============================================================ */
+
+function midiToName(midi){
+
+    const names=[
+        "C","C#","D","D#","E","F",
+        "F#","G","G#","A","A#","B"
+    ];
+
+    const octave=
+        Math.floor(midi/12)-1;
+
+    return names[midi%12]+octave;
+}
+
+
+/* ============================================================
+   VISUALIZADOR
+============================================================ */
+
+function renderVisualizer(){
+
+    const container=
+        document.getElementById(
+            "visualizer"
+        );
+
+    container.innerHTML="";
+
+    for(const page of score.pages){
+
+        const wrapper=
+            document.createElement("div");
+
+        wrapper.className="sheet";
+
+        const svgClone=
+            page.svg.documentElement.cloneNode(true);
+
+        /*
+         * Convertimos el SVG en un elemento visible.
+         */
+
+        svgClone.removeAttribute("width");
+        svgClone.removeAttribute("height");
+
+        /*
+         * Insertar líneas azules reales.
+         */
+
+        for(const staff of page.staves){
+
+            for(const line of staff.lines){
+
+                const lineEl=
+                    document.createElementNS(
+                        "http://www.w3.org/2000/svg",
+                        "line"
+                    );
+
+                lineEl.setAttribute(
+                    "x1",
+                    line.x1
+                );
+
+                lineEl.setAttribute(
+                    "x2",
+                    line.x2
+                );
+
+                lineEl.setAttribute(
+                    "y1",
+                    line.y
+                );
+
+                lineEl.setAttribute(
+                    "y2",
+                    line.y
+                );
+
+                lineEl.setAttribute(
+                    "class",
+                    "staff-line"
+                );
+
+                svgClone.appendChild(
+                    lineEl
+                );
+            }
+        }
+
+        /*
+         * Puntos rojos de cabezas.
+         */
+
+        for(const n of page.heads){
+
+            const circle=
+                document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "circle"
+                );
+
+            circle.setAttribute(
+                "cx",
+                n.x
+            );
+
+            circle.setAttribute(
+                "cy",
+                n.y
+            );
+
+            circle.setAttribute(
+                "r",
+                "4"
+            );
+
+            circle.setAttribute(
+                "class",
+                "note-dot"
+            );
+
+            if(
+                n.pitch===null ||
+                n.pitchConfidence<.85
+            ){
+                circle.classList.add("low");
+            }
+
+            svgClone.appendChild(
+                circle
+            );
+        }
+
+        wrapper.appendChild(
+            svgClone
+        );
+
+        container.appendChild(
+            wrapper
+        );
+    }
 }
 
 
@@ -2685,33 +1760,15 @@ function renderResultados(){
    MIDI
 ============================================================ */
 
-/*
- * MIDI Standard:
- *
- * Header:
- * MThd
- *
- * Track:
- * MTrk
- *
- * PPQ = 480
- */
+function writeVarLen(value){
 
-const PPQ=480;
+    value=Math.max(
+        0,
+        Math.floor(value)
+    );
 
-
-function midiVarLen(
-    value
-){
-
-    value =
-        Math.max(
-            0,
-            Math.floor(value)
-        );
-
-    let buffer =
-        value & 0x7f;
+    let buffer=
+        value & 0x7F;
 
     const bytes=[];
 
@@ -2720,16 +1777,14 @@ function midiVarLen(
     ){
 
         buffer <<= 8;
-
         buffer |=
-            ((value & 0x7f)|0x80);
-
+            ((value & 0x7F)|0x80);
     }
 
     while(true){
 
         bytes.push(
-            buffer & 0xff
+            buffer & 0xFF
         );
 
         if(
@@ -2741,428 +1796,40 @@ function midiVarLen(
         }else{
 
             break;
-
         }
-
     }
 
     return bytes;
-
-}
-
-
-function uint32(n){
-
-    return [
-
-        (n>>24)&255,
-        (n>>16)&255,
-        (n>>8)&255,
-        n&255
-
-    ];
-
-}
-
-
-function uint16(n){
-
-    return [
-
-        (n>>8)&255,
-        n&255
-
-    ];
-
-}
-
-
-function textoBytes(text){
-
-    return [
-        ...new TextEncoder()
-        .encode(text)
-    ];
-
 }
 
 
 /* ============================================================
-   CREAR MIDI
+   MIDI HELPERS
 ============================================================ */
 
-function crearMIDI(){
-
-    const eventos=[];
-
-    /*
-     * Convertir todos los eventos
-     * visuales a ticks MIDI.
-     */
-
-    let globalTick=0;
-
-    for(
-        const page
-        of estado.paginas
-    ){
-
-        /*
-         * Cada página continúa temporalmente
-         * después de la anterior.
-         */
-
-        for(
-            const evento
-            of page.eventos
-        ){
-
-            const tick =
-                globalTick+
-                Math.round(
-                    evento.tick*PPQ
-                );
-
-            eventos.push({
-
-                tick,
-
-                notas:
-                    evento.notas,
-
-                duracion:
-                    evento.duracion
-
-            });
-
-        }
-
-        /*
-         * Separación de página.
-         *
-         * Se estima a partir del último
-         * evento.
-         */
-
-        if(
-            page.eventos.length
-        ){
-
-            const ultimo =
-                page.eventos[
-                    page.eventos.length-1
-                ];
-
-            globalTick +=
-                Math.round(
-                    (
-                        ultimo.tick+
-                        4
-                    )*PPQ
-                );
-
-        }
-
-    }
-
-
-    /*
-     * Ordenar.
-     */
-
-    eventos.sort(
-        (a,b)=>a.tick-b.tick
-    );
-
-
-    const track=[];
-
-    /*
-     * Tempo.
-     *
-     * Microsegundos por negra.
-     */
-
-    const micros =
-        Math.round(
-            60000000/
-            estado.tempo
-        );
-
-
-    /*
-     * Delta 0
-     * Meta tempo.
-     */
-
-    track.push(
-        ...midiVarLen(0),
-        0xff,
-        0x51,
-        0x03,
-        (micros>>16)&255,
-        (micros>>8)&255,
-        micros&255
-    );
-
-
-    /*
-     * Compás.
-     */
-
-    track.push(
-        ...midiVarLen(0),
-        0xff,
-        0x58,
-        0x04,
-        estado.timeNumerator,
-        Math.round(
-            Math.log2(
-                estado.timeDenominator
-            )
-        ),
-        24,
-        8
-    );
-
-
-    /*
-     * Nombre.
-     */
-
-    const nombre =
-        textoBytes(
-            "Experience - Ludovico Einaudi"
-        );
-
-    track.push(
-        ...midiVarLen(0),
-        0xff,
-        0x03,
-        nombre.length,
-        ...nombre
-    );
-
-
-    let anteriorTick=0;
-
-
-    /*
-     * Canal piano.
-     */
-
-    const canal=0;
-
-
-    for(
-        const evento
-        of eventos
-    ){
-
-        const tick =
-            Math.max(
-                0,
-                evento.tick
-            );
-
-        const delta =
-            tick-anteriorTick;
-
-
-        /*
-         * Cada nota del acorde.
-         */
-
-        const duracionTicks =
-            Math.max(
-                30,
-                Math.round(
-                    evento.duracion*
-                    PPQ
-                )
-            );
-
-
-        /*
-         * NOTE ON.
-         */
-
-        let primero=true;
-
-        for(
-            const nota
-            of evento.notas
-        ){
-
-            if(
-                nota.pitch===null
-            )
-                continue;
-
-
-            let pitch =
-                nota.pitch;
-
-
-            /*
-             * Protección.
-             */
-
-            pitch =
-                Math.max(
-                    21,
-                    Math.min(
-                        108,
-                        Math.round(
-                            pitch
-                        )
-                    )
-                );
-
-
-            track.push(
-
-                ...midiVarLen(
-                    primero
-                    ? delta
-                    : 0
-                ),
-
-                0x90 | canal,
-
-                pitch,
-
-                82
-
-            );
-
-            primero=false;
-
-        }
-
-
-        /*
-         * NOTE OFF.
-         *
-         * En este punto usamos el
-         * mismo evento temporal.
-         */
-
-        for(
-            const nota
-            of evento.notas
-        ){
-
-            if(
-                nota.pitch===null
-            )
-                continue;
-
-
-            let pitch =
-                Math.max(
-                    21,
-                    Math.min(
-                        108,
-                        Math.round(
-                            nota.pitch
-                        )
-                    )
-                );
-
-
-            track.push(
-
-                ...midiVarLen(
-                    duracionTicks
-                ),
-
-                0x80 | canal,
-
-                pitch,
-
-                0
-
-            );
-
-        }
-
-
-        anteriorTick =
-            tick+
-            duracionTicks;
-
-    }
-
-
-    /*
-     * Fin de pista.
-     */
-
-    track.push(
-
-        ...midiVarLen(0),
-
-        0xff,
-        0x2f,
-        0x00
-
-    );
-
-
-    /*
-     * Header.
-     */
-
-    const header = [
-
-        ...textoBytes("MThd"),
-
-        0,
-        0,
-        0,
-        6,
-
-        ...uint16(0),
-
-        ...uint16(1),
-
-        ...uint16(PPQ)
-
+function u16(n){
+
+    return [
+        (n>>8)&255,
+        n&255
     ];
+}
 
+function u32(n){
 
-    /*
-     * Track chunk.
-     */
-
-    const trackChunk=[
-
-        ...textoBytes("MTrk"),
-
-        ...uint32(
-            track.length
-        ),
-
-        ...track
-
+    return [
+        (n>>>24)&255,
+        (n>>>16)&255,
+        (n>>>8)&255,
+        n&255
     ];
+}
 
+function textBytes(str){
 
-    const bytes =
-        new Uint8Array([
-            ...header,
-            ...trackChunk
-        ]);
-
-
-    return new Blob(
-        [bytes],
-        {
-            type:"audio/midi"
-        }
+    return [...str].map(
+        c=>c.charCodeAt(0)
     );
-
 }
 
 
@@ -3170,136 +1837,249 @@ function crearMIDI(){
    GENERAR MIDI
 ============================================================ */
 
-function generarMIDI(){
+function generateMIDI(){
 
-    if(
-        !estado.paginas.length
-    ){
+    if(!score.events.length){
 
         alert(
-            "Primero analiza la partitura."
+            "No hay eventos musicales."
         );
 
         return;
-
     }
-
 
     log("");
-    log(
-        "▶ GENERANDO MIDI..."
+    log("▶ GENERANDO MIDI...");
+
+    const bpm=DEFAULT_BPM;
+
+    /*
+     * Convertimos eventos en ticks.
+     *
+     * Por ahora utilizamos una secuencia temporal global
+     * basada en la posición horizontal de cada página.
+     */
+
+    const events=
+        [...score.events]
+        .sort((a,b)=>{
+
+            if(a.page!==b.page)
+                return a.page-b.page;
+
+            return a.x-b.x;
+        });
+
+    let currentTick=0;
+
+    const midiEvents=[];
+
+    /*
+     * Cada evento recibe una duración aproximada.
+     */
+
+    for(const event of events){
+
+        const duration=
+            event.duration || 1;
+
+        const delta=0;
+
+        for(const note of event.notes){
+
+            if(note.pitch===null)
+                continue;
+
+            midiEvents.push({
+
+                tick:currentTick,
+
+                type:"on",
+
+                pitch:clamp(
+                    note.pitch,
+                    0,
+                    127
+                ),
+
+                velocity:88
+
+            });
+
+            midiEvents.push({
+
+                tick:
+                    currentTick+
+                    Math.round(
+                        duration*PPQ
+                    ),
+
+                type:"off",
+
+                pitch:clamp(
+                    note.pitch,
+                    0,
+                    127
+                ),
+
+                velocity:0
+            });
+        }
+
+        currentTick+=
+            Math.round(
+                duration*PPQ
+            );
+    }
+
+    midiEvents.sort(
+        (a,b)=>{
+
+            if(a.tick!==b.tick)
+                return a.tick-b.tick;
+
+            /*
+             * Note-off antes de note-on.
+             */
+
+            if(a.type===b.type)
+                return 0;
+
+            return a.type==="off"
+                ? -1
+                : 1;
+        }
     );
 
+    const track=[];
 
-    try{
+    /*
+     * Tempo.
+     */
 
-        estado.midi =
-            crearMIDI();
-
-
-        log(
-            `✓ MIDI generado`
+    const mpqn=
+        Math.round(
+            60000000/bpm
         );
 
-        log(
-            `   Páginas: ${
-                estado.paginas.length
-            }`
-        );
+    track.push(
+        0x00,
+        0xFF,
+        0x51,
+        0x03,
+        (mpqn>>16)&255,
+        (mpqn>>8)&255,
+        mpqn&255
+    );
 
-        log(
-            `   Eventos: ${
-                estado.eventos.length
-            }`
-        );
+    let previousTick=0;
 
-        log(
-            `   Pitch: ${
-                totalConPitch()
-            }`
-        );
+    for(const e of midiEvents){
 
-        log(
-            `   Tempo: ${
-                estado.tempo
-            } BPM`
-        );
+        const delta=
+            e.tick-previousTick;
 
-        log(
-            `   Compás: ${
-                estado.timeNumerator
-            }/${
-                estado.timeDenominator
-            }`
-        );
+        previousTick=e.tick;
 
+        const bytes=
+            writeVarLen(delta);
 
-        document.getElementById(
-            "descargar"
-        ).disabled=false;
+        track.push(...bytes);
 
+        if(e.type==="on"){
 
-        document.getElementById(
-            "estado"
-        ).innerHTML =
-            `<div class="success">
-            ✓ MIDI generado correctamente.
-            </div>`;
+            track.push(
+                0x90,
+                e.pitch,
+                e.velocity
+            );
 
-    }
-    catch(error){
+        }else{
 
-        console.error(error);
-
-        log(
-            "❌ Error generando MIDI: "+
-            error.message
-        );
-
-        document.getElementById(
-            "estado"
-        ).innerHTML =
-            `<div class="warning">
-            ❌ No se pudo generar el MIDI.
-            </div>`;
-
+            track.push(
+                0x80,
+                e.pitch,
+                0
+            );
+        }
     }
 
+    track.push(
+        0x00,
+        0xFF,
+        0x2F,
+        0x00
+    );
+
+    const header=[
+        ...textBytes("MThd"),
+        ...u32(6),
+        ...u16(0),
+        ...u16(1),
+        ...u16(PPQ)
+    ];
+
+    const trackHeader=[
+        ...textBytes("MTrk"),
+        ...u32(track.length)
+    ];
+
+    const bytes=[
+        ...header,
+        ...trackHeader,
+        ...track
+    ];
+
+    midiBlob=
+        new Blob(
+            [new Uint8Array(bytes)],
+            {
+                type:"audio/midi"
+            }
+        );
+
+    document.getElementById(
+        "downloadBtn"
+    ).disabled=false;
+
+    log(
+        `✓ MIDI generado — ${events.length} eventos`
+    );
+
+    log(
+        `✓ Duración aproximada: ${
+            (currentTick/PPQ).toFixed(2)
+        } negras`
+    );
 }
 
 
 /* ============================================================
-   DESCARGAR
+   DESCARGAR MIDI
 ============================================================ */
 
-function descargarMIDI(){
+function downloadMIDI(){
 
-    if(!estado.midi){
+    if(!midiBlob){
 
-        alert(
-            "Primero genera el MIDI."
-        );
+        generateMIDI();
 
-        return;
-
+        if(!midiBlob)
+            return;
     }
 
-
-    const url =
+    const url=
         URL.createObjectURL(
-            estado.midi
+            midiBlob
         );
 
-
-    const a =
-        document.createElement(
-            "a"
-        );
+    const a=
+        document.createElement("a");
 
     a.href=url;
 
-    a.download =
-        "Experience-Ludovico-Einaudi-reconstruccion.mid";
+    a.download=
+        "Experience_reconstruccion.mid";
 
     document.body.appendChild(a);
 
@@ -3311,100 +2091,182 @@ function descargarMIDI(){
         ()=>URL.revokeObjectURL(url),
         1000
     );
-
 }
 
 
 /* ============================================================
-   ESCAPAR HTML
+   DESCARGAR JSON
 ============================================================ */
 
-function escapeHtml(text){
+function cleanForJSON(){
 
-    return String(text)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+    return {
 
+        metadata:score.metadata,
+
+        pages:score.pages.map(
+            page=>({
+
+                page:page.page,
+
+                filename:page.filename,
+
+                heads:page.heads.map(
+                    n=>({
+
+                        x:n.x,
+                        y:n.y,
+
+                        staff:n.staff,
+
+                        staffStep:n.staffStep,
+
+                        pitch:n.pitch,
+
+                        pitchConfidence:
+                            n.pitchConfidence,
+
+                        page:n.page
+                    })
+                ),
+
+                lines:page.lines,
+
+                staves:page.staves.map(
+                    s=>({
+
+                        index:s.index,
+
+                        top:s.top,
+
+                        bottom:s.bottom,
+
+                        spacing:s.spacing
+                    })
+                ),
+
+                bars:page.bars,
+
+                elements:page.elements
+            })
+        ),
+
+        events:score.events.map(
+            e=>({
+
+                id:e.id,
+
+                page:e.page,
+
+                staff:e.staff,
+
+                x:e.x,
+
+                duration:e.duration,
+
+                notes:e.notes.map(
+                    n=>({
+
+                        pitch:n.pitch,
+
+                        x:n.x,
+
+                        y:n.y,
+
+                        staff:n.staff,
+
+                        confidence:
+                            n.pitchConfidence
+                    })
+                )
+            })
+        )
+    };
+}
+
+function downloadJSON(){
+
+    const data=
+        cleanForJSON();
+
+    const blob=
+        new Blob(
+            [
+                JSON.stringify(
+                    data,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:"application/json"
+            }
+        );
+
+    const url=
+        URL.createObjectURL(blob);
+
+    const a=
+        document.createElement("a");
+
+    a.href=url;
+
+    a.download=
+        "Experience_reconstruccion.json";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    URL.revokeObjectURL(url);
 }
 
 
 /* ============================================================
-   EVENTOS UI
+   EVENTOS DE BOTONES
 ============================================================ */
 
 document
-.getElementById("analizar")
-.addEventListener(
-    "click",
-    analizar
-);
-
-
-document
-.getElementById("midi")
-.addEventListener(
-    "click",
-    generarMIDI
-);
-
+    .getElementById("analyzeBtn")
+    .addEventListener(
+        "click",
+        analyzeScore
+    );
 
 document
-.getElementById("descargar")
-.addEventListener(
-    "click",
-    descargarMIDI
-);
+    .getElementById("midiBtn")
+    .addEventListener(
+        "click",
+        generateMIDI
+    );
+
+document
+    .getElementById("downloadBtn")
+    .addEventListener(
+        "click",
+        downloadMIDI
+    );
+
+document
+    .getElementById("jsonBtn")
+    .addEventListener(
+        "click",
+        downloadJSON
+    );
 
 
 /* ============================================================
-   FIN
+   INICIALIZACIÓN
 ============================================================ */
 
 log(
-    "✓ Sistema listo."
+    "✓ Sistema preparado."
 );
 
 log(
-    `✓ ${ARCHIVOS.length} páginas configuradas.`
-);
-
-log(
-    "✓ Detección de cabezas."
-);
-
-log(
-    "✓ Detección de pentagramas."
-);
-
-log(
-    "✓ Detección de barras."
-);
-
-log(
-    "✓ Detección de beams."
-);
-
-log(
-    "✓ Detección de silencios."
-);
-
-log(
-    "✓ Detección de ligaduras."
-);
-
-log(
-    "✓ Detección de octavas."
-);
-
-log(
-    "✓ Reconstrucción de eventos/acordes."
-);
-
-log(
-    "✓ Generación MIDI."
+    "Pulsa «ANALIZAR PARTITURA» para comenzar."
 );
 
 </script>
