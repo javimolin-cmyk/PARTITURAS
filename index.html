@@ -3,141 +3,59 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
 
-<title>Experience — Analizador de Partitura</title>
+<title>Diagnóstico Notes SVG</title>
 
 <style>
 
 body {
-    margin: 0;
-    padding: 30px;
-    background: #202020;
-    color: white;
-    font-family: Arial, sans-serif;
-}
-
-.container {
-    max-width: 1500px;
-    margin: auto;
+    background:#202020;
+    color:white;
+    font-family:Arial;
+    padding:30px;
 }
 
 button {
-    padding: 13px 20px;
-    margin: 5px;
-    border: 0;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#analizar {
-    background: #4caf50;
-    color: white;
-}
-
-#descargarJSON {
-    background: #2196f3;
-    color: white;
-    display: none;
-}
-
-#estado {
-    background: #111;
-    padding: 20px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-    font-family: monospace;
-    margin-top: 20px;
-}
-
-.pagina {
-    background: white;
-    color: black;
-    margin: 30px 0;
-    padding: 20px;
-}
-
-.pagina svg {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.tabla {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    color: black;
-    background: white;
-    font-size: 14px;
-}
-
-.tabla th,
-.tabla td {
-    border: 1px solid #bbb;
-    padding: 6px;
-    text-align: center;
-}
-
-.tabla th {
-    background: #ddd;
-}
-
-.notaMarcada {
-    fill: red !important;
+    padding:12px 20px;
+    font-size:16px;
+    cursor:pointer;
 }
 
 pre {
-    background: #111;
-    color: #0f0;
-    padding: 15px;
-    overflow-x: auto;
+    background:#111;
+    padding:20px;
+    overflow:auto;
+    white-space:pre-wrap;
+}
+
+.pagina {
+    background:white;
+    color:black;
+    margin:30px 0;
+    padding:20px;
+}
+
+svg {
+    width:100%;
 }
 
 </style>
 
 </head>
 
-
 <body>
 
-<div class="container">
+<h1>Diagnóstico real de las Note</h1>
 
-<h1>
-🎼 Experience — Ludovico Einaudi
-</h1>
-
-
-<button id="analizar">
-🔎 ANALIZAR NOTAS
+<button onclick="analizar()">
+🔎 ANALIZAR NOTE
 </button>
 
-
-<button id="descargarJSON">
-⬇️ DESCARGAR DATOS JSON
-</button>
-
-
-<div id="estado">
+<pre id="resultado">
 Esperando...
-</div>
-
-
-<div id="resultado"></div>
-
-</div>
-
+</pre>
 
 <script>
-
-
-/*
-===========================================================
-CONFIGURACIÓN
-===========================================================
-*/
 
 const CARPETA =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
@@ -151,1018 +69,270 @@ const ARCHIVOS = [
 ];
 
 
-let datosPartitura = [];
-
-
-/*
-===========================================================
-CARGAR SVG
-===========================================================
-*/
-
 async function cargarSVG(nombre) {
 
-    const respuesta =
+    const r =
         await fetch(
             CARPETA + nombre
         );
 
-    if (!respuesta.ok) {
+    if (!r.ok) {
 
         throw new Error(
             nombre +
-            " → HTTP " +
-            respuesta.status
+            " HTTP " +
+            r.status
         );
 
     }
 
-    return await respuesta.text();
+    return await r.text();
 
 }
 
 
-/*
-===========================================================
-PARSEAR
-===========================================================
-*/
+function extraerNumerosPath(d) {
 
-function parsearSVG(texto) {
+    /*
+    Extrae todos los números
+    del atributo d.
 
-    const parser =
-        new DOMParser();
+    Esto permite estudiar
+    directamente la geometría
+    del path.
+    */
 
-    const documento =
-        parser.parseFromString(
-            texto,
-            "image/svg+xml"
+    if (!d)
+        return [];
+
+    const coincidencias =
+        d.match(
+            /[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g
         );
 
-    return documento.documentElement;
+    if (!coincidencias)
+        return [];
+
+    return coincidencias.map(
+        Number
+    );
 
 }
 
 
-/*
-===========================================================
-ANALIZAR UNA PÁGINA
-===========================================================
-*/
+function resumenPath(path) {
 
-function analizarPagina(
-    svg,
-    numeroPagina
-) {
-
-    /*
-    -------------------------------------------------------
-    IMPORTANTE:
-    -------------------------------------------------------
-
-    getBBox() necesita que el SVG esté renderizado.
-
-    Por eso primero insertamos una copia invisible
-    en el documento.
-    */
-
-    const wrapper =
-        document.createElement("div");
-
-    wrapper.style.position =
-        "absolute";
-
-    wrapper.style.left =
-        "-100000px";
-
-    wrapper.style.top =
-        "0";
-
-    wrapper.style.visibility =
-        "hidden";
-
-    wrapper.appendChild(
-        svg.cloneNode(true)
-    );
-
-    document.body.appendChild(
-        wrapper
-    );
+    const d =
+        path.getAttribute("d")
+        || "";
 
 
-    const svgReal =
-        wrapper.querySelector("svg");
+    const numeros =
+        extraerNumerosPath(d);
+
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+
+    let minY = Infinity;
+    let maxY = -Infinity;
 
 
     /*
-    -------------------------------------------------------
-    DIMENSIONES
-    -------------------------------------------------------
+    ATENCIÓN:
+
+    En un path SVG los números
+    no necesariamente son pares
+    X,Y porque existen comandos
+    con distintos números de
+    argumentos.
+
+    Por eso aquí solamente
+    mostramos los números y
+    NO fingimos todavía que
+    son coordenadas.
+
     */
-
-    let ancho =
-        parseFloat(
-            svgReal.getAttribute(
-                "width"
-            )
-        );
-
-    let alto =
-        parseFloat(
-            svgReal.getAttribute(
-                "height"
-            )
-        );
-
-
-    /*
-    viewBox si width/height no existen.
-    */
-
-    if (
-        (!ancho || !alto) &&
-        svgReal.hasAttribute(
-            "viewBox"
-        )
-    ) {
-
-        const vb =
-            svgReal
-            .getAttribute(
-                "viewBox"
-            )
-            .trim()
-            .split(/\s+/)
-            .map(Number);
-
-        ancho = vb[2];
-        alto = vb[3];
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    LÍNEAS DEL PENTAGRAMA
-    -------------------------------------------------------
-    */
-
-    const staffElementos =
-        [
-            ...svgReal.querySelectorAll(
-                ".StaffLines"
-            )
-        ];
-
-
-    const staffLines = [];
-
-
-    for (
-        const elemento
-        of staffElementos
-    ) {
-
-        try {
-
-            const caja =
-                elemento.getBBox();
-
-            staffLines.push({
-
-                x:
-                    caja.x,
-
-                y:
-                    caja.y,
-
-                width:
-                    caja.width,
-
-                height:
-                    caja.height
-
-            });
-
-        }
-        catch(e) {}
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    NOTAS
-    -------------------------------------------------------
-    */
-
-    const noteElements =
-        [
-            ...svgReal.querySelectorAll(
-                ".Note"
-            )
-        ];
-
-
-    const notas = [];
-
-
-    for (
-        let i = 0;
-        i < noteElements.length;
-        i++
-    ) {
-
-        const elemento =
-            noteElements[i];
-
-
-        let caja;
-
-
-        try {
-
-            caja =
-                elemento.getBBox();
-
-        }
-        catch(e) {
-
-            continue;
-
-        }
-
-
-        /*
-        Centro de la cabeza.
-        */
-
-        const centroX =
-            caja.x +
-            caja.width / 2;
-
-        const centroY =
-            caja.y +
-            caja.height / 2;
-
-
-        /*
-        ---------------------------------------------------
-        ENCONTRAR STAFF MÁS CERCANO
-        ---------------------------------------------------
-        */
-
-        let staffMasCercano =
-            -1;
-
-        let distanciaStaff =
-            Infinity;
-
-
-        for (
-            let s = 0;
-            s < staffLines.length;
-            s++
-        ) {
-
-            const staff =
-                staffLines[s];
-
-
-            const centroStaff =
-                staff.y +
-                staff.height / 2;
-
-
-            const distancia =
-                Math.abs(
-                    centroY -
-                    centroStaff
-                );
-
-
-            if (
-                distancia <
-                distanciaStaff
-            ) {
-
-                distanciaStaff =
-                    distancia;
-
-                staffMasCercano =
-                    s;
-
-            }
-
-        }
-
-
-        /*
-        ---------------------------------------------------
-        TODOS LOS ATRIBUTOS
-        ---------------------------------------------------
-        */
-
-        const atributos = {};
-
-
-        for (
-            const atributo
-            of elemento.attributes
-        ) {
-
-            atributos[
-                atributo.name
-            ] =
-                atributo.value;
-
-        }
-
-
-        /*
-        ---------------------------------------------------
-        INFORMACIÓN
-        ---------------------------------------------------
-        */
-
-        notas.push({
-
-            pagina:
-                numeroPagina + 1,
-
-            indice:
-                i + 1,
-
-            x:
-                centroX,
-
-            y:
-                centroY,
-
-            xInicio:
-                caja.x,
-
-            yInicio:
-                caja.y,
-
-            ancho:
-                caja.width,
-
-            alto:
-                caja.height,
-
-            staff:
-                staffMasCercano,
-
-            distanciaStaff,
-
-            path:
-                elemento.getAttribute(
-                    "d"
-                ),
-
-            atributos
-
-        });
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    STEMS
-    -------------------------------------------------------
-    */
-
-    const stems =
-        [
-            ...svgReal.querySelectorAll(
-                ".Stem"
-            )
-        ];
-
-
-    const datosStems = [];
-
-
-    for (
-        let i = 0;
-        i < stems.length;
-        i++
-    ) {
-
-        try {
-
-            const caja =
-                stems[i].getBBox();
-
-
-            datosStems.push({
-
-                x:
-                    caja.x +
-                    caja.width / 2,
-
-                y:
-                    caja.y +
-                    caja.height / 2,
-
-                width:
-                    caja.width,
-
-                height:
-                    caja.height
-
-            });
-
-        }
-        catch(e) {}
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    BEAMS
-    -------------------------------------------------------
-    */
-
-    const beams =
-        [
-            ...svgReal.querySelectorAll(
-                ".Beam"
-            )
-        ];
-
-
-    const datosBeams = [];
-
-
-    for (
-        let i = 0;
-        i < beams.length;
-        i++
-    ) {
-
-        try {
-
-            const caja =
-                beams[i].getBBox();
-
-
-            datosBeams.push({
-
-                x:
-                    caja.x,
-
-                y:
-                    caja.y,
-
-                width:
-                    caja.width,
-
-                height:
-                    caja.height
-
-            });
-
-        }
-        catch(e) {}
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    BARLINES
-    -------------------------------------------------------
-    */
-
-    const barras =
-        [
-            ...svgReal.querySelectorAll(
-                ".BarLine"
-            )
-        ];
-
-
-    const datosBarras = [];
-
-
-    for (
-        const barra
-        of barras
-    ) {
-
-        try {
-
-            const caja =
-                barra.getBBox();
-
-
-            datosBarras.push({
-
-                x:
-                    caja.x,
-
-                y:
-                    caja.y,
-
-                width:
-                    caja.width,
-
-                height:
-                    caja.height
-
-            });
-
-        }
-        catch(e) {}
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    RESTS
-    -------------------------------------------------------
-    */
-
-    const rests =
-        [
-            ...svgReal.querySelectorAll(
-                ".Rest"
-            )
-        ];
-
-
-    const datosRests = [];
-
-
-    for (
-        const rest
-        of rests
-    ) {
-
-        try {
-
-            const caja =
-                rest.getBBox();
-
-
-            datosRests.push({
-
-                x:
-                    caja.x,
-
-                y:
-                    caja.y,
-
-                width:
-                    caja.width,
-
-                height:
-                    caja.height
-
-            });
-
-        }
-        catch(e) {}
-
-    }
-
-
-    /*
-    -------------------------------------------------------
-    LIMPIAR COPIA
-    -------------------------------------------------------
-    */
-
-    wrapper.remove();
-
 
     return {
 
-        pagina:
-            numeroPagina + 1,
+        longitudD:
+            d.length,
 
-        ancho,
+        cantidadNumeros:
+            numeros.length,
 
-        alto,
+        primerosNumeros:
+            numeros.slice(
+                0,
+                40
+            ),
 
-        staffLines,
+        d:
 
-        notas,
-
-        stems:
-            datosStems,
-
-        beams:
-            datosBeams,
-
-        barras:
-            datosBarras,
-
-        rests:
-            datosRests
+            d.length > 2000
+                ? d.slice(0,2000) +
+                  "\n...[TRUNCADO]"
+                : d
 
     };
 
 }
 
 
-/*
-===========================================================
-MOSTRAR TABLA
-===========================================================
-*/
+async function analizar() {
 
-function mostrarPagina(
-    datos,
-    svgOriginal
-) {
-
-    const contenedor =
-        document.createElement(
-            "div"
-        );
-
-    contenedor.className =
-        "pagina";
-
-
-    const titulo =
-        document.createElement(
-            "h2"
-        );
-
-
-    titulo.textContent =
-        "Página " +
-        datos.pagina +
-        " — " +
-        datos.notas.length +
-        " notas";
-
-
-    contenedor.appendChild(
-        titulo
-    );
-
-
-    /*
-    SVG visual.
-    */
-
-    contenedor.appendChild(
-        document.importNode(
-            svgOriginal,
-            true
-        )
-    );
-
-
-    /*
-    TABLA
-    */
-
-    const tabla =
-        document.createElement(
-            "table"
-        );
-
-
-    tabla.className =
-        "tabla";
-
-
-    tabla.innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>#</th>
-                <th>X</th>
-                <th>Y</th>
-                <th>Ancho</th>
-                <th>Alto</th>
-                <th>Staff</th>
-                <th>Distancia</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody></tbody>
-
-    `;
-
-
-    const tbody =
-        tabla.querySelector(
-            "tbody"
-        );
+    let salida = "";
 
 
     for (
-        const nota
-        of datos.notas
+        let pagina = 0;
+        pagina < ARCHIVOS.length;
+        pagina++
     ) {
 
-        const fila =
-            document.createElement(
-                "tr"
+        const texto =
+            await cargarSVG(
+                ARCHIVOS[pagina]
             );
 
 
-        fila.innerHTML = `
-
-            <td>${nota.indice}</td>
-
-            <td>${nota.x.toFixed(2)}</td>
-
-            <td>${nota.y.toFixed(2)}</td>
-
-            <td>${nota.ancho.toFixed(2)}</td>
-
-            <td>${nota.alto.toFixed(2)}</td>
-
-            <td>${nota.staff}</td>
-
-            <td>${nota.distanciaStaff.toFixed(2)}</td>
-
-        `;
+        const parser =
+            new DOMParser();
 
 
-        tbody.appendChild(
-            fila
-        );
-
-    }
-
-
-    contenedor.appendChild(
-        tabla
-    );
+        const doc =
+            parser.parseFromString(
+                texto,
+                "image/svg+xml"
+            );
 
 
-    /*
-    INFORMACIÓN.
-    */
-
-    const info =
-        document.createElement(
-            "pre"
-        );
+        const svg =
+            doc.documentElement;
 
 
-    info.textContent =
-        JSON.stringify(
-            {
-                pentagramas:
-                    datos.staffLines,
-
-                stems:
-                    datos.stems,
-
-                beams:
-                    datos.beams,
-
-                barras:
-                    datos.barras,
-
-                rests:
-                    datos.rests
-            },
-            null,
-            2
-        );
+        const notas =
+            [
+                ...svg.querySelectorAll(
+                    ".Note"
+                )
+            ];
 
 
-    contenedor.appendChild(
-        info
-    );
+        salida +=
+            "\n\n====================================\n";
 
+        salida +=
+            "PÁGINA " +
+            (pagina + 1) +
+            "\n";
 
-    document
-        .getElementById(
-            "resultado"
-        )
-        .appendChild(
-            contenedor
-        );
+        salida +=
+            "NOTES: " +
+            notas.length +
+            "\n";
 
-}
+        salida +=
+            "====================================\n";
 
-
-/*
-===========================================================
-ANALIZAR TODO
-===========================================================
-*/
-
-async function analizar() {
-
-    document
-        .getElementById(
-            "resultado"
-        )
-        .innerHTML =
-            "";
-
-
-    datosPartitura = [];
-
-
-    try {
 
         for (
             let i = 0;
-            i < ARCHIVOS.length;
+            i < notas.length;
             i++
         ) {
 
-            document
-                .getElementById(
-                    "estado"
-                )
-                .textContent =
-                    "Analizando página " +
-                    (i + 1) +
-                    " de " +
-                    ARCHIVOS.length +
-                    "...";
-
-
-            const texto =
-                await cargarSVG(
-                    ARCHIVOS[i]
-                );
-
-
-            const svg =
-                parsearSVG(
-                    texto
-                );
+            const nota =
+                notas[i];
 
 
             const datos =
-                analizarPagina(
-                    svg,
-                    i
+                resumenPath(
+                    nota
                 );
 
 
-            datosPartitura.push(
-                datos
-            );
+            salida +=
+                "\n\n--- NOTE " +
+                (i + 1) +
+                " ---\n";
 
 
-            mostrarPagina(
-                datos,
-                svg
-            );
+            salida +=
+                "tag: " +
+                nota.tagName +
+                "\n";
+
+
+            salida +=
+                "class: " +
+                nota.getAttribute(
+                    "class"
+                ) +
+                "\n";
+
+
+            salida +=
+                "fill: " +
+                nota.getAttribute(
+                    "fill"
+                ) +
+                "\n";
+
+
+            salida +=
+                "stroke: " +
+                nota.getAttribute(
+                    "stroke"
+                ) +
+                "\n";
+
+
+            salida +=
+                "stroke-width: " +
+                nota.getAttribute(
+                    "stroke-width"
+                ) +
+                "\n";
+
+
+            salida +=
+                "longitud d: " +
+                datos.longitudD +
+                "\n";
+
+
+            salida +=
+                "cantidad números: " +
+                datos.cantidadNumeros +
+                "\n";
+
+
+            salida +=
+                "primeros números:\n" +
+                JSON.stringify(
+                    datos.primerosNumeros
+                );
+
+
+            salida +=
+                "\n\nPATH d:\n" +
+                datos.d;
 
         }
 
-
-        const totalNotas =
-            datosPartitura
-                .reduce(
-                    (
-                        suma,
-                        pagina
-                    ) =>
-                        suma +
-                        pagina.notas.length,
-                    0
-                );
-
-
-        document
-            .getElementById(
-                "descargarJSON"
-            )
-            .style.display =
-                "inline-block";
-
-
-        document
-            .getElementById(
-                "estado"
-            )
-            .textContent =
-                "✓ ANÁLISIS TERMINADO\n\n" +
-                "Páginas: " +
-                datosPartitura.length +
-                "\n" +
-                "Notas detectadas: " +
-                totalNotas +
-                "\n\n" +
-                "Ahora tenemos las coordenadas " +
-                "reales de las notas de MuseScore.";
-
     }
-    catch(error) {
-
-        console.error(error);
 
 
-        document
-            .getElementById(
-                "estado"
-            )
-            .textContent =
-                "❌ ERROR\n\n" +
-                error.message;
-
-    }
+    document
+        .getElementById(
+            "resultado"
+        )
+        .textContent =
+            salida;
 
 }
-
-
-/*
-===========================================================
-DESCARGAR JSON
-===========================================================
-*/
-
-document
-    .getElementById(
-        "descargarJSON"
-    )
-    .addEventListener(
-        "click",
-        () => {
-
-            const contenido =
-                JSON.stringify(
-                    datosPartitura,
-                    null,
-                    2
-                );
-
-
-            const blob =
-                new Blob(
-                    [contenido],
-                    {
-                        type:
-                            "application/json"
-                    }
-                );
-
-
-            const url =
-                URL.createObjectURL(
-                    blob
-                );
-
-
-            const enlace =
-                document.createElement(
-                    "a"
-                );
-
-
-            enlace.href =
-                url;
-
-
-            enlace.download =
-                "experience_notas.json";
-
-
-            enlace.click();
-
-
-            setTimeout(
-                () =>
-                    URL.revokeObjectURL(
-                        url
-                    ),
-                1000
-            );
-
-        }
-    );
-
-
-/*
-===========================================================
-BOTÓN
-===========================================================
-*/
-
-document
-    .getElementById(
-        "analizar"
-    )
-    .addEventListener(
-        "click",
-        analizar
-    );
 
 </script>
 
