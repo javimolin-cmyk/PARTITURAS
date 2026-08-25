@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Diagnóstico SVG — Experience</title>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Experience — Analizador de Partitura</title>
 
 <style>
+
 body {
     margin: 0;
     padding: 30px;
@@ -16,17 +19,17 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1500px;
     margin: auto;
 }
 
 button {
-    padding: 12px 18px;
-    font-size: 16px;
-    cursor: pointer;
+    padding: 13px 20px;
+    margin: 5px;
     border: 0;
     border-radius: 7px;
-    margin: 5px;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 #analizar {
@@ -34,49 +37,107 @@ button {
     color: white;
 }
 
-#resultado {
-    margin-top: 20px;
+#descargarJSON {
+    background: #2196f3;
+    color: white;
+    display: none;
+}
+
+#estado {
     background: #111;
     padding: 20px;
     border-radius: 8px;
-    font-family: monospace;
     white-space: pre-wrap;
-    overflow-x: auto;
+    font-family: monospace;
+    margin-top: 20px;
 }
 
 .pagina {
     background: white;
+    color: black;
+    margin: 30px 0;
     padding: 20px;
-    margin-top: 30px;
 }
 
-svg {
+.pagina svg {
     width: 100%;
     height: auto;
+    display: block;
 }
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    color: black;
+    background: white;
+    font-size: 14px;
+}
+
+.tabla th,
+.tabla td {
+    border: 1px solid #bbb;
+    padding: 6px;
+    text-align: center;
+}
+
+.tabla th {
+    background: #ddd;
+}
+
+.notaMarcada {
+    fill: red !important;
+}
+
+pre {
+    background: #111;
+    color: #0f0;
+    padding: 15px;
+    overflow-x: auto;
+}
+
 </style>
+
 </head>
+
 
 <body>
 
 <div class="container">
 
-<h1>Diagnóstico SVG — Experience</h1>
+<h1>
+🎼 Experience — Ludovico Einaudi
+</h1>
+
 
 <button id="analizar">
-🔎 ANALIZAR ESTRUCTURA DE LOS SVG
+🔎 ANALIZAR NOTAS
 </button>
 
-<div id="resultado">
+
+<button id="descargarJSON">
+⬇️ DESCARGAR DATOS JSON
+</button>
+
+
+<div id="estado">
 Esperando...
 </div>
 
-<div id="partituras"></div>
+
+<div id="resultado"></div>
 
 </div>
 
 
 <script>
+
+
+/*
+===========================================================
+CONFIGURACIÓN
+===========================================================
+*/
 
 const CARPETA =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
@@ -90,7 +151,16 @@ const ARCHIVOS = [
 ];
 
 
-async function cargar(nombre) {
+let datosPartitura = [];
+
+
+/*
+===========================================================
+CARGAR SVG
+===========================================================
+*/
+
+async function cargarSVG(nombre) {
 
     const respuesta =
         await fetch(
@@ -112,74 +182,288 @@ async function cargar(nombre) {
 }
 
 
-function analizarSVG(texto) {
+/*
+===========================================================
+PARSEAR
+===========================================================
+*/
+
+function parsearSVG(texto) {
 
     const parser =
         new DOMParser();
 
-    const doc =
+    const documento =
         parser.parseFromString(
             texto,
             "image/svg+xml"
         );
 
-    const svg =
-        doc.documentElement;
+    return documento.documentElement;
+
+}
 
 
-    const elementos =
+/*
+===========================================================
+ANALIZAR UNA PÁGINA
+===========================================================
+*/
+
+function analizarPagina(
+    svg,
+    numeroPagina
+) {
+
+    /*
+    -------------------------------------------------------
+    IMPORTANTE:
+    -------------------------------------------------------
+
+    getBBox() necesita que el SVG esté renderizado.
+
+    Por eso primero insertamos una copia invisible
+    en el documento.
+    */
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.style.position =
+        "absolute";
+
+    wrapper.style.left =
+        "-100000px";
+
+    wrapper.style.top =
+        "0";
+
+    wrapper.style.visibility =
+        "hidden";
+
+    wrapper.appendChild(
+        svg.cloneNode(true)
+    );
+
+    document.body.appendChild(
+        wrapper
+    );
+
+
+    const svgReal =
+        wrapper.querySelector("svg");
+
+
+    /*
+    -------------------------------------------------------
+    DIMENSIONES
+    -------------------------------------------------------
+    */
+
+    let ancho =
+        parseFloat(
+            svgReal.getAttribute(
+                "width"
+            )
+        );
+
+    let alto =
+        parseFloat(
+            svgReal.getAttribute(
+                "height"
+            )
+        );
+
+
+    /*
+    viewBox si width/height no existen.
+    */
+
+    if (
+        (!ancho || !alto) &&
+        svgReal.hasAttribute(
+            "viewBox"
+        )
+    ) {
+
+        const vb =
+            svgReal
+            .getAttribute(
+                "viewBox"
+            )
+            .trim()
+            .split(/\s+/)
+            .map(Number);
+
+        ancho = vb[2];
+        alto = vb[3];
+
+    }
+
+
+    /*
+    -------------------------------------------------------
+    LÍNEAS DEL PENTAGRAMA
+    -------------------------------------------------------
+    */
+
+    const staffElementos =
         [
-            ...svg.querySelectorAll("*")
+            ...svgReal.querySelectorAll(
+                ".StaffLines"
+            )
         ];
 
 
-    const tipos = {};
-
-    const clases = {};
-
-    const ids = {};
-
-    const atributos = {};
-
-    const textos = [];
-
+    const staffLines = [];
 
 
     for (
-        const elemento of elementos
+        const elemento
+        of staffElementos
     ) {
 
-        const nombre =
-            elemento.tagName;
+        try {
 
-        tipos[nombre] =
-            (tipos[nombre] || 0) + 1;
+            const caja =
+                elemento.getBBox();
+
+            staffLines.push({
+
+                x:
+                    caja.x,
+
+                y:
+                    caja.y,
+
+                width:
+                    caja.width,
+
+                height:
+                    caja.height
+
+            });
+
+        }
+        catch(e) {}
+
+    }
 
 
-        const clase =
-            elemento.getAttribute(
-                "class"
-            );
+    /*
+    -------------------------------------------------------
+    NOTAS
+    -------------------------------------------------------
+    */
 
-        if (clase) {
+    const noteElements =
+        [
+            ...svgReal.querySelectorAll(
+                ".Note"
+            )
+        ];
 
-            clases[clase] =
-                (clases[clase] || 0) + 1;
+
+    const notas = [];
+
+
+    for (
+        let i = 0;
+        i < noteElements.length;
+        i++
+    ) {
+
+        const elemento =
+            noteElements[i];
+
+
+        let caja;
+
+
+        try {
+
+            caja =
+                elemento.getBBox();
+
+        }
+        catch(e) {
+
+            continue;
 
         }
 
 
-        const id =
-            elemento.getAttribute(
-                "id"
-            );
+        /*
+        Centro de la cabeza.
+        */
 
-        if (id) {
+        const centroX =
+            caja.x +
+            caja.width / 2;
 
-            ids[id] =
-                (ids[id] || 0) + 1;
+        const centroY =
+            caja.y +
+            caja.height / 2;
+
+
+        /*
+        ---------------------------------------------------
+        ENCONTRAR STAFF MÁS CERCANO
+        ---------------------------------------------------
+        */
+
+        let staffMasCercano =
+            -1;
+
+        let distanciaStaff =
+            Infinity;
+
+
+        for (
+            let s = 0;
+            s < staffLines.length;
+            s++
+        ) {
+
+            const staff =
+                staffLines[s];
+
+
+            const centroStaff =
+                staff.y +
+                staff.height / 2;
+
+
+            const distancia =
+                Math.abs(
+                    centroY -
+                    centroStaff
+                );
+
+
+            if (
+                distancia <
+                distanciaStaff
+            ) {
+
+                distanciaStaff =
+                    distancia;
+
+                staffMasCercano =
+                    s;
+
+            }
 
         }
+
+
+        /*
+        ---------------------------------------------------
+        TODOS LOS ATRIBUTOS
+        ---------------------------------------------------
+        */
+
+        const atributos = {};
 
 
         for (
@@ -190,252 +474,695 @@ function analizarSVG(texto) {
             atributos[
                 atributo.name
             ] =
-                (
-                    atributos[
-                        atributo.name
-                    ] || 0
-                ) + 1;
+                atributo.value;
 
         }
 
 
-        if (
-            elemento.tagName ===
-            "text"
-        ) {
+        /*
+        ---------------------------------------------------
+        INFORMACIÓN
+        ---------------------------------------------------
+        */
 
-            const texto =
-                elemento.textContent
-                    .trim();
+        notas.push({
 
-            if (texto) {
+            pagina:
+                numeroPagina + 1,
 
-                textos.push(
-                    texto
-                );
+            indice:
+                i + 1,
 
-            }
+            x:
+                centroX,
 
-        }
+            y:
+                centroY,
+
+            xInicio:
+                caja.x,
+
+            yInicio:
+                caja.y,
+
+            ancho:
+                caja.width,
+
+            alto:
+                caja.height,
+
+            staff:
+                staffMasCercano,
+
+            distanciaStaff,
+
+            path:
+                elemento.getAttribute(
+                    "d"
+                ),
+
+            atributos
+
+        });
 
     }
 
 
+    /*
+    -------------------------------------------------------
+    STEMS
+    -------------------------------------------------------
+    */
+
+    const stems =
+        [
+            ...svgReal.querySelectorAll(
+                ".Stem"
+            )
+        ];
+
+
+    const datosStems = [];
+
+
+    for (
+        let i = 0;
+        i < stems.length;
+        i++
+    ) {
+
+        try {
+
+            const caja =
+                stems[i].getBBox();
+
+
+            datosStems.push({
+
+                x:
+                    caja.x +
+                    caja.width / 2,
+
+                y:
+                    caja.y +
+                    caja.height / 2,
+
+                width:
+                    caja.width,
+
+                height:
+                    caja.height
+
+            });
+
+        }
+        catch(e) {}
+
+    }
+
+
+    /*
+    -------------------------------------------------------
+    BEAMS
+    -------------------------------------------------------
+    */
+
+    const beams =
+        [
+            ...svgReal.querySelectorAll(
+                ".Beam"
+            )
+        ];
+
+
+    const datosBeams = [];
+
+
+    for (
+        let i = 0;
+        i < beams.length;
+        i++
+    ) {
+
+        try {
+
+            const caja =
+                beams[i].getBBox();
+
+
+            datosBeams.push({
+
+                x:
+                    caja.x,
+
+                y:
+                    caja.y,
+
+                width:
+                    caja.width,
+
+                height:
+                    caja.height
+
+            });
+
+        }
+        catch(e) {}
+
+    }
+
+
+    /*
+    -------------------------------------------------------
+    BARLINES
+    -------------------------------------------------------
+    */
+
+    const barras =
+        [
+            ...svgReal.querySelectorAll(
+                ".BarLine"
+            )
+        ];
+
+
+    const datosBarras = [];
+
+
+    for (
+        const barra
+        of barras
+    ) {
+
+        try {
+
+            const caja =
+                barra.getBBox();
+
+
+            datosBarras.push({
+
+                x:
+                    caja.x,
+
+                y:
+                    caja.y,
+
+                width:
+                    caja.width,
+
+                height:
+                    caja.height
+
+            });
+
+        }
+        catch(e) {}
+
+    }
+
+
+    /*
+    -------------------------------------------------------
+    RESTS
+    -------------------------------------------------------
+    */
+
+    const rests =
+        [
+            ...svgReal.querySelectorAll(
+                ".Rest"
+            )
+        ];
+
+
+    const datosRests = [];
+
+
+    for (
+        const rest
+        of rests
+    ) {
+
+        try {
+
+            const caja =
+                rest.getBBox();
+
+
+            datosRests.push({
+
+                x:
+                    caja.x,
+
+                y:
+                    caja.y,
+
+                width:
+                    caja.width,
+
+                height:
+                    caja.height
+
+            });
+
+        }
+        catch(e) {}
+
+    }
+
+
+    /*
+    -------------------------------------------------------
+    LIMPIAR COPIA
+    -------------------------------------------------------
+    */
+
+    wrapper.remove();
+
+
     return {
-        elementos,
-        tipos,
-        clases,
-        ids,
-        atributos,
-        textos
+
+        pagina:
+            numeroPagina + 1,
+
+        ancho,
+
+        alto,
+
+        staffLines,
+
+        notas,
+
+        stems:
+            datosStems,
+
+        beams:
+            datosBeams,
+
+        barras:
+            datosBarras,
+
+        rests:
+            datosRests
+
     };
 
 }
 
 
+/*
+===========================================================
+MOSTRAR TABLA
+===========================================================
+*/
 
-function formatearObjeto(
-    titulo,
-    objeto,
-    limite = 100
+function mostrarPagina(
+    datos,
+    svgOriginal
 ) {
 
-    let salida =
-        "\n\n" +
-        "===== " +
-        titulo +
-        " =====\n";
+    const contenedor =
+        document.createElement(
+            "div"
+        );
+
+    contenedor.className =
+        "pagina";
 
 
-    const entradas =
-        Object.entries(
-            objeto
+    const titulo =
+        document.createElement(
+            "h2"
+        );
+
+
+    titulo.textContent =
+        "Página " +
+        datos.pagina +
+        " — " +
+        datos.notas.length +
+        " notas";
+
+
+    contenedor.appendChild(
+        titulo
+    );
+
+
+    /*
+    SVG visual.
+    */
+
+    contenedor.appendChild(
+        document.importNode(
+            svgOriginal,
+            true
         )
-        .sort(
-            (a,b) =>
-                b[1] -
-                a[1]
-        )
-        .slice(
-            0,
-            limite
+    );
+
+
+    /*
+    TABLA
+    */
+
+    const tabla =
+        document.createElement(
+            "table"
+        );
+
+
+    tabla.className =
+        "tabla";
+
+
+    tabla.innerHTML = `
+
+        <thead>
+
+            <tr>
+
+                <th>#</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Ancho</th>
+                <th>Alto</th>
+                <th>Staff</th>
+                <th>Distancia</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+    `;
+
+
+    const tbody =
+        tabla.querySelector(
+            "tbody"
         );
 
 
     for (
-        const [clave, cantidad]
-        of entradas
+        const nota
+        of datos.notas
     ) {
 
-        salida +=
-            cantidad +
-            " × " +
-            clave +
-            "\n";
+        const fila =
+            document.createElement(
+                "tr"
+            );
+
+
+        fila.innerHTML = `
+
+            <td>${nota.indice}</td>
+
+            <td>${nota.x.toFixed(2)}</td>
+
+            <td>${nota.y.toFixed(2)}</td>
+
+            <td>${nota.ancho.toFixed(2)}</td>
+
+            <td>${nota.alto.toFixed(2)}</td>
+
+            <td>${nota.staff}</td>
+
+            <td>${nota.distanciaStaff.toFixed(2)}</td>
+
+        `;
+
+
+        tbody.appendChild(
+            fila
+        );
 
     }
 
 
-    return salida;
+    contenedor.appendChild(
+        tabla
+    );
+
+
+    /*
+    INFORMACIÓN.
+    */
+
+    const info =
+        document.createElement(
+            "pre"
+        );
+
+
+    info.textContent =
+        JSON.stringify(
+            {
+                pentagramas:
+                    datos.staffLines,
+
+                stems:
+                    datos.stems,
+
+                beams:
+                    datos.beams,
+
+                barras:
+                    datos.barras,
+
+                rests:
+                    datos.rests
+            },
+            null,
+            2
+        );
+
+
+    contenedor.appendChild(
+        info
+    );
+
+
+    document
+        .getElementById(
+            "resultado"
+        )
+        .appendChild(
+            contenedor
+        );
 
 }
 
 
+/*
+===========================================================
+ANALIZAR TODO
+===========================================================
+*/
 
 async function analizar() {
 
-    const resultado =
-        document.getElementById(
+    document
+        .getElementById(
             "resultado"
-        );
-
-    resultado.textContent =
-        "Analizando...";
-
-
-    let informe = "";
+        )
+        .innerHTML =
+            "";
 
 
-    for (
-        let i = 0;
-        i < ARCHIVOS.length;
-        i++
-    ) {
-
-        const nombre =
-            ARCHIVOS[i];
+    datosPartitura = [];
 
 
-        try {
+    try {
+
+        for (
+            let i = 0;
+            i < ARCHIVOS.length;
+            i++
+        ) {
+
+            document
+                .getElementById(
+                    "estado"
+                )
+                .textContent =
+                    "Analizando página " +
+                    (i + 1) +
+                    " de " +
+                    ARCHIVOS.length +
+                    "...";
+
 
             const texto =
-                await cargar(
-                    nombre
+                await cargarSVG(
+                    ARCHIVOS[i]
                 );
 
 
-            const datos =
-                analizarSVG(
+            const svg =
+                parsearSVG(
                     texto
                 );
 
 
-            informe +=
-                "\n\n\n" +
-                "########################################\n" +
-                "PÁGINA " +
-                (i + 1) +
-                "\n" +
-                "########################################\n";
-
-
-            informe +=
-                "\nTotal elementos: " +
-                datos.elementos.length;
-
-
-            informe +=
-                formatearObjeto(
-                    "TIPOS DE ELEMENTOS",
-                    datos.tipos
+            const datos =
+                analizarPagina(
+                    svg,
+                    i
                 );
 
 
-            informe +=
-                formatearObjeto(
-                    "CLASES",
-                    datos.clases
-                );
-
-
-            informe +=
-                formatearObjeto(
-                    "ATRIBUTOS",
-                    datos.atributos
-                );
-
-
-            informe +=
-                "\n\nTEXTOS EN SVG:\n";
-
-
-            informe +=
-                datos.textos
-                    .slice(0,100)
-                    .join(
-                        "\n"
-                    );
-
-
-            /*
-            Mostrar SVG.
-            */
-
-            const pagina =
-                document.createElement(
-                    "div"
-                );
-
-            pagina.className =
-                "pagina";
-
-
-            const parser =
-                new DOMParser();
-
-
-            const documento =
-                parser.parseFromString(
-                    texto,
-                    "image/svg+xml"
-                );
-
-
-            pagina.appendChild(
-                document.importNode(
-                    documento.documentElement,
-                    true
-                )
+            datosPartitura.push(
+                datos
             );
 
 
-            document
-                .getElementById(
-                    "partituras"
-                )
-                .appendChild(
-                    pagina
+            mostrarPagina(
+                datos,
+                svg
+            );
+
+        }
+
+
+        const totalNotas =
+            datosPartitura
+                .reduce(
+                    (
+                        suma,
+                        pagina
+                    ) =>
+                        suma +
+                        pagina.notas.length,
+                    0
                 );
 
 
-        }
-        catch(error) {
+        document
+            .getElementById(
+                "descargarJSON"
+            )
+            .style.display =
+                "inline-block";
 
-            informe +=
-                "\nERROR EN " +
-                nombre +
-                ": " +
-                error.message;
 
-        }
+        document
+            .getElementById(
+                "estado"
+            )
+            .textContent =
+                "✓ ANÁLISIS TERMINADO\n\n" +
+                "Páginas: " +
+                datosPartitura.length +
+                "\n" +
+                "Notas detectadas: " +
+                totalNotas +
+                "\n\n" +
+                "Ahora tenemos las coordenadas " +
+                "reales de las notas de MuseScore.";
 
     }
+    catch(error) {
+
+        console.error(error);
 
 
-    resultado.textContent =
-        informe;
+        document
+            .getElementById(
+                "estado"
+            )
+            .textContent =
+                "❌ ERROR\n\n" +
+                error.message;
+
+    }
 
 }
 
 
+/*
+===========================================================
+DESCARGAR JSON
+===========================================================
+*/
+
 document
-.getElementById(
-    "analizar"
-)
-.addEventListener(
-    "click",
-    analizar
-);
+    .getElementById(
+        "descargarJSON"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            const contenido =
+                JSON.stringify(
+                    datosPartitura,
+                    null,
+                    2
+                );
+
+
+            const blob =
+                new Blob(
+                    [contenido],
+                    {
+                        type:
+                            "application/json"
+                    }
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            const enlace =
+                document.createElement(
+                    "a"
+                );
+
+
+            enlace.href =
+                url;
+
+
+            enlace.download =
+                "experience_notas.json";
+
+
+            enlace.click();
+
+
+            setTimeout(
+                () =>
+                    URL.revokeObjectURL(
+                        url
+                    ),
+                1000
+            );
+
+        }
+    );
+
+
+/*
+===========================================================
+BOTÓN
+===========================================================
+*/
+
+document
+    .getElementById(
+        "analizar"
+    )
+    .addEventListener(
+        "click",
+        analizar
+    );
 
 </script>
 
