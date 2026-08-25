@@ -1,617 +1,1569 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Experience — Partitura PNG</title>
+<title>Experience — SVG → MIDI</title>
 
-  <style>
-    body {
-      margin: 0;
-      padding: 30px;
-      background: #222;
-      font-family: Arial, sans-serif;
-      color: white;
-    }
+<style>
 
-    h1 {
-      text-align: center;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    #estado {
-      max-width: 1000px;
-      margin: 20px auto;
-      padding: 15px;
-      background: #333;
-      border-radius: 8px;
-      white-space: pre-wrap;
-    }
+body {
+    margin: 0;
+    padding: 25px;
+    background: #202020;
+    color: white;
+    font-family: Arial, sans-serif;
+}
 
-    .pagina {
-      max-width: 1400px;
-      margin: 30px auto;
-      background: white;
-      padding: 20px;
-      color: black;
-      box-shadow: 0 3px 15px rgba(0,0,0,.4);
-    }
+.container {
+    max-width: 1500px;
+    margin: auto;
+}
 
-    .pagina h2 {
-      margin-top: 0;
-    }
+h1 {
+    text-align: center;
+}
 
-    .pagina img {
-      display: block;
-      width: 100%;
-      height: auto;
-      border: 1px solid #ccc;
-    }
+.panel {
+    background: #303030;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
 
-    .botones {
-      margin-top: 15px;
-    }
+button {
+    padding: 12px 18px;
+    margin: 5px;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 16px;
+}
 
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      margin-right: 8px;
-    }
+#analizar {
+    background: #4caf50;
+    color: white;
+}
 
-    .descargar {
-      background: #1976d2;
-      color: white;
-    }
+#descargar {
+    background: #2196f3;
+    color: white;
+    display: none;
+}
 
-    .original {
-      background: #555;
-      color: white;
-    }
-  </style>
+#estado {
+    white-space: pre-wrap;
+    font-family: monospace;
+    line-height: 1.5;
+}
+
+.pagina {
+    background: white;
+    color: black;
+    margin: 30px 0;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.pagina h2 {
+    margin-top: 0;
+}
+
+.svg-container {
+    position: relative;
+    width: 100%;
+}
+
+.svg-container svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.nota-detectada {
+    position: absolute;
+    border: 2px solid red;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+.info {
+    background: #111;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+</style>
 </head>
+
 
 <body>
 
-<h1>Experience — Ludovico Einaudi</h1>
+<div class="container">
+
+<h1>
+Experience — Ludovico Einaudi
+</h1>
+
+
+<div class="panel">
+
+<button id="analizar">
+🎼 ANALIZAR PARTITURA
+</button>
+
+<button id="descargar">
+🎹 DESCARGAR MIDI
+</button>
 
 <div id="estado">
-  Iniciando...
+Esperando...
 </div>
 
+</div>
+
+
 <div id="partituras"></div>
+
+</div>
 
 
 <script>
 
+/*
+============================================================
+CONFIGURACIÓN
+============================================================
+*/
+
 const CARPETA =
-  "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
+"EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
 const ARCHIVOS = [
-  "score_0.svg",
-  "score_1.svg",
-  "score_2.svg",
-  "score_3.svg",
-  "score_4.svg"
+"score_0.svg",
+"score_1.svg",
+"score_2.svg",
+"score_3.svg",
+"score_4.svg"
 ];
-
-const estado =
-  document.getElementById("estado");
-
-const contenedor =
-  document.getElementById("partituras");
 
 
 /*
-==========================================================
+============================================================
+VARIABLES
+============================================================
+*/
+
+let todasLasNotas = [];
+
+let midiBlob = null;
+
+
+/*
+============================================================
+ESTADO
+============================================================
+*/
+
+function estado(texto) {
+
+    document
+        .getElementById("estado")
+        .textContent = texto;
+
+}
+
+
+/*
+============================================================
 CARGAR SVG
-==========================================================
+============================================================
 */
 
 async function cargarSVG(nombre) {
 
-  const url =
-    CARPETA +
-    nombre;
+    const respuesta =
+        await fetch(
+            CARPETA + nombre
+        );
 
-  const respuesta =
-    await fetch(url);
+    if (!respuesta.ok) {
 
-  if (!respuesta.ok) {
+        throw new Error(
+            "No se pudo cargar " +
+            nombre +
+            " HTTP " +
+            respuesta.status
+        );
 
-    throw new Error(
-      nombre +
-      " → HTTP " +
-      respuesta.status
-    );
-  }
-
-  return await respuesta.text();
-}
-
-
-/*
-==========================================================
-OBTENER DIMENSIONES DEL SVG
-==========================================================
-*/
-
-function dimensionesSVG(svgTexto) {
-
-  const parser =
-    new DOMParser();
-
-  const documento =
-    parser.parseFromString(
-      svgTexto,
-      "image/svg+xml"
-    );
-
-  const svg =
-    documento.documentElement;
-
-  let width =
-    parseFloat(
-      svg.getAttribute("width")
-    );
-
-  let height =
-    parseFloat(
-      svg.getAttribute("height")
-    );
-
-  /*
-  Si no hay width/height,
-  usamos viewBox.
-  */
-
-  if (
-    (!width || !height) &&
-    svg.hasAttribute("viewBox")
-  ) {
-
-    const vb =
-      svg.getAttribute("viewBox")
-        .trim()
-        .split(/\s+/)
-        .map(Number);
-
-    if (vb.length === 4) {
-
-      width = vb[2];
-      height = vb[3];
     }
-  }
 
-  /*
-  Valores de seguridad.
-  */
+    return await respuesta.text();
 
-  if (!width)
-    width = 1600;
-
-  if (!height)
-    height = 2200;
-
-  return {
-    width,
-    height
-  };
 }
 
 
 /*
-==========================================================
-SVG → PNG
-==========================================================
+============================================================
+PARSEAR SVG
+============================================================
 */
 
-function convertirPNG(
-  svgTexto,
-  nombre
-) {
+function parsearSVG(texto) {
 
-  return new Promise(
-    (resolve, reject) => {
+    const parser =
+        new DOMParser();
 
-      const dimensiones =
-        dimensionesSVG(
-          svgTexto
+    const documento =
+        parser.parseFromString(
+            texto,
+            "image/svg+xml"
         );
 
-      /*
-      Creamos un Blob SVG.
-      */
+    return documento.documentElement;
 
-      const blob =
-        new Blob(
-          [svgTexto],
-          {
-            type:
-              "image/svg+xml"
-          }
-        );
-
-      const url =
-        URL.createObjectURL(
-          blob
-        );
-
-      const imagen =
-        new Image();
-
-      imagen.onload =
-        function() {
-
-          /*
-          Factor de resolución.
-
-          2 = buena calidad
-          3 = alta calidad
-          */
-
-          const escala = 3;
-
-          const canvas =
-            document.createElement(
-              "canvas"
-            );
-
-          canvas.width =
-            Math.round(
-              dimensiones.width *
-              escala
-            );
-
-          canvas.height =
-            Math.round(
-              dimensiones.height *
-              escala
-            );
-
-          const contexto =
-            canvas.getContext(
-              "2d"
-            );
-
-          /*
-          Fondo blanco.
-          */
-
-          contexto.fillStyle =
-            "white";
-
-          contexto.fillRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-
-          /*
-          Dibujar SVG.
-          */
-
-          contexto.drawImage(
-            imagen,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-
-          /*
-          Convertir a PNG.
-          */
-
-          canvas.toBlob(
-            function(png) {
-
-              URL.revokeObjectURL(
-                url
-              );
-
-              if (!png) {
-
-                reject(
-                  new Error(
-                    "No se pudo crear PNG"
-                  )
-                );
-
-                return;
-              }
-
-              resolve(png);
-
-            },
-            "image/png"
-          );
-        };
-
-      imagen.onerror =
-        function() {
-
-          URL.revokeObjectURL(
-            url
-          );
-
-          reject(
-            new Error(
-              "No se pudo rasterizar " +
-              nombre
-            )
-          );
-        };
-
-      imagen.src =
-        url;
-    }
-  );
 }
 
 
 /*
-==========================================================
-MOSTRAR PÁGINA
-==========================================================
+============================================================
+OBTENER CAJA DE ELEMENTO
+============================================================
 */
 
-async function procesarPagina(
-  nombre,
-  numero
-) {
+function obtenerCaja(elemento) {
 
-  estado.textContent =
-    `Procesando página ${
-      numero + 1
-    } de ${
-      ARCHIVOS.length
-    }...\n\n` +
-    nombre;
-
-  /*
-  Cargar SVG.
-  */
-
-  const svg =
-    await cargarSVG(
-      nombre
-    );
-
-  /*
-  Convertir SVG a PNG.
-  */
-
-  const png =
-    await convertirPNG(
-      svg,
-      nombre
-    );
-
-  /*
-  URL temporal del PNG.
-  */
-
-  const pngURL =
-    URL.createObjectURL(
-      png
-    );
-
-  /*
-  Crear contenedor.
-  */
-
-  const pagina =
-    document.createElement(
-      "section"
-    );
-
-  pagina.className =
-    "pagina";
-
-  /*
-  Título.
-  */
-
-  const titulo =
-    document.createElement(
-      "h2"
-    );
-
-  titulo.textContent =
-    "Página " +
-    (numero + 1);
-
-  pagina.appendChild(
-    titulo
-  );
-
-  /*
-  Imagen PNG.
-  */
-
-  const imagen =
-    document.createElement(
-      "img"
-    );
-
-  imagen.src =
-    pngURL;
-
-  imagen.alt =
-    "Partitura página " +
-    (numero + 1);
-
-  pagina.appendChild(
-    imagen
-  );
-
-  /*
-  Botones.
-  */
-
-  const botones =
-    document.createElement(
-      "div"
-    );
-
-  botones.className =
-    "botones";
-
-  /*
-  Descargar PNG.
-  */
-
-  const descargarPNG =
-    document.createElement(
-      "button"
-    );
-
-  descargarPNG.className =
-    "descargar";
-
-  descargarPNG.textContent =
-    "⬇ Descargar PNG";
-
-  descargarPNG.onclick =
-    function() {
-
-      const enlace =
-        document.createElement(
-          "a"
+    let x =
+        parseFloat(
+            elemento.getAttribute("x")
         );
 
-      enlace.href =
-        pngURL;
-
-      enlace.download =
-        "experience-pagina-" +
-        (numero + 1) +
-        ".png";
-
-      enlace.click();
-    };
-
-  botones.appendChild(
-    descargarPNG
-  );
-
-  /*
-  Descargar SVG original.
-  */
-
-  const descargarSVG =
-    document.createElement(
-      "button"
-    );
-
-  descargarSVG.className =
-    "original";
-
-  descargarSVG.textContent =
-    "⬇ Descargar SVG original";
-
-  descargarSVG.onclick =
-    function() {
-
-      const blob =
-        new Blob(
-          [svg],
-          {
-            type:
-              "image/svg+xml"
-          }
+    let y =
+        parseFloat(
+            elemento.getAttribute("y")
         );
 
-      const url =
-        URL.createObjectURL(
-          blob
+    let width =
+        parseFloat(
+            elemento.getAttribute("width")
         );
 
-      const enlace =
-        document.createElement(
-          "a"
+    let height =
+        parseFloat(
+            elemento.getAttribute("height")
         );
 
-      enlace.href =
-        url;
 
-      enlace.download =
-        nombre;
+    /*
+    Rectángulos.
+    */
 
-      enlace.click();
-
-      setTimeout(
-        () =>
-          URL.revokeObjectURL(
-            url
-          ),
-        1000
-      );
-    };
-
-  botones.appendChild(
-    descargarSVG
-  );
-
-  pagina.appendChild(
-    botones
-  );
-
-  contenedor.appendChild(
-    pagina
-  );
-
-  return pngURL;
-}
-
-
-/*
-==========================================================
-PROCESAR LAS CINCO PÁGINAS
-==========================================================
-*/
-
-async function iniciar() {
-
-  try {
-
-    for (
-      let i = 0;
-      i < ARCHIVOS.length;
-      i++
+    if (
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        Number.isFinite(width) &&
+        Number.isFinite(height)
     ) {
 
-      await procesarPagina(
-        ARCHIVOS[i],
-        i
-      );
+        return {
+            x,
+            y,
+            width,
+            height
+        };
+
     }
 
-    estado.textContent =
-      "✓ TERMINADO\n\n" +
-      "Las cinco páginas fueron " +
-      "convertidas a PNG.\n\n" +
-      "Ahora las partituras están " +
-      "rasterizadas como imágenes " +
-      "PNG de alta resolución.";
 
-  }
-  catch(error) {
+    /*
+    Círculos.
+    */
 
-    console.error(error);
+    if (
+        elemento.hasAttribute("cx") &&
+        elemento.hasAttribute("cy")
+    ) {
 
-    estado.textContent =
-      "❌ ERROR\n\n" +
-      error.message;
-  }
+        const cx =
+            parseFloat(
+                elemento.getAttribute("cx")
+            );
+
+        const cy =
+            parseFloat(
+                elemento.getAttribute("cy")
+            );
+
+        const r =
+            parseFloat(
+                elemento.getAttribute("r") ||
+                "4"
+            );
+
+        return {
+            x: cx - r,
+            y: cy - r,
+            width: r * 2,
+            height: r * 2
+        };
+
+    }
+
+
+    /*
+    Elipses.
+    */
+
+    if (
+        elemento.hasAttribute("cx") &&
+        elemento.hasAttribute("cy") &&
+        elemento.hasAttribute("rx") &&
+        elemento.hasAttribute("ry")
+    ) {
+
+        const cx =
+            parseFloat(
+                elemento.getAttribute("cx")
+            );
+
+        const cy =
+            parseFloat(
+                elemento.getAttribute("cy")
+            );
+
+        const rx =
+            parseFloat(
+                elemento.getAttribute("rx")
+            );
+
+        const ry =
+            parseFloat(
+                elemento.getAttribute("ry")
+            );
+
+        return {
+            x: cx - rx,
+            y: cy - ry,
+            width: rx * 2,
+            height: ry * 2
+        };
+
+    }
+
+
+    return null;
+
 }
 
 
-iniciar();
+/*
+============================================================
+BUSCAR LÍNEAS DEL PENTAGRAMA
+============================================================
+*/
+
+function detectarPentagramas(svg) {
+
+    const elementos =
+        [
+            ...svg.querySelectorAll(
+                "line,rect,path"
+            )
+        ];
+
+    const lineas = [];
+
+    for (
+        const elemento of elementos
+    ) {
+
+        const caja =
+            obtenerCaja(
+                elemento
+            );
+
+        if (!caja)
+            continue;
+
+
+        /*
+        Una línea muy ancha
+        y muy baja suele ser
+        una línea del pentagrama.
+        */
+
+        if (
+            caja.width >
+            100 &&
+            caja.width >
+            caja.height * 20
+        ) {
+
+            lineas.push({
+                y:
+                    caja.y +
+                    caja.height / 2,
+
+                x:
+                    caja.x,
+
+                width:
+                    caja.width
+            });
+
+        }
+
+    }
+
+
+    lineas.sort(
+        (a,b) =>
+            a.y - b.y
+    );
+
+
+    /*
+    Agrupar líneas separadas
+    por una distancia razonable.
+    */
+
+    const pentagramas = [];
+
+    let actual = [];
+
+    for (
+        const linea of lineas
+    ) {
+
+        if (
+            actual.length === 0
+        ) {
+
+            actual.push(linea);
+
+            continue;
+        }
+
+
+        const ultima =
+            actual[
+                actual.length - 1
+            ];
+
+
+        if (
+            linea.y -
+            ultima.y <
+            15
+        ) {
+
+            actual.push(linea);
+
+        } else {
+
+            if (
+                actual.length >= 4
+            ) {
+
+                pentagramas.push(
+                    actual
+                );
+
+            }
+
+            actual = [
+                linea
+            ];
+
+        }
+
+    }
+
+
+    if (
+        actual.length >= 4
+    ) {
+
+        pentagramas.push(
+            actual
+        );
+
+    }
+
+
+    return pentagramas;
+
+}
+
+
+/*
+============================================================
+DETECTAR POSIBLES CABEZAS DE NOTA
+============================================================
+*/
+
+function detectarCabezas(
+    svg,
+    pentagramas
+) {
+
+    const elementos =
+        [
+            ...svg.querySelectorAll(
+                "path,circle,ellipse,rect"
+            )
+        ];
+
+
+    const candidatos = [];
+
+
+    for (
+        const elemento of elementos
+    ) {
+
+        const caja =
+            obtenerCaja(
+                elemento
+            );
+
+        if (!caja)
+            continue;
+
+
+        const ancho =
+            caja.width;
+
+        const alto =
+            caja.height;
+
+
+        /*
+        Las cabezas de nota
+        suelen ser pequeñas
+        y aproximadamente ovaladas.
+        */
+
+        if (
+            ancho >= 3 &&
+            ancho <= 20 &&
+            alto >= 2 &&
+            alto <= 15
+        ) {
+
+            const cx =
+                caja.x +
+                ancho / 2;
+
+            const cy =
+                caja.y +
+                alto / 2;
+
+
+            /*
+            Buscar el pentagrama
+            más cercano.
+            */
+
+            let mejor =
+                null;
+
+            let distancia =
+                Infinity;
+
+
+            for (
+                const pentagrama
+                of pentagramas
+            ) {
+
+                const centro =
+                    pentagrama.reduce(
+                        (
+                            suma,
+                            linea
+                        ) =>
+                            suma +
+                            linea.y,
+                        0
+                    ) /
+                    pentagrama.length;
+
+
+                const d =
+                    Math.abs(
+                        cy -
+                        centro
+                    );
+
+
+                if (
+                    d <
+                    distancia
+                ) {
+
+                    distancia =
+                        d;
+
+                    mejor =
+                        pentagrama;
+
+                }
+
+            }
+
+
+            if (
+                mejor &&
+                distancia < 45
+            ) {
+
+                candidatos.push({
+
+                    x: cx,
+
+                    y: cy,
+
+                    width: ancho,
+
+                    height: alto,
+
+                    pentagrama:
+                        mejor
+
+                });
+
+            }
+
+        }
+
+    }
+
+
+    return candidatos;
+
+}
+
+
+/*
+============================================================
+ELIMINAR DUPLICADOS
+============================================================
+*/
+
+function eliminarDuplicados(
+    notas
+) {
+
+    const resultado = [];
+
+    for (
+        const nota of notas
+    ) {
+
+        const duplicada =
+            resultado.some(
+                otra =>
+                    Math.abs(
+                        otra.x -
+                        nota.x
+                    ) < 3 &&
+                    Math.abs(
+                        otra.y -
+                        nota.y
+                    ) < 3
+            );
+
+
+        if (!duplicada) {
+
+            resultado.push(
+                nota
+            );
+
+        }
+
+    }
+
+    return resultado;
+
+}
+
+
+/*
+============================================================
+CONVERTIR POSICIÓN Y
+A NOTA MUSICAL
+============================================================
+*/
+
+/*
+Esto usa una aproximación
+basada en el espaciado del
+pentagrama.
+
+La clave inicial se asume
+como clave de sol para el
+pentagrama superior y clave
+de fa para el inferior.
+
+*/
+
+function yANota(
+    y,
+    pentagrama,
+    indicePentagrama
+) {
+
+    const lineas =
+        pentagrama;
+
+    if (
+        lineas.length < 5
+    )
+        return 60;
+
+
+    /*
+    Ordenar líneas.
+    */
+
+    const ys =
+        lineas
+            .map(
+                linea => linea.y
+            )
+            .sort(
+                (a,b) => a-b
+            );
+
+
+    /*
+    Espacio entre líneas.
+    */
+
+    const espacio =
+        (
+            ys[4] -
+            ys[0]
+        ) / 4;
+
+
+    if (
+        !Number.isFinite(
+            espacio
+        ) ||
+        espacio <= 0
+    ) {
+
+        return 60;
+
+    }
+
+
+    /*
+    Cada espacio de línea
+    representa un paso diatónico.
+    */
+
+    const posicion =
+        (
+            ys[4] -
+            y
+        ) /
+        (
+            espacio / 2
+        );
+
+
+    /*
+    MIDI aproximado.
+
+    Pentagrama superior:
+    línea inferior = E4 (64)
+
+    Pentagrama inferior:
+    línea inferior = G2 (43)
+    */
+
+    const base =
+        indicePentagrama === 0
+            ? 64
+            : 43;
+
+
+    /*
+    Escala diatónica aproximada.
+    */
+
+    const pasos =
+        Math.round(
+            posicion
+        );
+
+
+    const escala =
+        [
+            0,
+            2,
+            4,
+            5,
+            7,
+            9,
+            11
+        ];
+
+
+    let octava =
+        Math.floor(
+            pasos / 7
+        );
+
+
+    let grado =
+        pasos % 7;
+
+
+    if (grado < 0) {
+
+        grado += 7;
+
+        octava--;
+
+    }
+
+
+    return (
+        base +
+        escala[grado] +
+        octava * 12
+    );
+
+}
+
+
+/*
+============================================================
+ASIGNAR TIEMPOS
+============================================================
+*/
+
+function asignarTiempos(
+    notas
+) {
+
+    /*
+    Agrupamos por posición X.
+
+    Notas con X muy parecido
+    forman acordes.
+    */
+
+    notas.sort(
+        (a,b) =>
+            a.x - b.x
+    );
+
+
+    let tiempo =
+        0;
+
+    let ultimoX =
+        null;
+
+
+    for (
+        const nota of notas
+    ) {
+
+        if (
+            ultimoX === null
+        ) {
+
+            tiempo = 0;
+
+        } else {
+
+            const distancia =
+                nota.x -
+                ultimoX;
+
+
+            /*
+            Aproximación:
+
+            distancia horizontal
+            grande = avance temporal.
+
+            */
+
+            if (
+                distancia > 5
+            ) {
+
+                tiempo +=
+                    0.25;
+
+            }
+
+        }
+
+
+        nota.inicio =
+            tiempo;
+
+
+        nota.duracion =
+            0.25;
+
+
+        ultimoX =
+            nota.x;
+
+    }
+
+
+    return notas;
+
+}
+
+
+/*
+============================================================
+ANALIZAR UNA PÁGINA
+============================================================
+*/
+
+function analizarPagina(
+    svg
+) {
+
+    const pentagramas =
+        detectarPentagramas(
+            svg
+        );
+
+
+    let candidatos =
+        detectarCabezas(
+            svg,
+            pentagramas
+        );
+
+
+    candidatos =
+        eliminarDuplicados(
+            candidatos
+        );
+
+
+    /*
+    Convertir candidatos
+    en notas.
+    */
+
+    const notas = [];
+
+
+    for (
+        const candidato
+        of candidatos
+    ) {
+
+        const indice =
+            pentagramas.indexOf(
+                candidato.pentagrama
+            );
+
+
+        const midi =
+            yANota(
+                candidato.y,
+                candidato.pentagrama,
+                indice
+            );
+
+
+        notas.push({
+
+            x:
+                candidato.x,
+
+            y:
+                candidato.y,
+
+            midi,
+
+            pentagrama:
+                indice
+
+        });
+
+    }
+
+
+    return {
+
+        pentagramas,
+
+        notas
+
+    };
+
+}
+
+
+/*
+============================================================
+MIDI
+============================================================
+*/
+
+function vlq(numero) {
+
+    let buffer =
+        numero & 127;
+
+    const resultado = [];
+
+    while (
+        (numero >>= 7)
+    ) {
+
+        buffer <<= 8;
+
+        buffer |=
+            (
+                numero &
+                127
+            ) |
+            128;
+
+    }
+
+
+    while (true) {
+
+        resultado.push(
+            buffer & 255
+        );
+
+
+        if (
+            buffer & 128
+        ) {
+
+            buffer >>= 8;
+
+        } else {
+
+            break;
+
+        }
+
+    }
+
+
+    return resultado;
+
+}
+
+
+function u16(n) {
+
+    return [
+        (n >> 8) & 255,
+        n & 255
+    ];
+
+}
+
+
+function u32(n) {
+
+    return [
+        (n >> 24) & 255,
+        (n >> 16) & 255,
+        (n >> 8) & 255,
+        n & 255
+    ];
+
+}
+
+
+function texto(texto) {
+
+    return [
+        ...texto
+            .split("")
+            .map(
+                c =>
+                    c.charCodeAt(0)
+            )
+    ];
+
+}
+
+
+/*
+============================================================
+CREAR MIDI
+============================================================
+*/
+
+function crearMIDI(
+    notas
+) {
+
+    const PPQ =
+        480;
+
+
+    const eventos = [];
+
+
+    /*
+    Instrumento piano.
+    */
+
+    eventos.push(
+        0,
+        0xc0,
+        0
+    );
+
+
+    /*
+    Ordenar.
+    */
+
+    notas.sort(
+        (a,b) =>
+            a.inicio -
+            b.inicio
+    );
+
+
+    let ultimoTiempo =
+        0;
+
+
+    for (
+        const nota of notas
+    ) {
+
+        const inicio =
+            Math.round(
+                nota.inicio *
+                PPQ
+            );
+
+
+        const duracion =
+            Math.round(
+                nota.duracion *
+                PPQ
+            );
+
+
+        const delta =
+            Math.max(
+                0,
+                inicio -
+                ultimoTiempo
+            );
+
+
+        eventos.push(
+            ...vlq(delta),
+            0x90,
+            Math.max(
+                0,
+                Math.min(
+                    127,
+                    nota.midi
+                )
+            ),
+            85
+        );
+
+
+        eventos.push(
+            ...vlq(
+                duracion
+            ),
+            0x80,
+            Math.max(
+                0,
+                Math.min(
+                    127,
+                    nota.midi
+                )
+            ),
+            0
+        );
+
+
+        ultimoTiempo =
+            inicio +
+            duracion;
+
+    }
+
+
+    eventos.push(
+        0,
+        0xff,
+        0x2f,
+        0
+    );
+
+
+    const encabezado = [
+
+        ...texto("MThd"),
+
+        ...u32(6),
+
+        ...u16(0),
+
+        ...u16(1),
+
+        ...u16(PPQ)
+
+    ];
+
+
+    const pista = [
+
+        ...texto("MTrk"),
+
+        ...u32(
+            eventos.length
+        ),
+
+        ...eventos
+
+    ];
+
+
+    return new Uint8Array([
+        ...encabezado,
+        ...pista
+    ]);
+
+}
+
+
+/*
+============================================================
+ANALIZAR
+============================================================
+*/
+
+async function analizar() {
+
+    todasLasNotas = [];
+
+
+    document
+        .getElementById(
+            "descargar"
+        )
+        .style.display =
+            "none";
+
+
+    document
+        .getElementById(
+            "partituras"
+        )
+        .innerHTML =
+            "";
+
+
+    try {
+
+        estado(
+            "Cargando y analizando las cinco páginas..."
+        );
+
+
+        for (
+            let i = 0;
+            i < ARCHIVOS.length;
+            i++
+        ) {
+
+            estado(
+                "Página " +
+                (i + 1) +
+                " / " +
+                ARCHIVOS.length +
+                "\n\nLeyendo SVG..."
+            );
+
+
+            const textoSVG =
+                await cargarSVG(
+                    ARCHIVOS[i]
+                );
+
+
+            const svg =
+                parsearSVG(
+                    textoSVG
+                );
+
+
+            const resultado =
+                analizarPagina(
+                    svg
+                );
+
+
+            const notas =
+                asignarTiempos(
+                    resultado.notas
+                );
+
+
+            todasLasNotas.push(
+                ...notas
+            );
+
+
+            /*
+            Mostrar página.
+            */
+
+            const pagina =
+                document.createElement(
+                    "div"
+                );
+
+            pagina.className =
+                "pagina";
+
+
+            const titulo =
+                document.createElement(
+                    "h2"
+                );
+
+            titulo.textContent =
+                "Página " +
+                (i + 1) +
+                " — " +
+                notas.length +
+                " posibles notas";
+
+
+            pagina.appendChild(
+                titulo
+            );
+
+
+            const contenedor =
+                document.createElement(
+                    "div"
+                );
+
+            contenedor.className =
+                "svg-container";
+
+
+            const svgVisual =
+                document.importNode(
+                    svg,
+                    true
+                );
+
+
+            contenedor.appendChild(
+                svgVisual
+            );
+
+
+            pagina.appendChild(
+                contenedor
+            );
+
+
+            document
+                .getElementById(
+                    "partituras"
+                )
+                .appendChild(
+                    pagina
+                );
+
+
+            console.log(
+                "Página",
+                i + 1,
+                resultado
+            );
+
+        }
+
+
+        /*
+        Crear MIDI.
+        */
+
+        if (
+            todasLasNotas.length === 0
+        ) {
+
+            throw new Error(
+                "No se detectaron posibles cabezas de nota."
+            );
+
+        }
+
+
+        const datos =
+            crearMIDI(
+                todasLasNotas
+            );
+
+
+        midiBlob =
+            new Blob(
+                [datos],
+                {
+                    type:
+                        "audio/midi"
+                }
+            );
+
+
+        document
+            .getElementById(
+                "descargar"
+            )
+            .style.display =
+                "inline-block";
+
+
+        estado(
+            "✓ ANÁLISIS TERMINADO\n\n" +
+            "Páginas: " +
+            ARCHIVOS.length +
+            "\n" +
+            "Posibles notas detectadas: " +
+            todasLasNotas.length +
+            "\n\n" +
+            "Se ha generado un MIDI preliminar.\n\n" +
+            "IMPORTANTE: este MIDI es una " +
+            "reconstrucción automática y debe " +
+            "validarse contra la partitura."
+        );
+
+
+    }
+    catch(error) {
+
+        console.error(
+            error
+        );
+
+
+        estado(
+            "❌ ERROR\n\n" +
+            error.message
+        );
+
+    }
+
+}
+
+
+/*
+============================================================
+DESCARGAR MIDI
+============================================================
+*/
+
+document
+    .getElementById(
+        "descargar"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            if (!midiBlob)
+                return;
+
+
+            const url =
+                URL.createObjectURL(
+                    midiBlob
+                );
+
+
+            const enlace =
+                document.createElement(
+                    "a"
+                );
+
+
+            enlace.href =
+                url;
+
+
+            enlace.download =
+                "Experience-Ludovico-Einaudi.mid";
+
+
+            document
+                .body
+                .appendChild(
+                    enlace
+                );
+
+
+            enlace.click();
+
+
+            enlace.remove();
+
+
+            setTimeout(
+                () =>
+                    URL.revokeObjectURL(
+                        url
+                    ),
+                1000
+            );
+
+        }
+    );
+
+
+/*
+============================================================
+BOTÓN
+============================================================
+*/
+
+document
+    .getElementById(
+        "analizar"
+    )
+    .addEventListener(
+        "click",
+        analizar
+    );
 
 </script>
 
