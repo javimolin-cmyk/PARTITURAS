@@ -32,7 +32,7 @@ pre{max-height:600px;overflow:auto;background:#0d1117;padding:15px;border-radius
 .sheet{position:relative;margin-bottom:30px;border-bottom:2px solid #ddd}.sheet svg{width:100%;height:auto;display:block}
 .note-dot{stroke:#fff;stroke-width:1.2;pointer-events:none}.staff-line{stroke:#1f6feb;stroke-width:1.2;opacity:.75;pointer-events:none}
 .bar-line{stroke:#d29922;stroke-width:1;opacity:.5;pointer-events:none}
-#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:1px;height:1px;visibility:hidden;overflow:visible}
+#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:2000px;height:2000px;visibility:hidden;overflow:visible;pointer-events:none}
 @media(max-width:700px){h1{font-size:22px}.container{padding:10px}#log{height:340px}}
 </style>
 </head>
@@ -93,6 +93,7 @@ function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").
 function round(v,n=2){let p=10**n;return Math.round(v*p)/p}
 
 function resetUI(){
+  $("bboxSandbox").innerHTML="";
   $("statPages").textContent=0;$("statHeads").textContent=0;$("statStaves").textContent=0;
   $("statAssigned").textContent=0;$("statPitch").textContent=0;$("statHigh").textContent=0;
   $("results").innerHTML="";$("visualizer").innerHTML="";$("jsonPreview").textContent="Sin datos.";
@@ -117,15 +118,32 @@ async function fetchSVG(file){
 function parseSVG(text){
   const doc=new DOMParser().parseFromString(text,"image/svg+xml");
   if(doc.querySelector("parsererror"))throw new Error("SVG inválido");
-  const svg=doc.documentElement;
-  if(!svg || svg.nodeName.toLowerCase()!=="svg")throw new Error("No se encontró <svg>");
-  return {doc,svg};
+  const source=doc.documentElement;
+  if(!source || source.nodeName.toLowerCase()!=="svg")throw new Error("No se encontró <svg>");
+
+  // Montar una copia REAL en el DOM: getBBox() no es fiable en SVG
+  // que permanece solamente dentro del XMLDocument de DOMParser.
+  const live=document.importNode(source,true);
+  live.setAttribute("aria-hidden","true");
+  live.style.position="absolute";
+  live.style.left="0";
+  live.style.top="0";
+  live.style.visibility="hidden";
+  live.style.display="block";
+  const vb=(source.getAttribute("viewBox")||"").trim().split(/[\\s,]+/).map(Number);
+  const w=(vb.length===4&&Number.isFinite(vb[2]))?vb[2]:parseFloat(source.getAttribute("width"))||2000;
+  const h=(vb.length===4&&Number.isFinite(vb[3]))?vb[3]:parseFloat(source.getAttribute("height"))||2000;
+  live.setAttribute("width",String(Math.max(1,w)));
+  live.setAttribute("height",String(Math.max(1,h)));
+  $("bboxSandbox").appendChild(live);
+
+  return {doc,svg:live};
 }
 
 function bbox(el){
   try{
     const b=el.getBBox();
-    if([b.x,b.y,b.width,b.height].every(Number.isFinite))return b;
+    if([b.x,b.y,b.width,b.height].every(Number.isFinite) && (b.width>0||b.height>0))return b;
   }catch(e){}
   return null;
 }
@@ -149,39 +167,79 @@ function getViewBox(svg){
  * subpaths. Se conservan únicamente geometrías cerradas/pequeñas
  * compatibles con una cabeza, evitando Stem/Beam.
  */
+function splitSubpaths(d){
+  if(!d)return [];
+  const m=d.match(/[Mm][^Mm]*/g);
+  return m?m.map(x=>x.trim()).filter(Boolean):[];
+}
+
+function bboxPathSubpaths(d,sourceEl){
+  const parts=splitSubpaths(d);
+  if(!parts.length)return [];
+  const ns="http://www.w3.org/2000/svg";
+  const holder=document.createElementNS(ns,"svg");
+  holder.setAttribute("width","1");
+  holder.setAttribute("height","1");
+  holder.style.position="absolute";
+  holder.style.left="0";
+  holder.style.top="0";
+  holder.style.visibility="hidden";
+  holder.style.overflow="visible";
+  const p=document.createElementNS(ns,"path");
+  const tr=sourceEl&&sourceEl.getAttribute("transform");
+  if(tr)p.setAttribute("transform",tr);
+  holder.appendChild(p);
+  $("bboxSandbox").appendChild(holder);
+  const out=[];
+  for(const part of parts){
+    p.setAttribute("d",part);
+    try{
+      const b=p.getBBox();
+      if([b.x,b.y,b.width,b.height].every(Number.isFinite)&&b.width>0&&b.height>0)out.push(b);
+    }catch(e){}
+  }
+  holder.remove();
+  return out;
+}
+
+/*
+ * CLAVE: un .Note puede contener un único <path> con cientos de
+ * subpaths M... que representan las cabezas. Medir el path completo
+ * hace que todas desaparezcan. Hay que separar y medir cada subpath.
+ */
 function extractHeads(svg){
   const out=[];
   const notes=[...svg.querySelectorAll(".Note")];
+
   for(let ni=0;ni<notes.length;ni++){
     const note=notes[ni];
-    const paths=[...note.querySelectorAll("path,ellipse,circle")];
-    const candidates=[];
-    for(const el of paths){
-      const b=bbox(el);if(!b)continue;
-      const area=b.width*b.height;
-      if(b.width<=0||b.height<=0)continue;
-      /* cabeza típica: relativamente compacta; excluye líneas largas */
-      const ratio=Math.max(b.width,b.height)/Math.max(0.01,Math.min(b.width,b.height));
-      if(ratio>4.5 && area>80)continue;
-      if(b.width>40||b.height>40)continue;
-      candidates.push({el,b,area});
+
+    for(const el of note.querySelectorAll("path")){
+      for(const b of bboxPathSubpaths(el.getAttribute("d")||"",el)){
+        const area=b.width*b.height;
+        const ratio=Math.max(b.width,b.height)/Math.max(.01,Math.min(b.width,b.height));
+        if(b.width<2||b.height<1||b.width>100||b.height>100)continue;
+        if(ratio>4&&area>80)continue;
+
+        const x=b.x+b.width/2,y=b.y+b.height/2;
+        if(!out.some(n=>Math.abs(n.x-x)<1.2&&Math.abs(n.y-y)<1.2)){
+          out.push({x,y,w:b.width,h:b.height,noteIndex:ni});
+        }
+      }
     }
 
-    /*
-     * Si hay varias geometrías dentro del .Note, MuseScore puede
-     * representar una nota como varios subpaths. Tomamos las
-     * posiciones compactas; se deduplican por centro.
-     */
-    for(const c of candidates){
-      const x=c.b.x+c.b.width/2,y=c.b.y+c.b.height/2;
-      if(!out.some(n=>Math.abs(n.x-x)<1.2&&Math.abs(n.y-y)<1.2)){
-        out.push({x,y,w:c.b.width,h:c.b.height,noteIndex:ni});
-      }
+    for(const el of note.querySelectorAll("ellipse,circle")){
+      const b=bbox(el);if(!b)continue;
+      const area=b.width*b.height;
+      const ratio=Math.max(b.width,b.height)/Math.max(.01,Math.min(b.width,b.height));
+      if(b.width<2||b.height<1||b.width>100||b.height>100)continue;
+      if(ratio>4&&area>80)continue;
+      const x=b.x+b.width/2,y=b.y+b.height/2;
+      if(!out.some(n=>Math.abs(n.x-x)<1.2&&Math.abs(n.y-y)<1.2))
+        out.push({x,y,w:b.width,h:b.height,noteIndex:ni});
     }
   }
 
-  /* Fallback: si la estructura .Note no dio geometrías, buscar
-     elementos con clases que contengan NoteHead. */
   if(!out.length){
     for(const el of svg.querySelectorAll("[class*='NoteHead']")){
       const b=bbox(el);if(!b)continue;
@@ -191,14 +249,9 @@ function extractHeads(svg){
   return out.sort((a,b)=>a.y-b.y||a.x-b.x);
 }
 
-/*
- * StaffLines reales. Cada StaffLines puede contener 5 líneas.
- * Se detectan líneas horizontales mediante <path>/<line>/<rect>
- * y se agrupan por proximidad vertical.
- */
 function extractStaffLines(svg){
   const ys=[];
-  for(const el of svg.querySelectorAll(".StaffLines path,.StaffLines line,.StaffLines rect")){
+  for(const el of svg.querySelectorAll(".StaffLines path,.StaffLines line,.StaffLines rect,.StaffLines polyline")){
     const b=bbox(el);if(!b)continue;
     if(b.width>100 && b.height<8)ys.push(b.y+b.height/2);
   }
