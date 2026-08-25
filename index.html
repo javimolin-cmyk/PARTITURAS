@@ -1,61 +1,124 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 
 <meta charset="UTF-8">
 
-<title>Diagnóstico Notes SVG</title>
+<title>
+Experience — Detector de notas
+</title>
 
 <style>
 
 body {
-    background:#202020;
-    color:white;
-    font-family:Arial;
-    padding:30px;
+    margin: 0;
+    padding: 30px;
+    background: #202020;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 1500px;
+    margin: auto;
 }
 
 button {
-    padding:12px 20px;
-    font-size:16px;
-    cursor:pointer;
+    padding: 12px 20px;
+    margin: 5px;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 16px;
 }
 
-pre {
-    background:#111;
-    padding:20px;
-    overflow:auto;
-    white-space:pre-wrap;
+#analizar {
+    background: #4caf50;
+    color: white;
+}
+
+#descargar {
+    background: #2196f3;
+    color: white;
+    display: none;
+}
+
+#estado {
+    background: #111;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-family: monospace;
 }
 
 .pagina {
-    background:white;
-    color:black;
-    margin:30px 0;
-    padding:20px;
+    background: white;
+    color: black;
+    margin-top: 30px;
+    padding: 20px;
 }
 
-svg {
-    width:100%;
+.pagina svg {
+    width: 100%;
+    height: auto;
+}
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    color: black;
+    background: white;
+    margin-top: 20px;
+}
+
+.tabla th,
+.tabla td {
+    border: 1px solid #aaa;
+    padding: 6px;
+    text-align: center;
+}
+
+.tabla th {
+    background: #ddd;
+}
+
+pre {
+    background: #111;
+    color: #0f0;
+    padding: 15px;
+    overflow: auto;
 }
 
 </style>
 
 </head>
 
+
 <body>
 
-<h1>Diagnóstico real de las Note</h1>
+<div class="container">
 
-<button onclick="analizar()">
-🔎 ANALIZAR NOTE
+<h1>
+🎼 Experience — Detector real de notas
+</h1>
+
+<button id="analizar">
+🔎 DETECTAR CABEZAS DE NOTA
 </button>
 
-<pre id="resultado">
+<div id="estado">
 Esperando...
-</pre>
+</div>
+
+<div id="resultado"></div>
+
+</div>
+
 
 <script>
+
 
 const CARPETA =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
@@ -69,272 +132,656 @@ const ARCHIVOS = [
 ];
 
 
+let todasLasNotas = [];
+
+
+/*
+==========================================================
+CARGAR SVG
+==========================================================
+*/
+
 async function cargarSVG(nombre) {
 
-    const r =
+    const respuesta =
         await fetch(
             CARPETA + nombre
         );
 
-    if (!r.ok) {
+    if (!respuesta.ok) {
 
         throw new Error(
             nombre +
-            " HTTP " +
-            r.status
+            " → HTTP " +
+            respuesta.status
         );
 
     }
 
-    return await r.text();
+    return await respuesta.text();
 
 }
 
 
-function extraerNumerosPath(d) {
+/*
+==========================================================
+SEPARAR SUBPATHS
+==========================================================
 
-    /*
-    Extrae todos los números
-    del atributo d.
+Un path SVG puede contener:
 
-    Esto permite estudiar
-    directamente la geometría
-    del path.
-    */
+M...
+...
+M...
+...
+M...
+
+Cada M inicia una nueva figura.
+
+En nuestros SVG de MuseScore,
+cada cabeza de nota aparece
+como una de estas figuras.
+==========================================================
+*/
+
+function separarSubpaths(d) {
 
     if (!d)
         return [];
 
-    const coincidencias =
-        d.match(
-            /[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g
-        );
-
-    if (!coincidencias)
-        return [];
-
-    return coincidencias.map(
-        Number
-    );
-
-}
-
-
-function resumenPath(path) {
-
-    const d =
-        path.getAttribute("d")
-        || "";
-
-
-    const numeros =
-        extraerNumerosPath(d);
-
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-
-    let minY = Infinity;
-    let maxY = -Infinity;
-
 
     /*
-    ATENCIÓN:
+    Buscar cada comando M.
 
-    En un path SVG los números
-    no necesariamente son pares
-    X,Y porque existen comandos
-    con distintos números de
-    argumentos.
-
-    Por eso aquí solamente
-    mostramos los números y
-    NO fingimos todavía que
-    son coordenadas.
-
+    Permitimos M y m.
     */
 
-    return {
-
-        longitudD:
-            d.length,
-
-        cantidadNumeros:
-            numeros.length,
-
-        primerosNumeros:
-            numeros.slice(
-                0,
-                40
-            ),
-
-        d:
-
-            d.length > 2000
-                ? d.slice(0,2000) +
-                  "\n...[TRUNCADO]"
-                : d
-
-    };
-
-}
+    const posiciones = [];
 
 
-async function analizar() {
+    const regex =
+        /[Mm](?=[-+.\d])/g;
 
-    let salida = "";
+
+    let match;
+
+
+    while (
+        (match =
+            regex.exec(d)) !== null
+    ) {
+
+        posiciones.push(
+            match.index
+        );
+
+    }
+
+
+    const resultado = [];
 
 
     for (
-        let pagina = 0;
-        pagina < ARCHIVOS.length;
-        pagina++
+        let i = 0;
+        i < posiciones.length;
+        i++
     ) {
 
-        const texto =
-            await cargarSVG(
-                ARCHIVOS[pagina]
+        const inicio =
+            posiciones[i];
+
+
+        const final =
+            i + 1 <
+            posiciones.length
+                ? posiciones[i + 1]
+                : d.length;
+
+
+        const subpath =
+            d.slice(
+                inicio,
+                final
+            ).trim();
+
+
+        if (subpath) {
+
+            resultado.push(
+                subpath
             );
-
-
-        const parser =
-            new DOMParser();
-
-
-        const doc =
-            parser.parseFromString(
-                texto,
-                "image/svg+xml"
-            );
-
-
-        const svg =
-            doc.documentElement;
-
-
-        const notas =
-            [
-                ...svg.querySelectorAll(
-                    ".Note"
-                )
-            ];
-
-
-        salida +=
-            "\n\n====================================\n";
-
-        salida +=
-            "PÁGINA " +
-            (pagina + 1) +
-            "\n";
-
-        salida +=
-            "NOTES: " +
-            notas.length +
-            "\n";
-
-        salida +=
-            "====================================\n";
-
-
-        for (
-            let i = 0;
-            i < notas.length;
-            i++
-        ) {
-
-            const nota =
-                notas[i];
-
-
-            const datos =
-                resumenPath(
-                    nota
-                );
-
-
-            salida +=
-                "\n\n--- NOTE " +
-                (i + 1) +
-                " ---\n";
-
-
-            salida +=
-                "tag: " +
-                nota.tagName +
-                "\n";
-
-
-            salida +=
-                "class: " +
-                nota.getAttribute(
-                    "class"
-                ) +
-                "\n";
-
-
-            salida +=
-                "fill: " +
-                nota.getAttribute(
-                    "fill"
-                ) +
-                "\n";
-
-
-            salida +=
-                "stroke: " +
-                nota.getAttribute(
-                    "stroke"
-                ) +
-                "\n";
-
-
-            salida +=
-                "stroke-width: " +
-                nota.getAttribute(
-                    "stroke-width"
-                ) +
-                "\n";
-
-
-            salida +=
-                "longitud d: " +
-                datos.longitudD +
-                "\n";
-
-
-            salida +=
-                "cantidad números: " +
-                datos.cantidadNumeros +
-                "\n";
-
-
-            salida +=
-                "primeros números:\n" +
-                JSON.stringify(
-                    datos.primerosNumeros
-                );
-
-
-            salida +=
-                "\n\nPATH d:\n" +
-                datos.d;
 
         }
 
     }
 
 
+    return resultado;
+
+}
+
+
+/*
+==========================================================
+COORDENADA INICIAL
+==========================================================
+*/
+
+function obtenerInicio(
+    subpath
+) {
+
+    /*
+    Ejemplo:
+
+    M2163 3018.7c...
+
+    */
+
+    const match =
+        subpath.match(
+            /^[Mm]\s*([-+.\d]+)[,\s]+([-+.\d]+)/
+        );
+
+
+    if (!match)
+        return null;
+
+
+    return {
+
+        x:
+            parseFloat(
+                match[1]
+            ),
+
+        y:
+            parseFloat(
+                match[2]
+            )
+
+    };
+
+}
+
+
+/*
+==========================================================
+ANALIZAR NOTE PATH
+==========================================================
+*/
+
+function analizarNotePath(
+    path,
+    pagina
+) {
+
+    const d =
+        path.getAttribute(
+            "d"
+        );
+
+
+    const subpaths =
+        separarSubpaths(
+            d
+        );
+
+
+    const notas = [];
+
+
+    for (
+        let i = 0;
+        i < subpaths.length;
+        i++
+    ) {
+
+        const inicio =
+            obtenerInicio(
+                subpaths[i]
+            );
+
+
+        if (!inicio)
+            continue;
+
+
+        /*
+        Una cabeza de nota de MuseScore
+        tiene normalmente un patrón
+        de curvas cúbicas inmediatamente
+        después de M.
+        */
+
+        const esCabeza =
+            /^M[^\n]*c/i.test(
+                subpaths[i]
+            );
+
+
+        if (!esCabeza)
+            continue;
+
+
+        notas.push({
+
+            pagina,
+
+            indice:
+                i + 1,
+
+            x:
+                inicio.x,
+
+            y:
+                inicio.y,
+
+            path:
+                subpaths[i]
+
+        });
+
+    }
+
+
+    return notas;
+
+}
+
+
+/*
+==========================================================
+ANALIZAR PÁGINA
+==========================================================
+*/
+
+async function analizarPagina(
+    archivo,
+    numeroPagina
+) {
+
+    const texto =
+        await cargarSVG(
+            archivo
+        );
+
+
+    const parser =
+        new DOMParser();
+
+
+    const documento =
+        parser.parseFromString(
+            texto,
+            "image/svg+xml"
+        );
+
+
+    const svg =
+        documento.documentElement;
+
+
+    const notePaths =
+        [
+            ...svg.querySelectorAll(
+                ".Note"
+            )
+        ];
+
+
+    const notas = [];
+
+
+    for (
+        const path
+        of notePaths
+    ) {
+
+        const encontradas =
+            analizarNotePath(
+                path,
+                numeroPagina
+            );
+
+
+        notas.push(
+            ...encontradas
+        );
+
+    }
+
+
+    return {
+
+        svg,
+
+        notas,
+
+        notePaths:
+            notePaths.length
+
+    };
+
+}
+
+
+/*
+==========================================================
+MOSTRAR RESULTADO
+==========================================================
+*/
+
+function mostrar(
+    resultadoPagina
+) {
+
+    const pagina =
+        document.createElement(
+            "div"
+        );
+
+
+    pagina.className =
+        "pagina";
+
+
+    const titulo =
+        document.createElement(
+            "h2"
+        );
+
+
+    titulo.textContent =
+        "Página " +
+        resultadoPagina.pagina +
+        " — " +
+        resultadoPagina.notas.length +
+        " cabezas detectadas";
+
+
+    pagina.appendChild(
+        titulo
+    );
+
+
+    /*
+    Mostrar SVG.
+    */
+
+    pagina.appendChild(
+        document.importNode(
+            resultadoPagina.svg,
+            true
+        )
+    );
+
+
+    /*
+    Tabla.
+    */
+
+    const tabla =
+        document.createElement(
+            "table"
+        );
+
+
+    tabla.className =
+        "tabla";
+
+
+    tabla.innerHTML = `
+
+        <thead>
+
+            <tr>
+
+                <th>#</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Inicio del path</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody></tbody>
+
+    `;
+
+
+    const tbody =
+        tabla.querySelector(
+            "tbody"
+        );
+
+
+    for (
+        const nota
+        of resultadoPagina.notas
+    ) {
+
+        const fila =
+            document.createElement(
+                "tr"
+            );
+
+
+        fila.innerHTML = `
+
+            <td>
+                ${nota.indice}
+            </td>
+
+            <td>
+                ${nota.x.toFixed(2)}
+            </td>
+
+            <td>
+                ${nota.y.toFixed(2)}
+            </td>
+
+            <td>
+                M${nota.x}
+                ${nota.y}
+            </td>
+
+        `;
+
+
+        tbody.appendChild(
+            fila
+        );
+
+    }
+
+
+    pagina.appendChild(
+        tabla
+    );
+
+
+    /*
+    Mostrar primeros paths.
+    */
+
+    const pre =
+        document.createElement(
+            "pre"
+        );
+
+
+    pre.textContent =
+        resultadoPagina.notas
+            .slice(0, 10)
+            .map(
+                nota =>
+                    "NOTA " +
+                    nota.indice +
+                    "\n" +
+                    nota.path
+            )
+            .join(
+                "\n\n"
+            );
+
+
+    pagina.appendChild(
+        pre
+    );
+
+
     document
         .getElementById(
             "resultado"
         )
-        .textContent =
-            salida;
+        .appendChild(
+            pagina
+        );
 
 }
+
+
+/*
+==========================================================
+ANALIZAR TODO
+==========================================================
+*/
+
+async function analizar() {
+
+    todasLasNotas = [];
+
+
+    document
+        .getElementById(
+            "resultado"
+        )
+        .innerHTML =
+            "";
+
+
+    try {
+
+        for (
+            let i = 0;
+            i < ARCHIVOS.length;
+            i++
+        ) {
+
+            document
+                .getElementById(
+                    "estado"
+                )
+                .textContent =
+                    "Analizando página " +
+                    (i + 1) +
+                    " / " +
+                    ARCHIVOS.length +
+                    "...";
+
+
+            const resultado =
+                await analizarPagina(
+                    ARCHIVOS[i],
+                    i + 1
+                );
+
+
+            resultado.pagina =
+                i + 1;
+
+
+            todasLasNotas.push(
+                ...resultado.notas
+            );
+
+
+            mostrar(
+                resultado
+            );
+
+        }
+
+
+        document
+            .getElementById(
+                "estado"
+            )
+            .textContent =
+
+            "✓ ANÁLISIS COMPLETADO\n\n" +
+
+            "Total de cabezas detectadas: " +
+            todasLasNotas.length +
+
+            "\n\n" +
+
+            "Página 1: " +
+            todasLasNotas.filter(
+                n => n.pagina === 1
+            ).length +
+
+            "\nPágina 2: " +
+            todasLasNotas.filter(
+                n => n.pagina === 2
+            ).length +
+
+            "\nPágina 3: " +
+            todasLasNotas.filter(
+                n => n.pagina === 3
+            ).length +
+
+            "\nPágina 4: " +
+            todasLasNotas.filter(
+                n => n.pagina === 4
+            ).length +
+
+            "\nPágina 5: " +
+            todasLasNotas.filter(
+                n => n.pagina === 5
+            ).length;
+
+
+    }
+    catch(error) {
+
+        console.error(
+            error
+        );
+
+
+        document
+            .getElementById(
+                "estado"
+            )
+            .textContent =
+                "❌ ERROR\n\n" +
+                error.message;
+
+    }
+
+}
+
+
+/*
+==========================================================
+BOTÓN
+==========================================================
+*/
+
+document
+    .getElementById(
+        "analizar"
+    )
+    .addEventListener(
+        "click",
+        analizar
+    );
 
 </script>
 
 </body>
+
 </html>
