@@ -4,99 +4,371 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Experience — Reconstrucción MIDI</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0d1117;color:#e6edf3;font-family:Arial,Helvetica,sans-serif}
-header{padding:24px;background:#161b22;border-bottom:1px solid #30363d}
-h1{margin:0 0 8px;font-size:28px}
-.subtitle{color:#8b949e;font-size:14px}
-.container{max-width:1600px;margin:auto;padding:20px}
-.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
-button{border:0;border-radius:8px;padding:13px 18px;font-weight:bold;cursor:pointer;background:#238636;color:#fff}
-button.secondary{background:#1f6feb}
-button.warning{background:#9e6a03}
-button:disabled{opacity:.45;cursor:not-allowed}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
-.stat,.panel{background:#161b22;border:1px solid #30363d;border-radius:10px}
-.stat{padding:17px}
-.number{font-size:28px;font-weight:bold}
-.label{color:#8b949e;font-size:13px;margin-top:5px}
-.panel{margin-bottom:20px;overflow:hidden}
-.panel-title{padding:14px 18px;border-bottom:1px solid #30363d;font-weight:bold}
-.panel-body{padding:18px}
-#log{height:430px;overflow:auto;white-space:pre-wrap;font:12px/1.55 monospace;color:#c9d1d9}
-.page{margin-bottom:28px;border:1px solid #30363d;border-radius:10px;overflow:hidden}
-.page-header{padding:14px;background:#21262d}
-.page-info{color:#8b949e;font-size:13px;margin-top:5px}
-.table-wrap{overflow:auto;max-height:600px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th,td{padding:7px;border-bottom:1px solid #30363d;text-align:left;white-space:nowrap}
-th{color:#8b949e;background:#0d1117;position:sticky;top:0}
-.high{color:#3fb950}
-.medium{color:#d29922}
-.low{color:#f85149}
-.element-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.element{padding:5px 8px;background:#21262d;border:1px solid #30363d;border-radius:6px;font:11px monospace}
-pre{max-height:600px;overflow:auto;background:#0d1117;padding:15px;border-radius:8px;font-size:11px}
-.warning-box{background:#3d2b00;border:1px solid #9e6a03;color:#d29922;padding:12px;border-radius:8px;margin-bottom:15px}
-.success-box{background:#0d2818;border:1px solid #238636;color:#3fb950;padding:12px;border-radius:8px}
-#visualizer{background:#fff;border-radius:8px;padding:10px;overflow:auto}
-.sheet{position:relative;margin-bottom:30px;border-bottom:2px solid #ddd}
-.sheet svg{width:100%;height:auto;display:block}
-.note-dot{stroke:#fff;stroke-width:1.2;pointer-events:none}
-.staff-line{stroke:#1f6feb;stroke-width:1.2;opacity:.75;pointer-events:none}
-.bar-line{stroke:#d29922;stroke-width:1;opacity:.5;pointer-events:none}
-#bboxSandbox{position:fixed;left:-100000px;top:-100000px;width:5000px;height:7000px;visibility:hidden;overflow:visible;pointer-events:none}
+
+body{
+margin:0;
+background:#0d1117;
+color:#e6edf3;
+font-family:Arial,Helvetica,sans-serif
+}
+
+header{
+padding:24px;
+background:#161b22;
+border-bottom:1px solid #30363d
+}
+
+h1{
+margin:0 0 8px;
+font-size:28px
+}
+
+.subtitle{
+color:#8b949e;
+font-size:14px
+}
+
+.container{
+max-width:1600px;
+margin:auto;
+padding:20px
+}
+
+.controls{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:20px
+}
+
+button{
+border:0;
+border-radius:8px;
+padding:13px 18px;
+font-weight:bold;
+cursor:pointer;
+background:#238636;
+color:#fff
+}
+
+button.secondary{
+background:#1f6feb
+}
+
+button.warning{
+background:#9e6a03
+}
+
+button:disabled{
+opacity:.45;
+cursor:not-allowed
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+gap:12px;
+margin-bottom:20px
+}
+
+.stat,.panel{
+background:#161b22;
+border:1px solid #30363d;
+border-radius:10px
+}
+
+.stat{
+padding:17px
+}
+
+.number{
+font-size:28px;
+font-weight:bold
+}
+
+.label{
+color:#8b949e;
+font-size:13px;
+margin-top:5px
+}
+
+.panel{
+margin-bottom:20px;
+overflow:hidden
+}
+
+.panel-title{
+padding:14px 18px;
+border-bottom:1px solid #30363d;
+font-weight:bold
+}
+
+.panel-body{
+padding:18px
+}
+
+#log{
+height:430px;
+overflow:auto;
+white-space:pre-wrap;
+font:12px/1.55 monospace;
+color:#c9d1d9
+}
+
+.page{
+margin-bottom:28px;
+border:1px solid #30363d;
+border-radius:10px;
+overflow:hidden
+}
+
+.page-header{
+padding:14px;
+background:#21262d
+}
+
+.page-info{
+color:#8b949e;
+font-size:13px;
+margin-top:5px
+}
+
+.table-wrap{
+overflow:auto;
+max-height:600px
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:12px
+}
+
+th,td{
+padding:7px;
+border-bottom:1px solid #30363d;
+text-align:left;
+white-space:nowrap
+}
+
+th{
+color:#8b949e;
+background:#0d1117;
+position:sticky;
+top:0
+}
+
+.high{
+color:#3fb950
+}
+
+.medium{
+color:#d29922
+}
+
+.low{
+color:#f85149
+}
+
+.element-grid{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-top:10px
+}
+
+.element{
+padding:5px 8px;
+background:#21262d;
+border:1px solid #30363d;
+border-radius:6px;
+font:11px monospace
+}
+
+pre{
+max-height:600px;
+overflow:auto;
+background:#0d1117;
+padding:15px;
+border-radius:8px;
+font-size:11px
+}
+
+.warning-box{
+background:#3d2b00;
+border:1px solid #9e6a03;
+color:#d29922;
+padding:12px;
+border-radius:8px;
+margin-bottom:15px
+}
+
+.success-box{
+background:#0d2818;
+border:1px solid #238636;
+color:#3fb950;
+padding:12px;
+border-radius:8px
+}
+
+#visualizer{
+background:#fff;
+border-radius:8px;
+padding:10px;
+overflow:auto
+}
+
+.sheet{
+position:relative;
+margin-bottom:30px;
+border-bottom:2px solid #ddd
+}
+
+.sheet svg{
+width:100%;
+height:auto;
+display:block
+}
+
+.note-dot{
+stroke:#fff;
+stroke-width:1.2;
+pointer-events:none
+}
+
+.staff-line{
+stroke:#1f6feb;
+stroke-width:1.2;
+opacity:.75;
+pointer-events:none
+}
+
+.bar-line{
+stroke:#d29922;
+stroke-width:1;
+opacity:.5;
+pointer-events:none
+}
+
+#bboxSandbox{
+position:fixed;
+left:-100000px;
+top:-100000px;
+width:5000px;
+height:7000px;
+visibility:hidden;
+overflow:visible;
+pointer-events:none
+}
+
 @media(max-width:700px){
-h1{font-size:22px}
-.container{padding:10px}
-#log{height:340px}
+h1{
+font-size:22px
+}
+
+.container{
+padding:10px
+}
+
+#log{
+height:340px
+}
 }
 </style>
 </head>
+
 <body>
 
 <header>
 <h1>🎼 Experience — Reconstrucción MIDI</h1>
-<div class="subtitle">Extracción musical directamente desde los SVG de MuseScore</div>
+<div class="subtitle">
+Extracción musical directamente desde los SVG de MuseScore
+</div>
 </header>
 
 <div class="container">
 
 <div class="controls">
-<button id="analyzeBtn" type="button">▶ ANALIZAR PARTITURA</button>
-<button id="midiBtn" class="secondary" type="button" disabled>🎹 GENERAR MIDI</button>
-<button id="downloadBtn" class="warning" type="button" disabled>⬇ DESCARGAR MIDI</button>
-<button id="jsonBtn" type="button" disabled>💾 DESCARGAR JSON</button>
+<button id="analyzeBtn" type="button">
+▶ ANALIZAR PARTITURA
+</button>
+
+<button id="midiBtn" class="secondary" type="button" disabled>
+🎹 GENERAR MIDI
+</button>
+
+<button id="downloadBtn" class="warning" type="button" disabled>
+⬇ DESCARGAR MIDI
+</button>
+
+<button id="jsonBtn" type="button" disabled>
+💾 DESCARGAR JSON
+</button>
 </div>
 
 <div class="stats">
-<div class="stat"><div class="number" id="statPages">0</div><div class="label">Páginas</div></div>
-<div class="stat"><div class="number" id="statHeads">0</div><div class="label">Cabezas</div></div>
-<div class="stat"><div class="number" id="statStaves">0</div><div class="label">Pentagramas</div></div>
-<div class="stat"><div class="number" id="statAssigned">0</div><div class="label">Asignadas</div></div>
-<div class="stat"><div class="number" id="statPitch">0</div><div class="label">Con pitch</div></div>
-<div class="stat"><div class="number" id="statHigh">0</div><div class="label">Pitch ≥ 85%</div></div>
+
+<div class="stat">
+<div class="number" id="statPages">0</div>
+<div class="label">Páginas</div>
+</div>
+
+<div class="stat">
+<div class="number" id="statHeads">0</div>
+<div class="label">Cabezas</div>
+</div>
+
+<div class="stat">
+<div class="number" id="statStaves">0</div>
+<div class="label">Pentagramas</div>
+</div>
+
+<div class="stat">
+<div class="number" id="statAssigned">0</div>
+<div class="label">Asignadas</div>
+</div>
+
+<div class="stat">
+<div class="number" id="statPitch">0</div>
+<div class="label">Con pitch</div>
+</div>
+
+<div class="stat">
+<div class="number" id="statHigh">0</div>
+<div class="label">Pitch ≥ 85%</div>
+</div>
+
 </div>
 
 <div class="panel">
 <div class="panel-title">Registro</div>
-<div class="panel-body"><div id="log"></div></div>
+<div class="panel-body">
+<div id="log"></div>
+</div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Información musical detectada</div>
-<div class="panel-body" id="results">Ejecuta el análisis para comenzar.</div>
+<div class="panel-body" id="results">
+Ejecuta el análisis para comenzar.
+</div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Vista reconstruida</div>
-<div class="panel-body"><div id="visualizer"></div></div>
+<div class="panel-body">
+<div id="visualizer"></div>
+</div>
 </div>
 
 <div class="panel">
 <div class="panel-title">Datos JSON</div>
-<div class="panel-body"><pre id="jsonPreview">Sin datos.</pre></div>
+<div class="panel-body">
+<pre id="jsonPreview">Sin datos.</pre>
+</div>
 </div>
 
 </div>
@@ -110,12 +382,26 @@ Experience — reconstrucción experimental desde SVG
 <script>
 "use strict";
 
-const BASE="EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
-const SVG_FILES=["score_0.svg","score_1.svg","score_2.svg","score_3.svg","score_4.svg"];
+const BASE="./EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
+
+const SVG_FILES=[
+"score_0.svg",
+"score_1.svg",
+"score_2.svg",
+"score_3.svg",
+"score_4.svg"
+];
+
 const PPQ=480;
 const DEFAULT_BPM=60;
 
-let score={pages:[],notes:[],events:[],metadata:{}};
+let score={
+pages:[],
+notes:[],
+events:[],
+metadata:{}
+};
+
 let midiBlob=null;
 
 const $=id=>document.getElementById(id);
@@ -132,13 +418,19 @@ $("log").textContent="";
 
 function median(a){
 if(!a.length)return 0;
+
 const b=[...a].sort((x,y)=>x-y);
 const m=Math.floor(b.length/2);
-return b.length%2?b[m]:(b[m-1]+b[m])/2;
+
+return b.length%2
+?b[m]
+:(b[m-1]+b[m])/2;
 }
 
 function mean(a){
-return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+return a.length
+?a.reduce((x,y)=>x+y,0)/a.length
+:0;
 }
 
 function clamp(v,a,b){
@@ -159,35 +451,61 @@ return String(s)
 }
 
 function resetUI(){
+
 $("bboxSandbox").innerHTML="";
+
 $("statPages").textContent=0;
 $("statHeads").textContent=0;
 $("statStaves").textContent=0;
 $("statAssigned").textContent=0;
 $("statPitch").textContent=0;
 $("statHigh").textContent=0;
+
 $("results").innerHTML="";
 $("visualizer").innerHTML="";
 $("jsonPreview").textContent="Sin datos.";
+
 $("midiBtn").disabled=true;
 $("downloadBtn").disabled=true;
 $("jsonBtn").disabled=true;
+
 midiBlob=null;
 }
 
 async function fetchSVG(file){
+
 const url=BASE+file;
+
 log("   "+file);
 log("   Descargando...");
+
 const r=await fetch(url,{cache:"no-store"});
-if(!r.ok)throw new Error("HTTP "+r.status+" — "+url);
+
+if(!r.ok){
+throw new Error(
+"HTTP "+r.status+" — "+url
+);
+}
+
 const text=await r.text();
-log("   ✓ SVG cargado — "+text.length+" caracteres");
+
+log(
+"   ✓ SVG cargado — "+
+text.length+
+" caracteres"
+);
+
 return text;
 }
 
 function parseSVG(text){
-const doc=new DOMParser().parseFromString(text,"image/svg+xml");
+
+const doc=
+new DOMParser()
+.parseFromString(
+text,
+"image/svg+xml"
+);
 
 if(doc.querySelector("parsererror")){
 throw new Error("SVG inválido");
@@ -195,29 +513,56 @@ throw new Error("SVG inválido");
 
 const source=doc.documentElement;
 
-if(!source||source.nodeName.toLowerCase()!=="svg"){
+if(
+!source||
+source.nodeName.toLowerCase()!=="svg"
+){
 throw new Error("No se encontró <svg>");
 }
 
-const live=document.importNode(source,true);
+const live=
+document.importNode(
+source,
+true
+);
 
-live.setAttribute("aria-hidden","true");
+live.setAttribute(
+"aria-hidden",
+"true"
+);
 
-const vb=(source.getAttribute("viewBox")||"")
+const vb=
+(source.getAttribute("viewBox")||"")
 .trim()
 .split(/[\s,]+/)
 .map(Number);
 
-const w=vb.length===4&&Number.isFinite(vb[2])
+const w=
+vb.length===4&&
+Number.isFinite(vb[2])
 ?vb[2]
-:parseFloat(source.getAttribute("width"))||3000;
+:parseFloat(
+source.getAttribute("width")
+)||3000;
 
-const h=vb.length===4&&Number.isFinite(vb[3])
+const h=
+vb.length===4&&
+Number.isFinite(vb[3])
 ?vb[3]
-:parseFloat(source.getAttribute("height"))||4200;
+:parseFloat(
+source.getAttribute("height")
+)||4200;
 
-live.setAttribute("width",String(Math.max(1,w)));
-live.setAttribute("height",String(Math.max(1,h)));
+live.setAttribute(
+"width",
+String(Math.max(1,w))
+);
+
+live.setAttribute(
+"height",
+String(Math.max(1,h))
+);
+
 live.style.position="absolute";
 live.style.left="0";
 live.style.top="0";
@@ -228,31 +573,42 @@ live.style.pointerEvents="none";
 
 $("bboxSandbox").appendChild(live);
 
-return{doc,svg:live};
+return{
+doc,
+svg:live
+};
 }
 
 function bbox(el){
+
 try{
+
 const b=el.getBBox();
 
 if(
-[b.x,b.y,b.width,b.height].every(Number.isFinite)&&
+[b.x,b.y,b.width,b.height]
+.every(Number.isFinite)&&
 (b.width>0||b.height>0)
 ){
+
 return{
 x:b.x,
 y:b.y,
 width:b.width,
 height:b.height
 };
+
 }
+
 }catch(e){}
 
 return null;
 }
 
 function rootPoint(el,x,y){
+
 try{
+
 const root=el.ownerSVGElement;
 
 if(!root){
@@ -266,29 +622,44 @@ if(!em||!rm){
 return{x,y};
 }
 
-const p=new DOMPoint(x,y).matrixTransform(em);
-return p.matrixTransform(rm.inverse());
+const p=
+new DOMPoint(x,y)
+.matrixTransform(em);
+
+return p.matrixTransform(
+rm.inverse()
+);
 
 }catch(e){
+
 return{x,y};
+
 }
 }
 
 function rootBBox(el){
+
 const b=bbox(el);
 
 if(!b)return null;
 
 try{
+
 const root=el.ownerSVGElement;
 
-if(!root)return b;
+if(!root){
+return b;
+}
 
 const pts=[
 rootPoint(el,b.x,b.y),
 rootPoint(el,b.x+b.width,b.y),
 rootPoint(el,b.x,b.y+b.height),
-rootPoint(el,b.x+b.width,b.y+b.height)
+rootPoint(
+el,
+b.x+b.width,
+b.y+b.height
+)
 ];
 
 const xs=pts.map(p=>p.x);
@@ -307,32 +678,57 @@ height:maxY-minY
 };
 
 }catch(e){
+
 return b;
+
 }
 }
 
 function splitSubpaths(d){
+
 if(!d)return[];
 
-const matches=d.match(/[Mm][^Mm]*/g);
+const matches=
+d.match(/[Mm][^Mm]*/g);
 
 return matches
-?matches.map(x=>x.trim()).filter(Boolean)
+?matches
+.map(x=>x.trim())
+.filter(Boolean)
 :[];
 }
 
 function measureSubpaths(el){
-const d=el.getAttribute("d")||"";
-const parts=splitSubpaths(d);
 
-if(!parts.length)return[];
+const d=
+el.getAttribute("d")||"";
 
-const ns="http://www.w3.org/2000/svg";
+const parts=
+splitSubpaths(d);
 
-const holder=document.createElementNS(ns,"svg");
+if(!parts.length){
+return[];
+}
 
-holder.setAttribute("width","5000");
-holder.setAttribute("height","7000");
+const ns=
+"http://www.w3.org/2000/svg";
+
+const holder=
+document.createElementNS(
+ns,
+"svg"
+);
+
+holder.setAttribute(
+"width",
+"5000"
+);
+
+holder.setAttribute(
+"height",
+"7000"
+);
+
 holder.style.position="absolute";
 holder.style.left="0";
 holder.style.top="0";
@@ -340,9 +736,14 @@ holder.style.visibility="visible";
 holder.style.opacity="0";
 holder.style.overflow="visible";
 
-const p=document.createElementNS(ns,"path");
+const p=
+document.createElementNS(
+ns,
+"path"
+);
 
-for(const attr of[
+for(
+const attr of[
 "fill",
 "fill-rule",
 "stroke",
@@ -352,10 +753,16 @@ for(const attr of[
 "stroke-miterlimit",
 "vector-effect",
 "shape-rendering"
-]){
+]
+){
+
 if(el.hasAttribute(attr)){
-p.setAttribute(attr,el.getAttribute(attr));
+p.setAttribute(
+attr,
+el.getAttribute(attr)
+);
 }
+
 }
 
 holder.appendChild(p);
@@ -365,14 +772,18 @@ const result=[];
 
 for(const part of parts){
 
-p.setAttribute("d",part);
+p.setAttribute(
+"d",
+part
+);
 
 try{
 
 const b=p.getBBox();
 
 if(
-[b.x,b.y,b.width,b.height].every(Number.isFinite)&&
+[b.x,b.y,b.width,b.height]
+.every(Number.isFinite)&&
 b.width>0&&
 b.height>0
 ){
@@ -387,6 +798,7 @@ height:b.height
 }
 
 }catch(e){}
+
 }
 
 holder.remove();
@@ -394,7 +806,11 @@ holder.remove();
 return result;
 }
 
-function getElementsByClassIncludingSelf(svg,c){
+function getElementsByClassIncludingSelf(
+svg,
+c
+){
+
 const out=[];
 
 if(
@@ -404,18 +820,18 @@ svg.classList.contains(c)
 out.push(svg);
 }
 
-const selector="."+CSS.escape(c);
+const selector=
+"."+CSS.escape(c);
 
-out.push(...svg.querySelectorAll(selector));
+out.push(
+...svg.querySelectorAll(selector)
+);
 
 return out;
 }
 
-function countClass(svg,c){
-return getElementsByClassIncludingSelf(svg,c).length;
-}
-
 function isPlausibleHead(b){
+
 if(!b)return false;
 
 if(
@@ -429,14 +845,27 @@ return false;
 
 const ratio=
 Math.max(b.width,b.height)/
-Math.max(.01,Math.min(b.width,b.height));
+Math.max(
+.01,
+Math.min(b.width,b.height)
+);
 
-if(ratio>4.5)return false;
+if(ratio>4.5){
+return false;
+}
 
 return true;
 }
 
-function addHead(out,x,y,w,h,noteIndex,source){
+function addHead(
+out,
+x,
+y,
+w,
+h,
+noteIndex,
+source
+){
 
 if(
 !Number.isFinite(x)||
@@ -445,12 +874,15 @@ if(
 return;
 }
 
-const duplicate=out.some(n=>
+const duplicate=
+out.some(n=>
 Math.abs(n.x-x)<1.5&&
 Math.abs(n.y-y)<1.5
 );
 
-if(!duplicate){
+if(duplicate){
+return;
+}
 
 out.push({
 x,
@@ -460,15 +892,17 @@ h,
 noteIndex,
 source
 });
-
-}
 }
 
 function extractHeads(svg){
 
 const out=[];
+
 const noteElements=
-getElementsByClassIncludingSelf(svg,"Note");
+getElementsByClassIncludingSelf(
+svg,
+"Note"
+);
 
 log(
 "   🔎 Elementos .Note reales: "+
@@ -481,7 +915,8 @@ ni<noteElements.length;
 ni++
 ){
 
-const note=noteElements[ni];
+const note=
+noteElements[ni];
 
 if(
 note.tagName&&
@@ -489,19 +924,20 @@ note.tagName.toLowerCase()==="path"&&
 note.hasAttribute("d")
 ){
 
-for(const b of measureSubpaths(note)){
+for(
+const b of measureSubpaths(note)
+){
 
-if(!isPlausibleHead(b))continue;
+if(!isPlausibleHead(b)){
+continue;
+}
 
-const rb=rootBBox(note);
-
-const center=rootPoint(
+const center=
+rootPoint(
 note,
 b.x+b.width/2,
 b.y+b.height/2
 );
-
-if(rb){
 
 addHead(
 out,
@@ -512,8 +948,6 @@ b.height,
 ni,
 "Note"
 );
-
-}
 
 }
 
@@ -540,13 +974,17 @@ if(
 child.tagName.toLowerCase()==="path"
 ){
 
-const boxes=measureSubpaths(child);
+const boxes=
+measureSubpaths(child);
 
 for(const b of boxes){
 
-if(!isPlausibleHead(b))continue;
+if(!isPlausibleHead(b)){
+continue;
+}
 
-const center=rootPoint(
+const center=
+rootPoint(
 child,
 b.x+b.width/2,
 b.y+b.height/2
@@ -568,7 +1006,9 @@ ni,
 
 const b=rootBBox(child);
 
-if(!isPlausibleHead(b))continue;
+if(!isPlausibleHead(b)){
+continue;
+}
 
 addHead(
 out,
@@ -587,35 +1027,107 @@ ni,
 }
 
 out.sort(
-(a,b)=>a.y-b.y||a.x-b.x
+(a,b)=>
+a.y-b.y||
+a.x-b.x
 );
 
 return out;
 }
 
-function collectGraphicBoxes(svg,selector){
+/*
+=========================================================
+CORRECCIÓN IMPORTANTE:
+MuseScore coloca TODO el pentagrama dentro de un único
+path .StaffLines:
+
+M336.6 634.2h2428
+M336.6 659h2428
+...
+
+getBBox() de cada subpath tiene height=0 porque es una
+línea matemática. Por eso el código anterior descartaba
+todas las líneas.
+=========================================================
+*/
+
+function parseHorizontalPathLines(
+el
+){
+
+const d=
+el.getAttribute("d")||"";
 
 const result=[];
 
-for(const el of svg.querySelectorAll(selector)){
+let m;
 
-const b=rootBBox(el);
+/*
+M x y h longitud
+M x y H x2
+M x y L x2 y2
+*/
 
-if(!b)continue;
+const re=
+/[Mm]\s*([-+]?\d*\.?\d+(?:e[-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:e[-+]?\d+)?)(?:\s*[hH]\s*([-+]?\d*\.?\d+(?:e[-+]?\d+)?)|\s*[lL]\s*([-+]?\d*\.?\d+(?:e[-+]?\d+)?)\s*([-+]?\d*\.?\d+)|\s*[Hh]\s*([-+]?\d*\.?\d+))/gi;
 
-if(
-!Number.isFinite(b.x)||
-!Number.isFinite(b.y)||
-!Number.isFinite(b.width)||
-!Number.isFinite(b.height)
+while((m=re.exec(d))){
+
+const x=parseFloat(m[1]);
+const y=parseFloat(m[2]);
+
+let width=0;
+
+if(m[3]!==undefined){
+
+width=
+Math.abs(
+parseFloat(m[3])
+);
+
+}else if(
+m[4]!==undefined&&
+m[5]!==undefined
 ){
+
+const x2=
+parseFloat(m[4]);
+
+const y2=
+parseFloat(m[5]);
+
+if(Math.abs(y2)>3){
 continue;
 }
 
+width=
+Math.abs(x2);
+
+}else if(m[6]!==undefined){
+
+const x2=
+parseFloat(m[6]);
+
+width=
+Math.abs(x2-x);
+
+}
+
+if(
+Number.isFinite(x)&&
+Number.isFinite(y)&&
+width>500
+){
+
 result.push({
-el,
-...b
+x,
+y,
+width,
+height:0,
+source:"StaffLinesPath"
 });
+
+}
 
 }
 
@@ -624,7 +1136,7 @@ return result;
 
 function extractStaffLines(svg){
 
-const candidates=[];
+let candidates=[];
 
 const marked=
 getElementsByClassIncludingSelf(
@@ -634,84 +1146,48 @@ svg,
 
 for(const group of marked){
 
-const own=rootBBox(group);
-
-if(
-own&&
-own.width>500&&
-own.height<1000
-){
-}
-
-const descendants=
-group.querySelectorAll(
-"path,line,rect,polyline,polygon,use"
-);
-
-for(const el of descendants){
-
-const b=rootBBox(el);
-
-if(!b)continue;
-
-if(
-b.width>500&&
-b.height<=12
-){
-
-candidates.push({
-x:b.x,
-y:b.y,
-width:b.width,
-height:b.height,
-source:"StaffLines"
-});
-
-}
-
-}
-
+/*
+Caso real de MuseScore:
+.StaffLines es directamente <path>.
+*/
 if(
 group.tagName&&
 group.tagName.toLowerCase()==="path"
 ){
 
-const boxes=measureSubpaths(group);
-
-for(const b of boxes){
-
-if(
-b.width>500&&
-b.height<=12
-){
-
-const center=rootPoint(
-group,
-b.x+b.width/2,
-b.y+b.height/2
+candidates.push(
+...parseHorizontalPathLines(group)
 );
 
-candidates.push({
-x:center.x-b.width/2,
-y:center.y-b.height/2,
-width:b.width,
-height:b.height,
-source:"StaffLinesPath"
-});
+}
+
+/*
+Por si en otra versión de MuseScore
+.StaffLines es un grupo.
+*/
+const paths=
+group.querySelectorAll(
+"path"
+);
+
+for(const path of paths){
+
+candidates.push(
+...parseHorizontalPathLines(path)
+);
 
 }
 
 }
 
-}
-
-}
-
+/*
+Fallback geométrico.
+*/
 if(candidates.length<5){
 
 const all=
 svg.querySelectorAll(
-"path,line,rect,polyline,polygon,use"
+"path,line,rect,polyline,polygon"
 );
 
 for(const el of all){
@@ -721,29 +1197,21 @@ el.classList&&
 (
 el.classList.contains("BarLine")||
 el.classList.contains("Stem")||
-el.classList.contains("Beam")
+el.classList.contains("Beam")||
+el.classList.contains("Note")
 )
 ){
 continue;
 }
 
-const b=rootBBox(el);
+const d=
+el.getAttribute("d")||"";
 
-if(!b)continue;
+if(d){
 
-if(
-b.width>500&&
-b.width>b.height*40&&
-b.height<=12
-){
-
-candidates.push({
-x:b.x,
-y:b.y,
-width:b.width,
-height:b.height,
-source:"geometry"
-});
+candidates.push(
+...parseHorizontalPathLines(el)
+);
 
 }
 
@@ -751,21 +1219,22 @@ source:"geometry"
 
 }
 
+/*
+Eliminar duplicados.
+*/
 candidates.sort(
-(a,b)=>a.y-b.y||a.x-b.x
+(a,b)=>
+a.y-b.y||
+a.x-b.x
 );
 
 const unique=[];
 
 for(const c of candidates){
 
-const cy=c.y+c.height/2;
-
-const duplicate=unique.some(
-u=>
-Math.abs(
-(u.y+u.height/2)-cy
-)<1.5&&
+const duplicate=
+unique.some(u=>
+Math.abs(u.y-c.y)<1.5&&
 Math.abs(u.x-c.x)<3
 );
 
@@ -775,9 +1244,14 @@ unique.push(c);
 
 }
 
-const ys=unique.map(
-b=>b.y+b.height/2
-).sort((a,b)=>a-b);
+/*
+Agrupar líneas que pertenecen al mismo pentagrama.
+Las cinco líneas están separadas aproximadamente 24.8.
+*/
+const ys=
+unique
+.map(b=>b.y)
+.sort((a,b)=>a-b);
 
 const yUnique=[];
 
@@ -789,130 +1263,233 @@ Math.abs(
 y-yUnique[yUnique.length-1]
 )>2
 ){
+
 yUnique.push(y);
-}
-
-}
-
-const groups=[];
-
-for(const y of yUnique){
-
-let g=groups[groups.length-1];
-
-if(
-!g||
-y-g[g.length-1]>16
-){
-
-groups.push([y]);
-
-}else{
-
-g.push(y);
 
 }
 
 }
 
+/*
+Un pentagrama ocupa 4 espacios.
+Con separación ≈24.8:
+línea 1 -> línea 5 = ≈99.2
+*/
 const staffs=[];
 
-for(const original of groups){
+let i=0;
 
-if(original.length<5)continue;
-
-let g=[...original];
-
-if(g.length>5){
+while(i<yUnique.length){
 
 let best=null;
-let bestScore=Infinity;
 
-for(
-let i=0;
-i<=g.length-5;
-i++
-){
+for(let j=i;j<yUnique.length;j++){
 
-const q=g.slice(i,i+5);
+const candidate=
+yUnique.slice(i,j+1);
+
+if(candidate.length<5){
+continue;
+}
 
 const diffs=
-q.slice(1).map(
-(v,j)=>v-q[j]
+candidate
+.slice(1)
+.map(
+(v,k)=>v-candidate[k]
 );
-
-const spacing=median(diffs);
-
-const variance=
-mean(
-diffs.map(
-d=>Math.abs(d-spacing)
-)
-);
-
-const score=
-variance+
-Math.abs(
-spacing-(
-q[4]-q[0]
-)/4
-);
-
-if(score<bestScore){
-
-bestScore=score;
-best=q;
-
-}
-
-}
-
-if(best){
-g=best;
-}
-
-}
 
 const spacing=
-median(
-g.slice(1).map(
-(v,i)=>v-g[i]
-)
-);
+median(diffs);
 
 if(
-!Number.isFinite(spacing)||
 spacing<4||
 spacing>100
 ){
 continue;
 }
 
-staffs.push({
-lines:g,
-center:mean(g),
-spacing
-});
+let good=0;
+
+for(
+let k=1;
+k<candidate.length;
+k++
+){
+
+const d=
+candidate[k]-
+candidate[k-1];
+
+if(
+Math.abs(d-spacing)<3
+){
+good++;
+}
 
 }
 
-return staffs;
+if(
+good>=4&&
+(!best||
+Math.abs(
+spacing-24.8
+)<
+Math.abs(
+best.spacing-24.8
+))
+){
+
+best={
+lines:candidate.slice(0,5),
+spacing
+};
+
+}
+
+}
+
+if(best){
+
+const lines=
+best.lines;
+
+staffs.push({
+lines,
+center:mean(lines),
+spacing:best.spacing
+});
+
+i+=5;
+
+}else{
+
+i++;
+
+}
+
+}
+
+/*
+Fallback adicional si alguna página tiene geometría
+ligeramente distinta.
+*/
+if(!staffs.length){
+
+for(
+let k=0;
+k+4<yUnique.length;
+k++
+){
+
+const q=
+yUnique.slice(k,k+5);
+
+const diffs=
+q.slice(1)
+.map(
+(v,j)=>v-q[j]
+);
+
+const spacing=
+median(diffs);
+
+if(
+spacing>=15&&
+spacing<=35
+){
+
+staffs.push({
+lines:q,
+center:mean(q),
+spacing
+});
+
+k+=4;
+
+}
+
+}
+
+}
+
+/*
+Eliminar pentagramas duplicados.
+*/
+const finalStaffs=[];
+
+for(const s of staffs){
+
+const duplicate=
+finalStaffs.some(x=>
+Math.abs(
+x.center-s.center
+)<10
+);
+
+if(!duplicate){
+finalStaffs.push(s);
+}
+
+}
+
+return finalStaffs;
 }
 
 function extractClefs(svg){
 
 const clefs=[];
 
-for(
-const el of getElementsByClassIncludingSelf(
+const elements=
+getElementsByClassIncludingSelf(
 svg,
 "Clef"
-)
+);
+
+for(const el of elements){
+
+/*
+El .Clef real también es un path compuesto.
+No usamos su bbox global.
+*/
+if(
+el.tagName&&
+el.tagName.toLowerCase()==="path"
 ){
+
+const boxes=
+measureSubpaths(el);
+
+for(const b of boxes){
+
+if(
+b.width<5||
+b.height<5
+){
+continue;
+}
+
+const p=
+rootPoint(
+el,
+b.x+b.width/2,
+b.y+b.height/2
+);
+
+clefs.push({
+x:p.x,
+y:p.y,
+w:b.width,
+h:b.height
+});
+
+}
+
+}else{
 
 const b=rootBBox(el);
 
-if(!b)continue;
+if(b){
 
 clefs.push({
 x:b.x+b.width/2,
@@ -923,39 +1500,72 @@ h:b.height
 
 }
 
+}
+
+}
+
 return clefs;
 }
 
-function clefForStaff(staff,clefs){
+/*
+Para piano, la partitura de Experience está organizada
+como sistemas de dos pentagramas:
 
-if(!clefs.length)return"treble";
+staff 0 = mano derecha / treble
+staff 1 = mano izquierda / bass
+staff 2 = treble
+staff 3 = bass
+etc.
+
+Esto evita el error anterior de intentar obtener el tipo
+de clave desde el bbox global de un único path .Clef.
+*/
+function clefForStaff(
+staff,
+staffIndex,
+clefs
+){
+
+if(
+staffIndex>=0
+){
+
+return staffIndex%2===0
+?"treble"
+:"bass";
+
+}
+
+if(!clefs.length){
+return"treble";
+}
 
 let best=null;
 let bestD=Infinity;
 
 for(const c of clefs){
 
-const d=Math.abs(
-c.y-staff.center
-);
+const d=
+Math.abs(c.y-staff.center);
 
 if(d<bestD){
 
-best=c;
 bestD=d;
+best=c;
 
 }
 
 }
 
-if(!best)return"treble";
-
-return best.y>staff.center
-?"bass"
+return best
+?"treble"
 :"treble";
 }
 
-function assignStaff(heads,staffs){
+function assignStaff(
+heads,
+staffs
+){
 
 const assigned=[];
 
@@ -967,11 +1577,13 @@ let bestD=Infinity;
 staffs.forEach(
 (s,si)=>{
 
-const d=Math.abs(
+const d=
+Math.abs(
 n.y-s.center
 );
 
-const limit=Math.max(
+const limit=
+Math.max(
 s.spacing*3.8,
 35
 );
@@ -995,9 +1607,14 @@ bestD=d;
 
 assigned.push({
 ...n,
-staff:best?best.staff:-1,
+staff:
+best
+?best.staff
+:-1,
 staffDistance:
-best?best.dist:null
+best
+?best.dist
+:null
 });
 
 }
@@ -1005,12 +1622,17 @@ best?best.dist:null
 return assigned;
 }
 
+/*
+E4 = MIDI 64 en la línea inferior de clave de sol.
+
+G2 = MIDI 43 en la línea inferior de clave de fa.
+*/
 const TREBLE_STEPS=[
 0,1,3,5,7,8,10
 ];
 
 const BASS_STEPS=[
-0,2,3,5,7,8,10
+0,2,4,5,7,9,10
 ];
 
 function pitchFromStaff(
@@ -1058,35 +1680,28 @@ clamp(
 1
 );
 
-let midi;
+const steps=
+clef==="bass"
+?BASS_STEPS
+:TREBLE_STEPS;
 
-if(clef==="bass"){
+const base=
+clef==="bass"
+?43
+:64;
 
 const octave=
-Math.floor(diatonic/7);
+Math.floor(
+diatonic/7
+);
 
 const degree=
 ((diatonic%7)+7)%7;
 
-midi=
-43+
+const midi=
+base+
 octave*12+
-BASS_STEPS[degree];
-
-}else{
-
-const octave=
-Math.floor(diatonic/7);
-
-const degree=
-((diatonic%7)+7)%7;
-
-midi=
-64+
-octave*12+
-TREBLE_STEPS[degree];
-
-}
+steps[degree];
 
 return{
 pitch:clamp(
@@ -1127,12 +1742,21 @@ b.x+b.width/2
 
 }
 
-return arr.sort(
+return[
+...new Set(
+arr.map(
+x=>round(x,2)
+)
+)
+].sort(
 (a,b)=>a-b
 );
 }
 
-function assignMeasures(notes,bars){
+function assignMeasures(
+notes,
+bars
+){
 
 return notes.map(n=>{
 
@@ -1157,47 +1781,83 @@ measure
 
 }
 
-function inferDuration(note,sameStaff){
+/*
+Duración aproximada basada en la distancia horizontal
+entre cabezas consecutivas del mismo pentagrama.
+
+No intenta adivinar el valor desde el glyph:
+usa directamente la separación geométrica del SVG.
+*/
+function inferDuration(
+note,
+sameStaff
+){
 
 const sorted=
-[...sameStaff].sort(
+[...sameStaff]
+.sort(
 (a,b)=>a.x-b.x
 );
 
 const index=
 sorted.indexOf(note);
 
-if(index<0)return 480;
+if(index<0){
+return 480;
+}
 
 const next=
 sorted[index+1];
 
-if(!next)return 480;
+if(!next){
+return 480;
+}
 
 const dx=
 next.x-note.x;
 
-if(dx>300)return 1920;
-if(dx>190)return 960;
-if(dx>100)return 480;
-if(dx>55)return 240;
+if(dx>300){
+return 1920;
+}
+
+if(dx>190){
+return 960;
+}
+
+if(dx>100){
+return 480;
+}
+
+if(dx>55){
+return 240;
+}
 
 return 120;
 }
 
-function inferEvents(notes){
+function inferEvents(
+notes
+){
 
-const byStaff=new Map();
+const byStaff=
+new Map();
 
 for(const n of notes){
 
-if(n.staff<0)continue;
-
-if(!byStaff.has(n.staff)){
-byStaff.set(n.staff,[]);
+if(n.staff<0){
+continue;
 }
 
-byStaff.get(n.staff).push(n);
+if(!byStaff.has(n.staff)){
+byStaff.set(
+n.staff,
+[]
+);
+}
+
+byStaff
+.get(n.staff)
+.push(n);
 
 }
 
@@ -1209,25 +1869,30 @@ of byStaff
 ){
 
 arr.sort(
-(a,b)=>a.x-b.x
+(a,b)=>
+a.x-b.x||
+a.y-b.y
 );
 
 const groups=[];
 
 for(const n of arr){
 
-let g=groups[groups.length-1];
+let g=
+groups[groups.length-1];
 
 if(
 !g||
 Math.abs(n.x-g.x)>7
 ){
 
-groups.push({
+g={
 x:n.x,
 notes:[n],
 staff
-});
+};
+
+groups.push(g);
 
 }else{
 
@@ -1248,6 +1913,7 @@ arr
 events.push({
 x:g.x,
 staff,
+system:Math.floor(staff/2),
 measure:g.notes[0].measure,
 notes:g.notes,
 durationTicks:duration
@@ -1258,7 +1924,10 @@ durationTicks:duration
 }
 
 return events.sort(
-(a,b)=>a.x-b.x||a.staff-b.staff
+(a,b)=>
+a.system-b.system||
+a.x-b.x||
+a.staff-b.staff
 );
 }
 
@@ -1303,7 +1972,8 @@ return result;
 
 function getViewBox(svg){
 
-const vb=svg.getAttribute("viewBox");
+const vb=
+svg.getAttribute("viewBox");
 
 if(vb){
 
@@ -1321,8 +1991,12 @@ return p;
 return[
 0,
 0,
-parseFloat(svg.getAttribute("width"))||1000,
-parseFloat(svg.getAttribute("height"))||1400
+parseFloat(
+svg.getAttribute("width")
+)||1000,
+parseFloat(
+svg.getAttribute("height")
+)||1400
 ];
 
 }
@@ -1346,7 +2020,8 @@ clone.style.opacity="1";
 
 wrap.appendChild(clone);
 
-const vb=getViewBox(page.svg);
+const vb=
+getViewBox(page.svg);
 
 const overlay=
 document.createElementNS(
@@ -1381,13 +2056,26 @@ document.createElementNS(
 "line"
 );
 
-line.setAttribute("x1",vb[0]);
+line.setAttribute(
+"x1",
+vb[0]
+);
+
 line.setAttribute(
 "x2",
 vb[0]+vb[2]
 );
-line.setAttribute("y1",y);
-line.setAttribute("y2",y);
+
+line.setAttribute(
+"y1",
+y
+);
+
+line.setAttribute(
+"y2",
+y
+);
+
 line.setAttribute(
 "class",
 "staff-line"
@@ -1399,6 +2087,43 @@ overlay.appendChild(line);
 
 }
 
+for(const x of page.bars){
+
+const line=
+document.createElementNS(
+"http://www.w3.org/2000/svg",
+"line"
+);
+
+line.setAttribute(
+"x1",
+x
+);
+
+line.setAttribute(
+"x2",
+x
+);
+
+line.setAttribute(
+"y1",
+vb[1]
+);
+
+line.setAttribute(
+"y2",
+vb[1]+vb[3]
+);
+
+line.setAttribute(
+"class",
+"bar-line"
+);
+
+overlay.appendChild(line);
+
+}
+
 for(const n of page.notes){
 
 const c=
@@ -1407,12 +2132,21 @@ document.createElementNS(
 "ellipse"
 );
 
-c.setAttribute("cx",n.x);
-c.setAttribute("cy",n.y);
+c.setAttribute(
+"cx",
+n.x
+);
+
+c.setAttribute(
+"cy",
+n.y
+);
+
 c.setAttribute(
 "rx",
 Math.max(4,n.w/2)
 );
+
 c.setAttribute(
 "ry",
 Math.max(3,n.h/2)
@@ -1457,21 +2191,37 @@ p.notes.filter(
 n=>n.staff>=0
 ).length;
 
+const pitch=
+p.notes.filter(
+n=>n.pitch!=null
+).length;
+
 html+=`
 <div class="page">
+
 <div class="page-header">
+
 <b>📄 Página ${p.index+1}</b>
-<div class="page-info">${esc(p.file)}</div>
+
+<div class="page-info">
+${esc(p.file)}
+</div>
+
 <div class="page-info">
 <b>Cabezas:</b> ${p.notes.length} ·
 <b>Líneas:</b> ${p.staffLines.length} ·
 <b>Pentagramas:</b> ${p.staffs.length} ·
 <b>Barras:</b> ${p.elements.BarLine||0} ·
-<b>Asignadas:</b> ${assigned}
+<b>Asignadas:</b> ${assigned} ·
+<b>Pitch:</b> ${pitch}
 </div>
+
 </div>
+
 <div class="panel-body">
+
 <b>Elementos musicales:</b>
+
 <div class="element-grid">
 `;
 
@@ -1494,22 +2244,30 @@ ${esc(k)}: ${v}
 
 html+=`
 </div>
-<div style="margin-top:12px" class="${
-high/Math.max(1,p.notes.length)>=.7
+
+<div style="margin-top:12px"
+class="${
+high/Math.max(1,p.notes.length)>=.85
 ?"high"
 :"medium"
 }">
-🟢 Alta confianza: ${high}/${p.notes.length}
+🟢 Alta confianza:
+${high}/${p.notes.length}
 </div>
+
 <h4>Primeras notas detectadas</h4>
+
 <div class="table-wrap">
+
 <table>
+
 <thead>
 <tr>
 <th>#</th>
 <th>X</th>
 <th>Y</th>
 <th>Staff</th>
+<th>Sistema</th>
 <th>Clef</th>
 <th>Step</th>
 <th>Pitch</th>
@@ -1517,30 +2275,67 @@ high/Math.max(1,p.notes.length)>=.7
 <th>Confianza</th>
 </tr>
 </thead>
+
 <tbody>
 `;
 
-p.notes.slice(0,120).forEach(
+p.notes
+.slice(0,120)
+.forEach(
 (n,i)=>{
 
 html+=`
 <tr>
+
 <td>${i+1}</td>
+
 <td>${round(n.x,1)}</td>
+
 <td>${round(n.y,1)}</td>
-<td>${n.staff>=0?n.staff+1:"—"}</td>
-<td>${n.clef||"—"}</td>
-<td>${n.step??"—"}</td>
-<td class="${
-n.pitch!=null?"high":"low"
-}">
-${n.pitch!=null?n.pitch:"desconocida"}
+
+<td>
+${n.staff>=0
+?n.staff+1
+:"—"}
 </td>
-<td>${n.measure??"—"}</td>
-<td>${round(
+
+<td>
+${n.staff>=0
+?Math.floor(n.staff/2)+1
+:"—"}
+</td>
+
+<td>
+${n.clef||"—"}
+</td>
+
+<td>
+${n.step??"—"}
+</td>
+
+<td class="${
+n.pitch!=null
+?"high"
+:"low"
+}">
+${
+n.pitch!=null
+?n.pitch
+:"desconocida"
+}
+</td>
+
+<td>
+${n.measure??"—"}
+</td>
+
+<td>
+${round(
 (n.confidence||0)*100,
 1
-)}%</td>
+)}%
+</td>
+
 </tr>
 `;
 
@@ -1549,6 +2344,7 @@ ${n.pitch!=null?n.pitch:"desconocida"}
 html+=`
 </tbody>
 </table>
+
 </div>
 </div>
 </div>
@@ -1559,20 +2355,28 @@ html+=`
 $("results").innerHTML=html;
 }
 
-function writeVarLen(value,bytes){
+function writeVarLen(
+value,
+bytes
+){
 
-let buffer=value&0x7f;
+let buffer=
+value&0x7f;
 
 while(value>>=7){
 
 buffer<<=8;
-buffer|=(value&0x7f)|0x80;
+buffer|=
+(value&0x7f)|
+0x80;
 
 }
 
 while(true){
 
-bytes.push(buffer&0xff);
+bytes.push(
+buffer&0xff
+);
 
 if(buffer&0x80){
 
@@ -1588,7 +2392,10 @@ break;
 
 }
 
-function push16(arr,n){
+function push16(
+arr,
+n
+){
 
 arr.push(
 (n>>8)&255,
@@ -1597,7 +2404,10 @@ n&255
 
 }
 
-function push32(arr,n){
+function push32(
+arr,
+n
+){
 
 arr.push(
 (n>>24)&255,
@@ -1606,15 +2416,37 @@ arr.push(
 n&255
 );
 
-}function makeMidi(events){
+}
+
+/*
+=========================================================
+MIDI
+=========================================================
+
+El código anterior tenía un problema importante:
+procesaba primero el pentagrama superior y luego el
+inferior como si fueran dos secuencias temporales
+independientes.
+
+Eso hacía que:
+
+mano derecha -> tiempo avanza
+mano izquierda -> tiempo vuelve a avanzar
+
+y el MIDI quedaba aproximadamente al doble de duración.
+
+Aquí se reconstruye primero por SISTEMA.
+Cada sistema contiene los dos pentagramas y ambos
+comparten el mismo reloj.
+=========================================================
+*/
+
+function makeMidi(events){
 
 const data=[];
 
 data.push(
-0x4d,
-0x54,
-0x68,
-0x64
+0x4d,0x54,0x68,0x64
 );
 
 push32(data,6);
@@ -1625,8 +2457,11 @@ push16(data,PPQ);
 const track=[];
 
 const bpm=DEFAULT_BPM;
+
 const micros=
-Math.round(60000000/bpm);
+Math.round(
+60000000/bpm
+);
 
 track.push(
 0x00,
@@ -1638,39 +2473,143 @@ track.push(
 micros&255
 );
 
+/*
+Instrumento:
+0 = Acoustic Grand Piano
+*/
 track.push(
 0x00,
 0xc0,
 0x00
 );
 
-const flat=[];
-let tick=0;
+const bySystem=
+new Map();
 
-const sorted=
-[...events].sort(
-(a,b)=>a.x-b.x||a.staff-b.staff
+for(const event of events){
+
+const system=
+event.system??0;
+
+if(!bySystem.has(system)){
+bySystem.set(
+system,
+[]
+);
+}
+
+bySystem
+.get(system)
+.push(event);
+
+}
+
+const systems=
+[...bySystem.keys()]
+.sort(
+(a,b)=>a-b
 );
 
-for(const event of sorted){
+const flat=[];
 
-const duration=
-event.durationTicks||480;
+let globalTick=0;
+
+for(const system of systems){
+
+const systemEvents=
+bySystem
+.get(system)
+.sort(
+(a,b)=>
+a.x-b.x||
+a.staff-b.staff
+);
+
+let localTick=0;
+let previousX=null;
+
+for(const event of systemEvents){
+
+if(previousX===null){
+
+localTick=0;
+
+}else{
+
+const dx=
+Math.max(
+0,
+event.x-previousX
+);
+
+/*
+La separación horizontal se normaliza
+con una escala robusta.
+
+La duración musical sigue además la
+estimación calculada en el evento.
+*/
+let step;
+
+if(dx>300){
+step=1920;
+}else if(dx>190){
+step=960;
+}else if(dx>100){
+step=480;
+}else if(dx>55){
+step=240;
+}else{
+step=120;
+}
+
+localTick+=step;
+
+}
+
+previousX=event.x;
 
 for(const n of event.notes){
 
-if(n.pitch==null)continue;
+if(n.pitch==null){
+continue;
+}
 
 flat.push({
-start:tick,
-end:tick+duration,
+start:
+globalTick+localTick,
+end:
+globalTick+
+localTick+
+(event.durationTicks||480),
 pitch:n.pitch,
-velocity:80
+velocity:82
 });
 
 }
 
-tick+=duration;
+}
+
+/*
+El sistema termina después del último evento.
+*/
+let systemLength=0;
+
+for(const e of systemEvents){
+
+systemLength=
+Math.max(
+systemLength,
+e.durationTicks||480
+);
+
+}
+
+globalTick+=
+Math.max(
+localTick+systemLength,
+PPQ
+);
 
 }
 
@@ -1707,10 +2646,15 @@ for(const e of midiEvents){
 const delta=
 Math.max(
 0,
+Math.round(
 e.tick-lastTick
+)
 );
 
-writeVarLen(delta,track);
+writeVarLen(
+delta,
+track
+);
 
 if(e.type==="on"){
 
@@ -1753,7 +2697,9 @@ data,
 track.length
 );
 
-data.push(...track);
+data.push(
+...track
+);
 
 return new Blob(
 [
@@ -1782,10 +2728,12 @@ k==="svg"
 
 async function analyze(){
 
-const btn=$("analyzeBtn");
+const btn=
+$("analyzeBtn");
 
 btn.disabled=true;
-btn.textContent="⏳ ANALIZANDO...";
+btn.textContent=
+"⏳ ANALIZANDO...";
 
 clearLog();
 resetUI();
@@ -1819,7 +2767,9 @@ log(
 const text=
 await fetchSVG(file);
 
-const{svg}=
+const{
+svg
+}=
 parseSVG(text);
 
 const elements=
@@ -1894,7 +2844,8 @@ bars
 );
 
 assigned=
-assigned.map(n=>{
+assigned.map(
+n=>{
 
 const s=
 n.staff>=0
@@ -1903,7 +2854,11 @@ n.staff>=0
 
 const clef=
 s
-?clefForStaff(s,clefs)
+?clefForStaff(
+s,
+n.staff,
+clefs
+)
 :null;
 
 const p=
@@ -1991,7 +2946,8 @@ score.notes.length,
 
 staves:
 score.pages.reduce(
-(a,p)=>a+p.staffs.length,
+(a,p)=>
+a+p.staffs.length,
 0
 ),
 
@@ -2119,7 +3075,6 @@ $("results").insertAdjacentHTML(
 `<div class="warning-box">
 ❌ El SVG fue cargado, pero no se encontraron cabezas.
 </div>`
-
 );
 
 }else if(
@@ -2134,7 +3089,6 @@ $("results").insertAdjacentHTML(
 cabezas, pero todavía no se pudieron
 reconstruir los pentagramas.
 </div>`
-
 );
 
 }else if(
@@ -2153,7 +3107,6 @@ $("results").insertAdjacentHTML(
 ⚠️ ${missing} cabezas no pudieron
 asignarse a un pentagrama.
 </div>`
-
 );
 
 }else if(
@@ -2172,7 +3125,6 @@ $("results").insertAdjacentHTML(
 ⚠️ ${missing} cabezas no tienen pitch
 identificado. Las conservamos en el JSON.
 </div>`
-
 );
 
 }else{
@@ -2184,7 +3136,6 @@ $("results").insertAdjacentHTML(
 ✓ Todas las cabezas detectadas tienen
 pentagrama y pitch identificado.
 </div>`
-
 );
 
 }
@@ -2210,14 +3161,13 @@ si necesitas el detalle técnico.
 }finally{
 
 btn.disabled=false;
+
 btn.textContent=
 "▶ ANALIZAR PARTITURA";
 
 }
 
-}
-
-function generateMIDI(){
+}function generateMIDI(){
 
 if(
 !score||
@@ -2229,7 +3179,6 @@ log(
 );
 
 return;
-
 }
 
 midiBlob=
@@ -2244,8 +3193,22 @@ log(
 );
 
 log(
-"   Eventos MIDI: "+
+"   Eventos musicales: "+
 score.events.length
+);
+
+log(
+"   Notas con pitch: "+
+score.metadata.pitch
+);
+
+log(
+"   Sistemas: "+
+new Set(
+score.events.map(
+e=>e.system
+)
+).size
 );
 
 log(
@@ -2263,7 +3226,9 @@ generateMIDI();
 
 }
 
-if(!midiBlob)return;
+if(!midiBlob){
+return;
+}
 
 const url=
 URL.createObjectURL(
@@ -2285,7 +3250,9 @@ a.click();
 a.remove();
 
 setTimeout(
-()=>URL.revokeObjectURL(url),
+()=>{
+URL.revokeObjectURL(url);
+},
 1000
 );
 
@@ -2308,7 +3275,9 @@ type:"application/json"
 );
 
 const url=
-URL.createObjectURL(blob);
+URL.createObjectURL(
+blob
+);
 
 const a=
 document.createElement("a");
@@ -2325,7 +3294,9 @@ a.click();
 a.remove();
 
 setTimeout(
-()=>URL.revokeObjectURL(url),
+()=>{
+URL.revokeObjectURL(url);
+},
 1000
 );
 
@@ -2352,5 +3323,6 @@ downloadJSON
 );
 
 </script>
+
 </body>
 </html>
