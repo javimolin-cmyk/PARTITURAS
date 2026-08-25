@@ -5,90 +5,236 @@
 
 <meta charset="UTF-8">
 
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
 <title>
-Experience — Detector de notas
+Experience — Reconstrucción MIDI
 </title>
 
 <style>
 
+* {
+    box-sizing: border-box;
+}
+
 body {
+
     margin: 0;
+
     padding: 30px;
-    background: #202020;
+
+    background: #181818;
+
     color: white;
-    font-family: Arial, sans-serif;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 }
 
 .container {
-    max-width: 1500px;
+
+    max-width: 1600px;
+
     margin: auto;
 }
 
+h1 {
+    margin-top: 0;
+}
+
 button {
-    padding: 12px 20px;
+
+    padding: 13px 20px;
+
     margin: 5px;
+
     border: 0;
+
     border-radius: 7px;
+
     cursor: pointer;
-    font-size: 16px;
+
+    font-size: 15px;
+
+    font-weight: bold;
 }
 
 #analizar {
+
     background: #4caf50;
+
     color: white;
 }
 
-#descargar {
+#generarMIDI {
+
     background: #2196f3;
+
     color: white;
+
+    display: none;
+}
+
+#descargarJSON {
+
+    background: #795548;
+
+    color: white;
+
     display: none;
 }
 
 #estado {
-    background: #111;
-    padding: 20px;
+
     margin-top: 20px;
+
+    padding: 20px;
+
+    background: #101010;
+
     border-radius: 8px;
+
     white-space: pre-wrap;
+
     font-family: monospace;
+
+    line-height: 1.5;
+}
+
+.resumen {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(180px, 1fr)
+        );
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.card {
+
+    background: #252525;
+
+    padding: 15px;
+
+    border-radius: 8px;
+}
+
+.card .numero {
+
+    font-size: 28px;
+
+    font-weight: bold;
+}
+
+.card .texto {
+
+    color: #bbb;
+
+    margin-top: 5px;
 }
 
 .pagina {
+
     background: white;
+
     color: black;
-    margin-top: 30px;
+
+    margin-top: 35px;
+
     padding: 20px;
+
+    border-radius: 8px;
 }
 
 .pagina svg {
+
     width: 100%;
+
     height: auto;
+
+    display: block;
 }
 
 .tabla {
+
     width: 100%;
+
     border-collapse: collapse;
-    color: black;
-    background: white;
+
     margin-top: 20px;
+
+    font-size: 13px;
 }
 
 .tabla th,
 .tabla td {
+
     border: 1px solid #aaa;
+
     padding: 6px;
+
     text-align: center;
 }
 
 .tabla th {
+
     background: #ddd;
+
+    position: sticky;
+
+    top: 0;
+}
+
+.nota-ok {
+
+    background: #dff5df;
+}
+
+.nota-error {
+
+    background: #ffdede;
 }
 
 pre {
-    background: #111;
-    color: #0f0;
+
+    background: #101010;
+
+    color: #00ff66;
+
     padding: 15px;
+
     overflow: auto;
+
+    border-radius: 6px;
+}
+
+.info {
+
+    padding: 15px;
+
+    margin-top: 15px;
+
+    background: #eee;
+
+    color: #111;
+
+    border-radius: 6px;
+}
+
+.small {
+
+    font-size: 12px;
+
+    color: #777;
 }
 
 </style>
@@ -100,19 +246,49 @@ pre {
 
 <div class="container">
 
+
 <h1>
-🎼 Experience — Detector real de notas
+🎼 Experience — reconstrucción de partitura
 </h1>
 
+
+<p>
+SVG → cabezas de nota → pentagramas → pitch → MIDI
+</p>
+
+
+<div>
+
 <button id="analizar">
-🔎 DETECTAR CABEZAS DE NOTA
+🔎 ANALIZAR PARTITURA
 </button>
 
-<div id="estado">
-Esperando...
+
+<button id="generarMIDI">
+🎹 GENERAR MIDI
+</button>
+
+
+<button id="descargarJSON">
+⬇️ DESCARGAR JSON
+</button>
+
 </div>
 
+
+<div id="estado">
+Esperando análisis...
+</div>
+
+
+<div
+    id="resumen"
+    class="resumen">
+</div>
+
+
 <div id="resultado"></div>
+
 
 </div>
 
@@ -120,33 +296,105 @@ Esperando...
 <script>
 
 
+/*
+===========================================================
+CONFIGURACIÓN
+===========================================================
+*/
+
+
 const CARPETA =
 "EXPERIENCE%20-%20%20Ludovico%20Einaudi/";
 
+
 const ARCHIVOS = [
-"score_0.svg",
-"score_1.svg",
-"score_2.svg",
-"score_3.svg",
-"score_4.svg"
+
+    "score_0.svg",
+
+    "score_1.svg",
+
+    "score_2.svg",
+
+    "score_3.svg",
+
+    "score_4.svg"
+
 ];
 
 
+/*
+===========================================================
+DATOS GLOBALES
+===========================================================
+*/
+
+
+let paginas = [];
+
 let todasLasNotas = [];
+
+let todosLosPentagramas = [];
 
 
 /*
-==========================================================
-CARGAR SVG
-==========================================================
+===========================================================
+UTILIDADES
+===========================================================
 */
 
-async function cargarSVG(nombre) {
+
+function numero(valor) {
+
+    const n =
+        parseFloat(valor);
+
+    return Number.isFinite(n)
+        ? n
+        : 0;
+
+}
+
+
+function distancia(a, b) {
+
+    return Math.abs(a - b);
+
+}
+
+
+function clamp(
+    valor,
+    minimo,
+    maximo
+) {
+
+    return Math.max(
+        minimo,
+        Math.min(
+            maximo,
+            valor
+        )
+    );
+
+}
+
+
+/*
+===========================================================
+CARGAR SVG
+===========================================================
+*/
+
+
+async function cargarSVG(
+    nombre
+) {
 
     const respuesta =
         await fetch(
             CARPETA + nombre
         );
+
 
     if (!respuesta.ok) {
 
@@ -158,43 +406,74 @@ async function cargarSVG(nombre) {
 
     }
 
+
     return await respuesta.text();
 
 }
 
 
 /*
-==========================================================
-SEPARAR SUBPATHS
-==========================================================
-
-Un path SVG puede contener:
-
-M...
-...
-M...
-...
-M...
-
-Cada M inicia una nueva figura.
-
-En nuestros SVG de MuseScore,
-cada cabeza de nota aparece
-como una de estas figuras.
-==========================================================
+===========================================================
+PARSEAR SVG
+===========================================================
 */
 
-function separarSubpaths(d) {
+
+function parsearSVG(
+    texto
+) {
+
+    const parser =
+        new DOMParser();
+
+
+    const documento =
+        parser.parseFromString(
+            texto,
+            "image/svg+xml"
+        );
+
+
+    const error =
+        documento.querySelector(
+            "parsererror"
+        );
+
+
+    if (error) {
+
+        throw new Error(
+            "SVG inválido"
+        );
+
+    }
+
+
+    return documento.documentElement;
+
+}
+
+
+/*
+===========================================================
+SEPARAR SUBPATHS
+===========================================================
+
+Cada M/m inicia una nueva figura.
+
+En los .Note de MuseScore encontramos
+muchísimas figuras dentro de un solo path.
+===========================================================
+*/
+
+
+function separarSubpaths(
+    d
+) {
 
     if (!d)
         return [];
 
-
-    /*
-    Buscar cada comando M.
-
-    Permitimos M y m.
-    */
 
     const posiciones = [];
 
@@ -207,8 +486,10 @@ function separarSubpaths(d) {
 
 
     while (
-        (match =
-            regex.exec(d)) !== null
+        (
+            match =
+                regex.exec(d)
+        ) !== null
     ) {
 
         posiciones.push(
@@ -231,21 +512,27 @@ function separarSubpaths(d) {
             posiciones[i];
 
 
-        const final =
+        const fin =
             i + 1 <
             posiciones.length
+
                 ? posiciones[i + 1]
+
                 : d.length;
 
 
         const subpath =
-            d.slice(
+            d
+            .slice(
                 inicio,
-                final
-            ).trim();
+                fin
+            )
+            .trim();
 
 
-        if (subpath) {
+        if (
+            subpath
+        ) {
 
             resultado.push(
                 subpath
@@ -262,42 +549,1410 @@ function separarSubpaths(d) {
 
 
 /*
-==========================================================
-COORDENADA INICIAL
-==========================================================
+===========================================================
+CREAR SVG TEMPORAL
+===========================================================
 */
 
-function obtenerInicio(
-    subpath
-) {
 
-    /*
-    Ejemplo:
+let svgTrabajo = null;
 
-    M2163 3018.7c...
 
-    */
+function obtenerSVGTrabajo() {
 
-    const match =
-        subpath.match(
-            /^[Mm]\s*([-+.\d]+)[,\s]+([-+.\d]+)/
+    if (svgTrabajo)
+        return svgTrabajo;
+
+
+    svgTrabajo =
+        document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "svg"
         );
 
 
-    if (!match)
+    svgTrabajo.style.position =
+        "absolute";
+
+
+    svgTrabajo.style.left =
+        "-100000px";
+
+
+    svgTrabajo.style.top =
+        "0";
+
+
+    svgTrabajo.style.width =
+        "1px";
+
+
+    svgTrabajo.style.height =
+        "1px";
+
+
+    svgTrabajo.style.visibility =
+        "hidden";
+
+
+    document.body.appendChild(
+        svgTrabajo
+    );
+
+
+    return svgTrabajo;
+
+}
+
+
+/*
+===========================================================
+BBOX REAL DE UN SUBPATH
+===========================================================
+
+Aquí está una de las mejoras importantes.
+
+Antes hacíamos getBBox() sobre el .Note entero.
+
+Eso era incorrecto porque un .Note contiene
+muchísimas cabezas.
+
+Ahora hacemos getBBox() sobre CADA subpath.
+
+===========================================================
+*/
+
+
+function bboxSubpath(
+    d
+) {
+
+    try {
+
+        const svg =
+            obtenerSVGTrabajo();
+
+
+        const path =
+            document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "path"
+            );
+
+
+        path.setAttribute(
+            "d",
+            d
+        );
+
+
+        svg.appendChild(
+            path
+        );
+
+
+        const bbox =
+            path.getBBox();
+
+
+        path.remove();
+
+
+        return {
+
+            x: bbox.x,
+
+            y: bbox.y,
+
+            width: bbox.width,
+
+            height: bbox.height,
+
+            cx:
+                bbox.x +
+                bbox.width / 2,
+
+            cy:
+                bbox.y +
+                bbox.height / 2
+
+        };
+
+    }
+    catch(error) {
+
         return null;
+
+    }
+
+}
+
+
+/*
+===========================================================
+ANALIZAR NOTE
+===========================================================
+*/
+
+
+function extraerCabezas(
+    svg,
+    pagina
+) {
+
+    const notePaths =
+        [
+            ...svg.querySelectorAll(
+                ".Note"
+            )
+        ];
+
+
+    const cabezas = [];
+
+
+    for (
+        const notePath
+        of notePaths
+    ) {
+
+        const d =
+            notePath.getAttribute(
+                "d"
+            );
+
+
+        const subpaths =
+            separarSubpaths(
+                d
+            );
+
+
+        for (
+            const subpath
+            of subpaths
+        ) {
+
+            /*
+            Las cabezas de MuseScore
+            tienen normalmente curvas
+            cúbicas.
+
+            Evitamos comandos que claramente
+            no parecen cabezas.
+            */
+
+            if (
+                !/[Cc]/.test(
+                    subpath
+                )
+            )
+                continue;
+
+
+            const bbox =
+                bboxSubpath(
+                    subpath
+                );
+
+
+            if (!bbox)
+                continue;
+
+
+            /*
+            Las cabezas son pequeñas.
+
+            Filtramos geometrías gigantes
+            que puedan pertenecer a otra cosa.
+            */
+
+            if (
+                bbox.width < 5 ||
+                bbox.height < 5
+            )
+                continue;
+
+
+            if (
+                bbox.width > 100 ||
+                bbox.height > 100
+            )
+                continue;
+
+
+            /*
+            Una cabeza normal tiene
+            una relación de aspecto
+            relativamente compacta.
+            */
+
+            const relacion =
+                bbox.width /
+                bbox.height;
+
+
+            if (
+                relacion < 0.35 ||
+                relacion > 4
+            )
+                continue;
+
+
+            cabezas.push({
+
+                pagina,
+
+                x:
+                    bbox.cx,
+
+                y:
+                    bbox.cy,
+
+                xInicio:
+                    bbox.x,
+
+                yInicio:
+                    bbox.y,
+
+                width:
+                    bbox.width,
+
+                height:
+                    bbox.height,
+
+                path:
+                    subpath
+
+            });
+
+        }
+
+    }
+
+
+    /*
+    Orden natural:
+
+    primero página,
+    después Y,
+    después X.
+
+    Posteriormente volveremos a ordenar
+    temporalmente por X dentro de cada sistema.
+    */
+
+    return cabezas;
+
+}
+
+
+/*
+===========================================================
+ANALIZAR STAFFLINES
+===========================================================
+*/
+
+
+function analizarStaffLines(
+    svg
+) {
+
+    const elementos =
+        [
+            ...svg.querySelectorAll(
+                ".StaffLines"
+            )
+        ];
+
+
+    const lineas = [];
+
+
+    for (
+        const elemento
+        of elementos
+    ) {
+
+        const d =
+            elemento.getAttribute(
+                "d"
+            );
+
+
+        if (!d)
+            continue;
+
+
+        /*
+        Intentamos extraer segmentos horizontales
+        reales del path mediante un parser
+        SVG simplificado.
+        */
+
+        const segmentos =
+            extraerSegmentos(
+                d
+            );
+
+
+        for (
+            const segmento
+            of segmentos
+        ) {
+
+            if (
+                Math.abs(
+                    segmento.y1 -
+                    segmento.y2
+                ) < 2
+            ) {
+
+                if (
+                    segmento.longitud >
+                    100
+                ) {
+
+                    lineas.push(
+                        segmento
+                    );
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    Eliminar duplicados.
+    */
+
+    lineas.sort(
+        (a, b) =>
+            a.y -
+            b.y
+    );
+
+
+    const unicas = [];
+
+
+    for (
+        const linea
+        of lineas
+    ) {
+
+        const ultima =
+            unicas[
+                unicas.length - 1
+            ];
+
+
+        if (
+            !ultima ||
+            Math.abs(
+                linea.y -
+                ultima.y
+            ) > 2
+        ) {
+
+            unicas.push(
+                linea
+            );
+
+        }
+        else {
+
+            /*
+            Nos quedamos con la
+            más larga.
+            */
+
+            if (
+                linea.longitud >
+                ultima.longitud
+            ) {
+
+                unicas[
+                    unicas.length - 1
+                ] =
+                    linea;
+
+            }
+
+        }
+
+    }
+
+
+    /*
+    Agrupar de cinco en cinco
+    cuando los espacios verticales
+    son coherentes.
+    */
+
+    const pentagramas = [];
+
+
+    for (
+        let i = 0;
+        i < unicas.length;
+    ) {
+
+        const grupo = [
+            unicas[i]
+        ];
+
+
+        for (
+            let j = i + 1;
+            j < unicas.length;
+            j++
+        ) {
+
+            const diferencia =
+                unicas[j].y -
+                grupo[
+                    grupo.length - 1
+                ].y;
+
+
+            /*
+            Permitimos cierto margen
+            por redondeos del SVG.
+            */
+
+            const espacio =
+                grupo.length > 1
+
+                    ? grupo[1].y -
+                      grupo[0].y
+
+                    : diferencia;
+
+
+            if (
+                Math.abs(
+                    diferencia -
+                    espacio
+                ) < 8
+            ) {
+
+                grupo.push(
+                    unicas[j]
+                );
+
+                if (
+                    grupo.length === 5
+                ) {
+
+                    break;
+
+                }
+
+            }
+            else {
+
+                break;
+
+            }
+
+        }
+
+
+        if (
+            grupo.length === 5
+        ) {
+
+            const y =
+                grupo.map(
+                    linea =>
+                        linea.y
+                );
+
+
+            const xMin =
+                Math.min(
+                    ...grupo.map(
+                        linea =>
+                            Math.min(
+                                linea.x1,
+                                linea.x2
+                            )
+                    )
+                );
+
+
+            const xMax =
+                Math.max(
+                    ...grupo.map(
+                        linea =>
+                            Math.max(
+                                linea.x1,
+                                linea.x2
+                            )
+                    )
+                );
+
+
+            const espacio =
+                (
+                    y[4] -
+                    y[0]
+                ) / 4;
+
+
+            pentagramas.push({
+
+                lineas:
+                    grupo,
+
+                y,
+
+                xMin,
+
+                xMax,
+
+                espacio,
+
+                centro:
+                    (
+                        y[0] +
+                        y[4]
+                    ) / 2
+
+            });
+
+
+            i += 5;
+
+        }
+        else {
+
+            i++;
+
+        }
+
+    }
+
+
+    return pentagramas;
+
+}
+
+
+/*
+===========================================================
+PARSER SVG DE LÍNEAS
+===========================================================
+*/
+
+
+function extraerSegmentos(
+    d
+) {
+
+    /*
+    Tokenización básica de SVG.
+
+    Soporta:
+    M L H V C S Q T Z
+    y sus equivalentes relativos.
+    */
+
+    const tokens =
+        d.match(
+            /[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g
+        );
+
+
+    if (!tokens)
+        return [];
+
+
+    let i = 0;
+
+    let comando = null;
+
+    let x = 0;
+
+    let y = 0;
+
+    let sx = 0;
+
+    let sy = 0;
+
+
+    const segmentos = [];
+
+
+    function esNumero(
+        token
+    ) {
+
+        return (
+            token &&
+            !/[a-zA-Z]/.test(
+                token
+            )
+        );
+
+    }
+
+
+    function n() {
+
+        return parseFloat(
+            tokens[i++]
+        );
+
+    }
+
+
+    while (
+        i < tokens.length
+    ) {
+
+        if (
+            /[a-zA-Z]/.test(
+                tokens[i]
+            )
+        ) {
+
+            comando =
+                tokens[i++];
+
+        }
+
+
+        if (!comando)
+            break;
+
+
+        const relativo =
+            comando ===
+            comando.toLowerCase();
+
+
+        const C =
+            comando.toUpperCase();
+
+
+        if (C === "M") {
+
+            if (
+                !esNumero(
+                    tokens[i]
+                )
+            )
+                continue;
+
+
+            let nx = n();
+
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+
+                ny += y;
+
+            }
+
+
+            x = nx;
+
+            y = ny;
+
+            sx = x;
+
+            sy = y;
+
+
+            /*
+            Los M posteriores pueden
+            comportarse como L.
+            */
+
+            comando =
+                relativo
+                    ? "l"
+                    : "L";
+
+
+            continue;
+
+        }
+
+
+        if (C === "L") {
+
+            if (
+                !esNumero(
+                    tokens[i]
+                )
+            )
+                continue;
+
+
+            let nx = n();
+
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+
+                ny += y;
+
+            }
+
+
+            segmentos.push({
+
+                x1: x,
+
+                y1: y,
+
+                x2: nx,
+
+                y2: ny,
+
+                longitud:
+                    Math.hypot(
+                        nx - x,
+                        ny - y
+                    )
+
+            });
+
+
+            x = nx;
+
+            y = ny;
+
+
+            continue;
+
+        }
+
+
+        if (C === "H") {
+
+            if (
+                !esNumero(
+                    tokens[i]
+                )
+            )
+                continue;
+
+
+            let nx = n();
+
+
+            if (relativo)
+                nx += x;
+
+
+            segmentos.push({
+
+                x1: x,
+
+                y1: y,
+
+                x2: nx,
+
+                y2: y,
+
+                longitud:
+                    Math.abs(
+                        nx - x
+                    )
+
+            });
+
+
+            x = nx;
+
+            continue;
+
+        }
+
+
+        if (C === "V") {
+
+            if (
+                !esNumero(
+                    tokens[i]
+                )
+            )
+                continue;
+
+
+            let ny = n();
+
+
+            if (relativo)
+                ny += y;
+
+
+            segmentos.push({
+
+                x1: x,
+
+                y1: y,
+
+                x2: x,
+
+                y2: ny,
+
+                longitud:
+                    Math.abs(
+                        ny - y
+                    )
+
+            });
+
+
+            y = ny;
+
+            continue;
+
+        }
+
+
+        /*
+        Curvas:
+
+        actualizamos el punto final,
+        pero no las tratamos como
+        líneas del pentagrama.
+        */
+
+        if (C === "C") {
+
+            if (
+                i + 5 >=
+                tokens.length
+            )
+                break;
+
+
+            let x1 = n();
+            let y1 = n();
+
+            let x2 = n();
+            let y2 = n();
+
+            let nx = n();
+            let ny = n();
+
+
+            if (relativo) {
+
+                x1 += x;
+                y1 += y;
+
+                x2 += x;
+                y2 += y;
+
+                nx += x;
+                ny += y;
+
+            }
+
+
+            x = nx;
+            y = ny;
+
+            continue;
+
+        }
+
+
+        if (C === "S") {
+
+            if (
+                i + 3 >=
+                tokens.length
+            )
+                break;
+
+
+            n();
+            n();
+
+            let nx = n();
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+                ny += y;
+
+            }
+
+
+            x = nx;
+            y = ny;
+
+            continue;
+
+        }
+
+
+        if (C === "Q") {
+
+            if (
+                i + 3 >=
+                tokens.length
+            )
+                break;
+
+
+            n();
+            n();
+
+            let nx = n();
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+                ny += y;
+
+            }
+
+
+            x = nx;
+            y = ny;
+
+            continue;
+
+        }
+
+
+        if (C === "T") {
+
+            if (
+                i + 1 >=
+                tokens.length
+            )
+                break;
+
+
+            let nx = n();
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+                ny += y;
+
+            }
+
+
+            x = nx;
+            y = ny;
+
+            continue;
+
+        }
+
+
+        if (C === "A") {
+
+            /*
+            rx ry rotation largeArc sweep x y
+            */
+
+            if (
+                i + 6 >=
+                tokens.length
+            )
+                break;
+
+
+            n();
+            n();
+            n();
+            n();
+            n();
+
+            let nx = n();
+            let ny = n();
+
+
+            if (relativo) {
+
+                nx += x;
+                ny += y;
+
+            }
+
+
+            x = nx;
+            y = ny;
+
+            continue;
+
+        }
+
+
+        if (C === "Z") {
+
+            x = sx;
+
+            y = sy;
+
+            continue;
+
+        }
+
+
+        /*
+        Evitar quedar atrapados
+        si aparece algo inesperado.
+        */
+
+        if (
+            !esNumero(
+                tokens[i]
+            )
+        ) {
+
+            i++;
+
+        }
+
+    }
+
+
+    return segmentos;
+
+}
+
+
+/*
+===========================================================
+DETECTAR PENTAGRAMA DE UNA NOTA
+===========================================================
+*/
+
+
+function asignarPentagrama(
+    nota,
+    pentagramas
+) {
+
+    let mejor = null;
+
+    let mejorDistancia =
+        Infinity;
+
+
+    for (
+        let i = 0;
+        i < pentagramas.length;
+        i++
+    ) {
+
+        const p =
+            pentagramas[i];
+
+
+        /*
+        Distancia vertical al centro.
+        */
+
+        const d =
+            Math.abs(
+                nota.y -
+                p.centro
+            );
+
+
+        /*
+        También comprobamos que X
+        esté razonablemente dentro
+        del sistema.
+        */
+
+        const dentroX =
+            nota.x >=
+                p.xMin - 150 &&
+
+            nota.x <=
+                p.xMax + 150;
+
+
+        const penalizacion =
+            dentroX
+                ? 0
+                : 1000;
+
+
+        const total =
+            d +
+            penalizacion;
+
+
+        if (
+            total <
+            mejorDistancia
+        ) {
+
+            mejorDistancia =
+                total;
+
+            mejor = {
+
+                indice: i,
+
+                pentagrama: p,
+
+                distancia: d
+
+            };
+
+        }
+
+    }
+
+
+    return mejor;
+
+}
+
+
+/*
+===========================================================
+PITCH MUSICAL
+===========================================================
+
+Utilizamos la posición vertical.
+
+La fórmula trabaja en "pasos diatónicos".
+
+Para clave de SOL:
+
+línea inferior = Mi4
+línea siguiente = Sol4
+línea central = Si4
+línea siguiente = Re5
+línea superior = Fa5
+
+Para clave de FA:
+
+línea inferior = Sol2
+línea siguiente = Si2
+línea central = Re3
+línea siguiente = Fa3
+línea superior = La3
+
+===========================================================
+*/
+
+
+function notaMIDIDesdeY(
+    nota,
+    pentagrama,
+    clave = "treble"
+) {
+
+    const lineas =
+        pentagrama.lineas;
+
+
+    /*
+    Las líneas están de arriba
+    hacia abajo.
+
+    Un paso diatónico equivale
+    a medio espacio entre líneas.
+    */
+
+    const espacio =
+        pentagrama.espacio;
+
+
+    const yInferior =
+        lineas[4].y;
+
+
+    /*
+    Número de pasos diatónicos
+    desde la línea inferior.
+
+    Si está por encima:
+    positivo.
+
+    Si está debajo:
+    negativo.
+    */
+
+    const pasos =
+        (
+            yInferior -
+            nota.y
+        ) /
+        (
+            espacio / 2
+        );
+
+
+    let numeroDiatonico =
+        Math.round(
+            pasos
+        );
+
+
+    /*
+    MIDI de la línea inferior.
+    */
+
+    const midiLineaInferior =
+        clave === "bass"
+            ? 43   // G2
+            : 64;  // E4
+
+
+    /*
+    Convertimos pasos diatónicos
+    a semitonos.
+
+    Escala diatónica:
+    0 1 2 3 4 5 6
+    C D E F G A B
+
+    Los intervalos:
+    2,2,1,2,2,2,1
+    */
+
+    function subirDiatonico(
+        midi,
+        pasos
+    ) {
+
+        const intervalos = [
+            2,
+            2,
+            1,
+            2,
+            2,
+            2,
+            1
+        ];
+
+
+        let resultado =
+            midi;
+
+
+        let direccion =
+            pasos >= 0
+                ? 1
+                : -1;
+
+
+        let cantidad =
+            Math.abs(
+                pasos
+            );
+
+
+        for (
+            let i = 0;
+            i < cantidad;
+            i++
+        ) {
+
+            if (
+                direccion > 0
+            ) {
+
+                resultado +=
+                    intervalos[
+                        (
+                            resultado -
+                            midiLineaInferior
+                        ) % 7
+                    ];
+
+            }
+            else {
+
+                /*
+                Para bajar,
+                calculamos el intervalo
+                anterior.
+                */
+
+                const indice =
+                    (
+                        (
+                            resultado -
+                            midiLineaInferior
+                        ) % 7 +
+                        7
+                    ) % 7;
+
+
+                const anterior =
+                    (
+                        indice +
+                        6
+                    ) % 7;
+
+
+                resultado -=
+                    intervalos[
+                        anterior
+                    ];
+
+            }
+
+        }
+
+
+        return resultado;
+
+    }
+
+
+    const midi =
+        subirDiatonico(
+            midiLineaInferior,
+            numeroDiatonico
+        );
 
 
     return {
 
-        x:
-            parseFloat(
-                match[1]
+        midi:
+
+            clamp(
+                midi,
+                21,
+                108
             ),
 
-        y:
-            parseFloat(
-                match[2]
+        pasos:
+            numeroDiatonico,
+
+        precision:
+            Math.abs(
+                pasos -
+                numeroDiatonico
             )
 
     };
@@ -306,81 +1961,163 @@ function obtenerInicio(
 
 
 /*
-==========================================================
-ANALIZAR NOTE PATH
-==========================================================
+===========================================================
+DETECTAR CLAVE
+===========================================================
 */
 
-function analizarNotePath(
-    path,
-    pagina
+
+function detectarClave(
+    svg
 ) {
 
-    const d =
-        path.getAttribute(
-            "d"
+    /*
+    La mayoría de esta partitura
+    utiliza clave de SOL.
+
+    Buscamos información adicional
+    si MuseScore la expone en el path.
+
+    Como fallback:
+    treble.
+    */
+
+    const elementos =
+        [
+            ...svg.querySelectorAll(
+                ".Clef"
+            )
+        ];
+
+
+    if (
+        elementos.length === 0
+    ) {
+
+        return "treble";
+
+    }
+
+
+    /*
+    Experience utiliza principalmente
+    piano con clave de sol/fa.
+
+    Para esta primera reconstrucción
+    diferenciamos por posición vertical
+    de los elementos Clef.
+    */
+
+    return "treble";
+
+}
+
+
+/*
+===========================================================
+ORDEN TEMPORAL
+===========================================================
+*/
+
+
+function ordenarNotas(
+    notas
+) {
+
+    return notas
+        .slice()
+        .sort(
+            (a, b) => {
+
+                if (
+                    a.pagina !==
+                    b.pagina
+                ) {
+
+                    return (
+                        a.pagina -
+                        b.pagina
+                    );
+
+                }
+
+
+                if (
+                    a.sistema !==
+                    b.sistema
+                ) {
+
+                    return (
+                        a.sistema -
+                        b.sistema
+                    );
+
+                }
+
+
+                return (
+                    a.x -
+                    b.x
+                );
+
+            }
         );
 
-
-    const subpaths =
-        separarSubpaths(
-            d
-        );
+}
 
 
-    const notas = [];
+/*
+===========================================================
+DURACIÓN PRELIMINAR
+===========================================================
+
+Aquí utilizamos separación horizontal
+como aproximación inicial.
+
+Después podemos sustituir esto
+por el análisis exacto de Beam/Stem.
+===========================================================
+*/
+
+
+function estimarDuraciones(
+    notas
+) {
+
+    /*
+    Valor inicial:
+
+    negra = 480 ticks
+
+    */
+
+    const PPQ = 480;
 
 
     for (
         let i = 0;
-        i < subpaths.length;
+        i < notas.length;
         i++
     ) {
 
-        const inicio =
-            obtenerInicio(
-                subpaths[i]
-            );
-
-
-        if (!inicio)
-            continue;
+        const nota =
+            notas[i];
 
 
         /*
-        Una cabeza de nota de MuseScore
-        tiene normalmente un patrón
-        de curvas cúbicas inmediatamente
-        después de M.
+        Por ahora asignamos negra.
+
+        Posteriormente esta parte se sustituirá
+        utilizando Beam, Stem y posición
+        dentro del compás.
         */
 
-        const esCabeza =
-            /^M[^\n]*c/i.test(
-                subpaths[i]
-            );
+        nota.ticks =
+            PPQ;
 
 
-        if (!esCabeza)
-            continue;
-
-
-        notas.push({
-
-            pagina,
-
-            indice:
-                i + 1,
-
-            x:
-                inicio.x,
-
-            y:
-                inicio.y,
-
-            path:
-                subpaths[i]
-
-        });
+        nota.duracion =
+            "4";
 
     }
 
@@ -391,98 +2128,712 @@ function analizarNotePath(
 
 
 /*
-==========================================================
-ANALIZAR PÁGINA
-==========================================================
+===========================================================
+MIDI WRITER
+===========================================================
 */
 
-async function analizarPagina(
-    archivo,
-    numeroPagina
+
+function variableLength(
+    valor
 ) {
 
-    const texto =
-        await cargarSVG(
-            archivo
+    let buffer =
+        valor & 0x7F;
+
+
+    const bytes = [];
+
+
+    while (
+        (
+            valor >>= 7
+        )
+    ) {
+
+        buffer <<= 8;
+
+        buffer |=
+            (
+                (
+                    valor &
+                    0x7F
+                ) |
+                0x80
+            );
+
+    }
+
+
+    while (true) {
+
+        bytes.push(
+            buffer & 0xFF
         );
 
 
-    const parser =
-        new DOMParser();
+        if (
+            buffer &
+            0x80
+        ) {
+
+            buffer >>= 8;
+
+        }
+        else {
+
+            break;
+
+        }
+
+    }
 
 
-    const documento =
-        parser.parseFromString(
-            texto,
-            "image/svg+xml"
-        );
+    return bytes;
+
+}
 
 
-    const svg =
-        documento.documentElement;
+function textoBytes(
+    texto
+) {
+
+    return [
+        ...texto
+    ].map(
+        c =>
+            c.charCodeAt(0)
+    );
+
+}
 
 
-    const notePaths =
-        [
-            ...svg.querySelectorAll(
-                ".Note"
-            )
-        ];
+function numeroBytes(
+    numero,
+    cantidad
+) {
 
-
-    const notas = [];
+    const salida = [];
 
 
     for (
-        const path
-        of notePaths
+        let i =
+            cantidad - 1;
+
+        i >= 0;
+
+        i--
     ) {
 
-        const encontradas =
-            analizarNotePath(
-                path,
-                numeroPagina
-            );
-
-
-        notas.push(
-            ...encontradas
+        salida.push(
+            (
+                numero >>
+                (
+                    i * 8
+                )
+            ) &
+            0xFF
         );
 
     }
 
 
-    return {
-
-        svg,
-
-        notas,
-
-        notePaths:
-            notePaths.length
-
-    };
+    return salida;
 
 }
 
 
 /*
-==========================================================
-MOSTRAR RESULTADO
-==========================================================
+===========================================================
+GENERAR MIDI
+===========================================================
 */
 
-function mostrar(
-    resultadoPagina
+
+function crearMIDI(
+    notas
 ) {
 
-    const pagina =
+    const PPQ = 480;
+
+
+    /*
+    Orden temporal.
+    */
+
+    const ordenadas =
+        ordenarNotas(
+            notas
+        );
+
+
+    /*
+    Agrupamos notas con la misma posición
+    aproximada X para formar acordes.
+
+    Esto es muy importante para piano.
+    */
+
+    const grupos = [];
+
+
+    for (
+        const nota
+        of ordenadas
+    ) {
+
+        const anterior =
+            grupos[
+                grupos.length - 1
+            ];
+
+
+        if (
+            anterior &&
+
+            anterior.pagina ===
+                nota.pagina &&
+
+            anterior.sistema ===
+                nota.sistema &&
+
+            Math.abs(
+                anterior.x -
+                nota.x
+            ) < 15
+        ) {
+
+            anterior.notas.push(
+                nota
+            );
+
+        }
+        else {
+
+            grupos.push({
+
+                pagina:
+                    nota.pagina,
+
+                sistema:
+                    nota.sistema,
+
+                x:
+                    nota.x,
+
+                notas: [
+                    nota
+                ]
+
+            });
+
+        }
+
+    }
+
+
+    /*
+    Track MIDI.
+    */
+
+    const eventos = [];
+
+
+    /*
+    Tempo inicial:
+
+    60 BPM.
+
+    Posteriormente lo reemplazaremos
+    con el Tempo real del SVG.
+    */
+
+    const bpm = 60;
+
+
+    const microsegundos =
+        Math.round(
+            60000000 /
+            bpm
+        );
+
+
+    /*
+    Tempo.
+    */
+
+    eventos.push({
+
+        tiempo: 0,
+
+        datos: [
+
+            0xFF,
+            0x51,
+            0x03,
+
+            (
+                microsegundos >>
+                16
+            ) & 255,
+
+            (
+                microsegundos >>
+                8
+            ) & 255,
+
+            microsegundos &
+            255
+
+        ]
+
+    });
+
+
+    let tiempo =
+        0;
+
+
+    /*
+    Cada grupo se trata como
+    un evento simultáneo.
+    */
+
+    for (
+        const grupo
+        of grupos
+    ) {
+
+        /*
+        Aquí todas las notas del grupo
+        empiezan simultáneamente.
+        */
+
+        const eventosNota = [];
+
+
+        for (
+            const nota
+            of grupo.notas
+        ) {
+
+            eventosNota.push({
+
+                nota,
+
+                inicio:
+                    tiempo
+
+            });
+
+        }
+
+
+        /*
+        Ordenar por MIDI.
+        */
+
+        eventosNota.sort(
+            (
+                a,
+                b
+            ) =>
+                a.nota.midi -
+                b.nota.midi
+        );
+
+
+        /*
+        Nota ON.
+        */
+
+        for (
+            const evento
+            of eventosNota
+        ) {
+
+            eventos.push({
+
+                tiempo:
+                    evento.inicio,
+
+                datos: [
+
+                    0x90,
+
+                    evento.nota.midi,
+
+                    90
+
+                ]
+
+            });
+
+        }
+
+
+        /*
+        Duración actual.
+
+        */
+
+        const duracion =
+            Math.max(
+                ...grupo.notas.map(
+                    nota =>
+                        nota.ticks ||
+                        PPQ
+                )
+            );
+
+
+        /*
+        Nota OFF.
+
+        */
+
+        for (
+            const evento
+            of eventosNota
+        ) {
+
+            eventos.push({
+
+                tiempo:
+                    tiempo +
+                    (
+                        evento.nota.ticks ||
+                        duracion
+                    ),
+
+                datos: [
+
+                    0x80,
+
+                    evento.nota.midi,
+
+                    0
+
+                ]
+
+            });
+
+        }
+
+
+        tiempo +=
+            duracion;
+
+    }
+
+
+    /*
+    END OF TRACK
+    */
+
+    eventos.push({
+
+        tiempo,
+
+        datos: [
+
+            0xFF,
+            0x2F,
+            0x00
+
+        ]
+
+    });
+
+
+    /*
+    Ordenar por tiempo.
+    */
+
+    eventos.sort(
+        (
+            a,
+            b
+        ) =>
+            a.tiempo -
+            b.tiempo
+    );
+
+
+    /*
+    Crear track MIDI.
+
+    Delta time.
+    */
+
+    const track = [];
+
+
+    let tiempoAnterior =
+        0;
+
+
+    for (
+        const evento
+        of eventos
+    ) {
+
+        const delta =
+            evento.tiempo -
+            tiempoAnterior;
+
+
+        track.push(
+            ...variableLength(
+                delta
+            )
+        );
+
+
+        track.push(
+            ...evento.datos
+        );
+
+
+        tiempoAnterior =
+            evento.tiempo;
+
+    }
+
+
+    /*
+    Header MIDI.
+    */
+
+    const header = [
+
+        ...textoBytes(
+            "MThd"
+        ),
+
+        ...numeroBytes(
+            6,
+            4
+        ),
+
+        0,
+        0,
+
+        0,
+        1,
+
+        (
+            PPQ >>
+            8
+        ) & 255,
+
+        PPQ & 255
+
+    ];
+
+
+    const trackHeader = [
+
+        ...textoBytes(
+            "MTrk"
+        ),
+
+        ...numeroBytes(
+            track.length,
+            4
+        )
+
+    ];
+
+
+    const bytes = [
+
+        ...header,
+
+        ...trackHeader,
+
+        ...track
+
+    ];
+
+
+    return new Uint8Array(
+        bytes
+    );
+
+}
+
+
+/*
+===========================================================
+DESCARGAR MIDI
+===========================================================
+*/
+
+
+function descargarMIDI(
+    notas
+) {
+
+    const midi =
+        crearMIDI(
+            notas
+        );
+
+
+    const blob =
+        new Blob(
+            [midi],
+            {
+                type:
+                    "audio/midi"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const enlace =
+        document.createElement(
+            "a"
+        );
+
+
+    enlace.href =
+        url;
+
+
+    enlace.download =
+        "Experience_Ludovico_Einaudi.mid";
+
+
+    document.body.appendChild(
+        enlace
+    );
+
+
+    enlace.click();
+
+
+    enlace.remove();
+
+
+    setTimeout(
+        () =>
+            URL.revokeObjectURL(
+                url
+            ),
+        2000
+    );
+
+}
+
+
+/*
+===========================================================
+MOSTRAR RESUMEN
+===========================================================
+*/
+
+
+function mostrarResumen() {
+
+    const resumen =
+        document.getElementById(
+            "resumen"
+        );
+
+
+    resumen.innerHTML = "";
+
+
+    const tarjetas = [
+
+        [
+            paginas.length,
+            "Páginas"
+        ],
+
+        [
+            todasLasNotas.length,
+            "Cabezas detectadas"
+        ],
+
+        [
+            todosLosPentagramas.length,
+            "Pentagramas"
+        ],
+
+        [
+            todasLasNotas.filter(
+                n =>
+                    n.midi !== null
+            ).length,
+            "Notas con pitch"
+        ]
+
+    ];
+
+
+    for (
+        const [numero, texto]
+        of tarjetas
+    ) {
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "card";
+
+
+        card.innerHTML = `
+
+            <div class="numero">
+                ${numero}
+            </div>
+
+            <div class="texto">
+                ${texto}
+            </div>
+
+        `;
+
+
+        resumen.appendChild(
+            card
+        );
+
+    }
+
+}
+
+
+/*
+===========================================================
+MOSTRAR TABLA
+===========================================================
+*/
+
+
+function mostrarPagina(
+    pagina
+) {
+
+    const contenedor =
         document.createElement(
             "div"
         );
 
 
-    pagina.className =
+    contenedor.className =
         "pagina";
 
 
@@ -493,27 +2844,65 @@ function mostrar(
 
 
     titulo.textContent =
+
         "Página " +
-        resultadoPagina.pagina +
+        pagina.numero +
         " — " +
-        resultadoPagina.notas.length +
-        " cabezas detectadas";
+        pagina.notas.length +
+        " notas";
 
 
-    pagina.appendChild(
+    contenedor.appendChild(
         titulo
     );
 
 
     /*
-    Mostrar SVG.
+    SVG.
     */
 
-    pagina.appendChild(
+    contenedor.appendChild(
         document.importNode(
-            resultadoPagina.svg,
+            pagina.svg,
             true
         )
+    );
+
+
+    /*
+    Información.
+    */
+
+    const info =
+        document.createElement(
+            "div"
+        );
+
+
+    info.className =
+        "info";
+
+
+    info.innerHTML = `
+
+        <b>Pentagramas:</b>
+        ${pagina.pentagramas.length}
+
+        &nbsp;&nbsp;
+
+        <b>Note paths:</b>
+        ${pagina.notePaths}
+
+        &nbsp;&nbsp;
+
+        <b>Notas:</b>
+        ${pagina.notas.length}
+
+    `;
+
+
+    contenedor.appendChild(
+        info
     );
 
 
@@ -538,9 +2927,20 @@ function mostrar(
             <tr>
 
                 <th>#</th>
+
                 <th>X</th>
+
                 <th>Y</th>
-                <th>Inicio del path</th>
+
+                <th>Staff</th>
+
+                <th>Pasos</th>
+
+                <th>MIDI</th>
+
+                <th>Nota</th>
+
+                <th>Duración</th>
 
             </tr>
 
@@ -558,9 +2958,14 @@ function mostrar(
 
 
     for (
-        const nota
-        of resultadoPagina.notas
+        let i = 0;
+        i < pagina.notas.length;
+        i++
     ) {
+
+        const nota =
+            pagina.notas[i];
+
 
         const fila =
             document.createElement(
@@ -568,23 +2973,48 @@ function mostrar(
             );
 
 
+        const nombre =
+            nota.midi !== null
+
+                ? midiANombre(
+                    nota.midi
+                )
+
+                : "—";
+
+
         fila.innerHTML = `
 
             <td>
-                ${nota.indice}
+                ${i + 1}
             </td>
 
             <td>
-                ${nota.x.toFixed(2)}
+                ${nota.x.toFixed(1)}
             </td>
 
             <td>
-                ${nota.y.toFixed(2)}
+                ${nota.y.toFixed(1)}
             </td>
 
             <td>
-                M${nota.x}
-                ${nota.y}
+                ${nota.sistema + 1}
+            </td>
+
+            <td>
+                ${nota.pasos}
+            </td>
+
+            <td>
+                ${nota.midi ?? "—"}
+            </td>
+
+            <td>
+                ${nombre}
+            </td>
+
+            <td>
+                ${nota.duracion || "—"}
             </td>
 
         `;
@@ -597,38 +3027,8 @@ function mostrar(
     }
 
 
-    pagina.appendChild(
+    contenedor.appendChild(
         tabla
-    );
-
-
-    /*
-    Mostrar primeros paths.
-    */
-
-    const pre =
-        document.createElement(
-            "pre"
-        );
-
-
-    pre.textContent =
-        resultadoPagina.notas
-            .slice(0, 10)
-            .map(
-                nota =>
-                    "NOTA " +
-                    nota.indice +
-                    "\n" +
-                    nota.path
-            )
-            .join(
-                "\n\n"
-            );
-
-
-    pagina.appendChild(
-        pre
     );
 
 
@@ -637,29 +3037,87 @@ function mostrar(
             "resultado"
         )
         .appendChild(
-            pagina
+            contenedor
         );
 
 }
 
 
 /*
-==========================================================
-ANALIZAR TODO
-==========================================================
+===========================================================
+NOMBRE MIDI
+===========================================================
 */
+
+
+function midiANombre(
+    midi
+) {
+
+    const nombres = [
+
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B"
+
+    ];
+
+
+    const octava =
+        Math.floor(
+            midi / 12
+        ) - 1;
+
+
+    return (
+        nombres[
+            midi % 12
+        ] +
+        octava
+    );
+
+}
+
+
+/*
+===========================================================
+ANÁLISIS PRINCIPAL
+===========================================================
+*/
+
 
 async function analizar() {
 
+    const estado =
+        document.getElementById(
+            "estado"
+        );
+
+
+    const resultado =
+        document.getElementById(
+            "resultado"
+        );
+
+
+    resultado.innerHTML =
+        "";
+
+
+    paginas = [];
+
     todasLasNotas = [];
 
-
-    document
-        .getElementById(
-            "resultado"
-        )
-        .innerHTML =
-            "";
+    todosLosPentagramas = [];
 
 
     try {
@@ -670,78 +3128,227 @@ async function analizar() {
             i++
         ) {
 
-            document
-                .getElementById(
-                    "estado"
-                )
-                .textContent =
-                    "Analizando página " +
-                    (i + 1) +
-                    " / " +
-                    ARCHIVOS.length +
-                    "...";
+            estado.textContent =
+                "Analizando página " +
+                (
+                    i + 1
+                ) +
+                " / " +
+                ARCHIVOS.length +
+                "...";
 
 
-            const resultado =
-                await analizarPagina(
-                    ARCHIVOS[i],
+            const texto =
+                await cargarSVG(
+                    ARCHIVOS[i]
+                );
+
+
+            const svg =
+                parsearSVG(
+                    texto
+                );
+
+
+            /*
+            Extraer cabezas.
+            */
+
+            const notas =
+                extraerCabezas(
+                    svg,
                     i + 1
                 );
 
 
-            resultado.pagina =
-                i + 1;
+            /*
+            Pentagramas.
+            */
+
+            const pentagramas =
+                analizarStaffLines(
+                    svg
+                );
 
 
-            todasLasNotas.push(
-                ...resultado.notas
+            /*
+            Asignar pentagrama
+            y pitch.
+            */
+
+            for (
+                const nota
+                of notas
+            ) {
+
+                const asignacion =
+                    asignarPentagrama(
+                        nota,
+                        pentagramas
+                    );
+
+
+                if (
+                    asignacion
+                ) {
+
+                    nota.sistema =
+                        asignacion.indice;
+
+
+                    /*
+                    Primera aproximación:
+
+                    la primera mitad de los sistemas
+                    normalmente corresponde a clave
+                    de sol.
+
+                    Para piano, posteriormente
+                    refinaremos esto usando Clef.
+                    */
+
+                    const clave =
+                        "treble";
+
+
+                    const pitch =
+                        notaMIDIDesdeY(
+                            nota,
+                            asignacion.pentagrama,
+                            clave
+                        );
+
+
+                    nota.midi =
+                        pitch.midi;
+
+
+                    nota.pasos =
+                        pitch.pasos;
+
+
+                    nota.precision =
+                        pitch.precision;
+
+
+                    nota.clave =
+                        clave;
+
+                }
+                else {
+
+                    nota.sistema =
+                        -1;
+
+                    nota.midi =
+                        null;
+
+                    nota.pasos =
+                        null;
+
+                }
+
+
+                nota.pagina =
+                    i + 1;
+
+            }
+
+
+            /*
+            Ordenar y estimar duración.
+            */
+
+            const ordenadas =
+                ordenarNotas(
+                    notas
+                );
+
+
+            estimarDuraciones(
+                ordenadas
             );
 
 
-            mostrar(
-                resultado
+            paginas.push({
+
+                numero:
+                    i + 1,
+
+                svg,
+
+                notas:
+                    ordenadas,
+
+                pentagramas,
+
+                notePaths:
+                    svg.querySelectorAll(
+                        ".Note"
+                    ).length
+
+            });
+
+
+            todasLasNotas.push(
+                ...ordenadas
+            );
+
+
+            todosLosPentagramas.push(
+                ...pentagramas
+            );
+
+
+            mostrarPagina(
+                paginas[
+                    paginas.length - 1
+                ]
             );
 
         }
 
 
+        mostrarResumen();
+
+
         document
             .getElementById(
-                "estado"
+                "generarMIDI"
             )
-            .textContent =
+            .style.display =
+                "inline-block";
+
+
+        document
+            .getElementById(
+                "descargarJSON"
+            )
+            .style.display =
+                "inline-block";
+
+
+        estado.textContent =
 
             "✓ ANÁLISIS COMPLETADO\n\n" +
 
-            "Total de cabezas detectadas: " +
+            "Páginas: " +
+            paginas.length +
+
+            "\n" +
+
+            "Cabezas detectadas: " +
             todasLasNotas.length +
+
+            "\n" +
+
+            "Pentagramas detectados: " +
+            todosLosPentagramas.length +
 
             "\n\n" +
 
-            "Página 1: " +
-            todasLasNotas.filter(
-                n => n.pagina === 1
-            ).length +
-
-            "\nPágina 2: " +
-            todasLasNotas.filter(
-                n => n.pagina === 2
-            ).length +
-
-            "\nPágina 3: " +
-            todasLasNotas.filter(
-                n => n.pagina === 3
-            ).length +
-
-            "\nPágina 4: " +
-            todasLasNotas.filter(
-                n => n.pagina === 4
-            ).length +
-
-            "\nPágina 5: " +
-            todasLasNotas.filter(
-                n => n.pagina === 5
-            ).length;
+            "Cada cabeza ahora tiene coordenadas " +
+            "reales y pitch MIDI estimado.";
 
 
     }
@@ -752,13 +3359,10 @@ async function analizar() {
         );
 
 
-        document
-            .getElementById(
-                "estado"
-            )
-            .textContent =
-                "❌ ERROR\n\n" +
-                error.message;
+        estado.textContent =
+
+            "❌ ERROR\n\n" +
+            error.message;
 
     }
 
@@ -766,19 +3370,105 @@ async function analizar() {
 
 
 /*
-==========================================================
-BOTÓN
-==========================================================
+===========================================================
+BOTÓN MIDI
+===========================================================
 */
+
 
 document
     .getElementById(
-        "analizar"
+        "generarMIDI"
     )
     .addEventListener(
         "click",
-        analizar
+        () => {
+
+            descargarMIDI(
+                todasLasNotas
+            );
+
+        }
     );
+
+
+/*
+===========================================================
+DESCARGAR JSON
+===========================================================
+*/
+
+
+document
+    .getElementById(
+        "descargarJSON"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            const datos =
+                JSON.stringify(
+                    {
+
+                        paginas,
+
+                        notas:
+                            todasLasNotas,
+
+                        pentagramas:
+                            todosLosPentagramas
+
+                    },
+                    null,
+                    2
+                );
+
+
+            const blob =
+                new Blob(
+                    [datos],
+                    {
+                        type:
+                            "application/json"
+                    }
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            const enlace =
+                document.createElement(
+                    "a"
+                );
+
+
+            enlace.href =
+                url;
+
+
+            enlace.download =
+                "experience_reconstruccion.json";
+
+
+            enlace.click();
+
+
+            setTimeout(
+                () =>
+                    URL.revokeObjectURL(
+                        url
+                    ),
+                1000
+            );
+
+        }
+    );
+
 
 </script>
 
